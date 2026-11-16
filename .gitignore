@@ -1,0 +1,17 @@
+node_modules/
+www/
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+# iOS build artifacts
+ios/App/App/public/
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+*.ipa
+*.dSYM.zip
