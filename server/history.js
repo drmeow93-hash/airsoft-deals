@@ -178,4 +178,10 @@ function dropItems() {
 
 loadLocal();
 
-module.exports = { keyOf, normUrl, attachOffer, attachGroup, summarize, refreshRemote, dropItems, meta: () => meta, onUpdate, today, pairs };
+// Latest recorded price across a product's store URLs (for alert checks when a live re-check isn't possible).
+function latestFor(urls) {
+  let best = null;
+  for (const url of urls || []) { const r = H.get(keyOf(url)); if (r && r.length >= 2) { const p = r[r.length - 1]; if (best == null || p < best.price) best = { price: p, url, at: r[r.length - 2] }; } }
+  return best;
+}
+module.exports = { latestFor, keyOf, normUrl, attachOffer, attachGroup, summarize, refreshRemote, dropItems, meta: () => meta, onUpdate, today, pairs };

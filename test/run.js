@@ -128,3 +128,37 @@ console.log(`Held-out sample: ${hok}/${held.length} = ${(100 * hok / held.length
   [...bad, ...bad2].forEach((c) => console.log('  wrong:', c));
   if (bad.length || bad2.length) process.exitCode = 1;
 }
+
+// ---- Round 8: accounts, wishlist import parsing, "good price?" verdict ----
+{
+  const { emailOk, cleanItem } = require('../server/accounts');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../public/app.js'), 'utf8');
+  const grab = (name) => { const i = src.indexOf(name); let d = 0, j = src.indexOf('{', i); for (let k = j; k < src.length; k++) { if (src[k] === '{') d++; else if (src[k] === '}' && !--d) return src.slice(i, k + 1); } return ''; };
+  const helpers = `const DAY=864e5;const esc=(s)=>String(s);const money=(n)=>'$'+Number(n).toFixed(2);const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const fmtDate=(d)=>{const [,m,day]=String(d).split('-').map(Number);return MON[m-1]+' '+day;};`;
+  // eslint-disable-next-line no-new-func
+  const lib = new Function(`${helpers}${grab('function dealInfo(g)')}\n${grab('function parseWishlist(text)')}\nreturn { dealInfo, parseWishlist };`)();
+  const H = (pts, extra = {}) => { const v = pts.map((p) => p[1]); return { since: pts[0][0], pts, lo: Math.min(...v), hi: Math.max(...v), avg: v.reduce((a, b) => a + b, 0) / v.length, ...extra }; };
+  const G = (price, h, extra = {}) => ({ bestPrice: price, h, storeCount: 1, belowAvgPct: 0, avgPrice: price, inStock: true, offers: [{ discountPct: 0, store: 'X' }], ...extra });
+  const low = lib.dealInfo(G(90, H([['2026-09-01', 120], ['2026-10-01', 110], ['2026-11-01', 90]], { chg: -20, pct: -18.2, at: '2026-11-01' })));
+  const high = lib.dealInfo(G(130, H([['2026-09-01', 100], ['2026-10-01', 105], ['2026-11-01', 130]], { chg: 25, pct: 23.8, at: '2026-11-01' })));
+  const flat = lib.dealInfo(G(100, H([['2026-11-16', 100]])));
+  const flatCheap = lib.dealInfo(G(100, H([['2026-11-16', 100]]), { storeCount: 4, belowAvgPct: 12, avgPrice: 114 }));
+  const oos = lib.dealInfo(G(100, H([['2026-11-16', 100]]), { inStock: false }));
+  const csv = lib.parseWishlist('name,url,target\n"Hi-Capa 5.1, gold",https://www.evike.com/products/x,150\nGlock 17,,');
+  const plain = lib.parseWishlist('https://wgcshop.com/products/a\n\nTokyo Marui MWS\n');
+  const cases = [
+    [emailOk('a.b+c@example.co'), true], [emailOk('nope@'), false], [emailOk('x y@a.com'), false],
+    [cleanItem({ urls: ['http://insecure.com/x'] }), null],
+    [cleanItem({ urls: ['https://www.evike.com/p/1'], title: '<b>Gun</b>', target: '199.999' }).target, 200],
+    [cleanItem({ urls: ['https://www.evike.com/p/1'], title: '<b>Gun</b>' }).title.includes('<'), false],
+    [cleanItem({ urls: ['https://www.evike.com/p/1'], target: -5 }).target, null],
+    [low.level + '/' + low.rec, 'low/buy'], [high.level + '/' + high.rec, 'high/wait'],
+    [flat.level + '/' + flat.rec, 'new/fair'], [flat.label, 'Tracking since Nov 16'],
+    [flatCheap.rec, 'buy'], [oos.rec, 'oos'],
+    [csv.length, 2], [csv[0].line, 'https://www.evike.com/products/x'], [csv[0].target, 150], [csv[1].line, 'Glock 17'],
+    [plain.length, 2], [plain[1].line, 'Tokyo Marui MWS'],
+  ];
+  const bad = cases.filter(([got, want]) => got !== want);
+  console.log(`Accounts / import / verdict: ${cases.length - bad.length}/${cases.length} checks pass`);
+  bad.forEach((c) => console.log('  wrong:', c)); if (bad.length) process.exitCode = 1;
+}

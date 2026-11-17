@@ -302,3 +302,29 @@ Every page view shows saved prices first. It then calls `GET /api/refresh`, and 
 - **Product pages** re-check that product's offers directly when they're older than `PRODUCT_RECHECK_MS` (default 5 minutes) via `POST /api/recheck`. Shopify stores use `/products/<handle>.js`, after a robots.txt check that is cached for 12 h; other live stores are re-searched by title.
 - **History:** prices seen live are added to the in-memory price history right away, so arrows reflect them. The collector still commits history to the repo twice a day.
 - **Cold start:** when Render wakes the server, a full cycle starts within a second.
+
+## "Is this a good price?" (product page)
+The top of every product page answers buy-now-or-wait before anything else:
+- **Deal indicator**: *Historical low* (today's best price is the lowest we've recorded), *Near average*, or *Higher than usual*, from the recorded daily best price across stores (`g.h`). With short or flat history it says **"Tracking since <date>"** instead of claiming a low; nothing is back-filled.
+- **Recommendation**: *Buy now* (historical low, or clearly below the other stores / on sale / just dropped), *Wait* (above its average or just went up), *Fair price*, or *Out of stock*, with the reasons listed under it and a low–avg–high meter.
+- **Chart**: custom SVG (no chart library), one step line per store (labelled with the store's location, "Official store" for Umarex), 1M / 3M / 1Y / All ranges, tap/hover read-out, legend toggles, and Now / Lowest / Highest / Average. New prices only; used and marketplace listings have no history.
+
+## Tracking, target prices and email alerts (`server/accounts.js`)
+- **Track price** on a product adds it to your list; **Alert me when it drops to $X** sets a target. The **Dashboard** (`#/dashboard`, heart icon) shows tracked items, current vs saved price, targets, alert history, your email, and where your data is stored. **Check prices now** re-checks the stores (same robots-checked per-product re-check as the product page).
+- **Accounts are lightweight and free**: no password. The browser makes a random account key and keeps the list in localStorage. The list is copied to the server only when you set a target or add an email. Adding an email sends one confirmation link (double opt-in); that link is also the magic link to sign in on another device (`#/login?k=…&c=…`).
+- **Alerts piggyback on the refresh cycle**: after each store refresh cycle (visit-triggered, see below), up to 8 due targets are re-checked (each at most every 3 h, falling back to recorded history). When a price is at or below the target, an alert is recorded (shown in the dashboard) and emailed to a confirmed address. Each price is alerted once; a lower price alerts again.
+- **Wishlist import** (`#/import`): paste store links or product names (one per line) or upload a CSV with a `url` or `name` column (optional `target`). `POST /api/match` matches up to 25 lines against the in-memory catalogs only (no store requests), with an exact / good / weak confidence; you pick which to track.
+
+### Environment variables (all optional; nothing breaks without them)
+| Variable | What it does |
+|---|---|
+| `RESEND_API_KEY` | Turns on email (Resend, free tier 3,000 emails/month, 100/day). Without it, alerts appear in the dashboard only. |
+| `ALERTS_FROM` | Sender, e.g. `Felony's Airsoft Emporium <alerts@yourdomain.com>`, on a domain verified in Resend. The default `onboarding@resend.dev` only delivers to the Resend account owner's own address. |
+| `EMAIL_DAILY_CAP` | Max emails per day (default 100, Resend's free daily limit). |
+| `SITE_URL` | Base URL used in email links (default `https://airsoft-deals.onrender.com`). |
+| `DATABASE_URL` | Any Postgres connection string. Recommended: a free Neon database (doesn't expire). Creates one table, `accounts`. |
+
+### Persistence (why this choice)
+- **Source of truth: your browser** (localStorage). It survives server restarts, costs nothing, and re-syncs to the server on every visit.
+- **Server copy, for alerts while you're away**: with `DATABASE_URL` set it's stored in Postgres and survives restarts and redeploys. Without it, it's a file on the instance disk (`server/snapshot/accounts.json`, git-ignored), which Render's free plan wipes on every restart or redeploy; it comes back the next time you open the site, but targets can't be checked in between. The dashboard says which mode is active.
+- Not used: Render's free Postgres (deleted after 30 days) and committing to the repo (it's public, so emails would leak).

@@ -52,13 +52,36 @@ const remember = (gs, at) => gs.forEach((g) => { if (at && !g.checkedAt) g.check
 const keyOf = (g) => g.offers[0].url;
 const watch = {
   all: () => { try { return JSON.parse(localStorage.getItem('ad_watch') || '[]'); } catch { return []; } },
-  has: (g) => watch.all().some((w) => w.key === keyOf(g)),
-  toggle(g) {
-    let l = watch.all();
-    l = watch.has(g) ? l.filter((w) => w.key !== keyOf(g)) : [{ key: keyOf(g), savedAt: Date.now(), savedPrice: g.bestPrice, group: g }, ...l];
-    localStorage.setItem('ad_watch', JSON.stringify(l.slice(0, 100)));
-    badgeCount();
+  save(l) { localStorage.setItem('ad_watch', JSON.stringify(l.slice(0, 100))); badgeCount(); acct.soon(); },
+  get: (g) => watch.all().find((w) => w.key === keyOf(g)),
+  has: (g) => !!watch.get(g),
+  add(g, extra = {}) { const l = watch.all().filter((w) => w.key !== keyOf(g)); watch.save([{ key: keyOf(g), savedAt: Date.now(), savedPrice: g.bestPrice, group: g, ...extra }, ...l]); },
+  toggle(g) { if (watch.has(g)) watch.remove(keyOf(g)); else watch.add(g); },
+  remove(key) { watch.save(watch.all().filter((w) => w.key !== key)); },
+  update(key, patch) { watch.save(watch.all().map((w) => (w.key === key ? { ...w, ...patch } : w))); },
+  setTarget(g, v) { if (!watch.has(g)) watch.add(g); watch.update(keyOf(g), { target: v > 0 ? +(+v).toFixed(2) : null }); },
+};
+// Lightweight free account: a random key kept in this browser (no password). The watchlist lives here in
+// localStorage; it's copied to the server only when you set a target price or add an email, so alerts can run.
+const acct = {
+  key() {
+    let k = localStorage.getItem('ad_acct');
+    if (!k) { const a = crypto.getRandomValues(new Uint8Array(18)); k = btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); localStorage.setItem('ad_acct', k); }
+    return k;
   },
+  email: () => localStorage.getItem('ad_email') || '',
+  state: (() => { try { return JSON.parse(localStorage.getItem('ad_acct_state') || 'null'); } catch { return null; } })(),
+  needed: () => !!acct.email() || watch.all().some((w) => w.target),
+  items: () => watch.all().map((w) => ({ key: w.key, urls: w.group.offers.slice(0, 8).map((o) => o.url), title: w.group.title, brand: w.group.brand || '', offers: w.group.offers.slice(0, 12).map((o) => ({ url: o.url, storeId: o.storeId, store: o.store })), target: w.target || null, addedAt: new Date(w.savedAt).toISOString(), lastPrice: w.cur ?? w.group.bestPrice })),
+  async post(path, body) {
+    const r = await fetch(API + '/api/account/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: acct.key(), ...body }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `Server error ${r.status}`);
+    return d;
+  },
+  keep(d) { if (d && Array.isArray(d.items)) { acct.state = d; localStorage.setItem('ad_acct_state', JSON.stringify(d)); } return d; },
+  async sync(extra = {}) { if (!acct.needed() && !extra.email) return acct.state; return acct.keep(await acct.post('sync', { email: acct.email(), items: acct.items(), ...extra })); },
+  soon() { clearTimeout(acct._t); acct._t = setTimeout(() => acct.sync().catch(() => {}), 1500); },
 };
 function badgeCount() { const n = watch.all().length; const el = $('#watchCount'); el.textContent = n; el.classList.toggle('hidden', !n); }
 
@@ -157,6 +180,124 @@ function chartHtml(h) {
   </svg>`;
 }
 
+// ---- "Is this a good price? Buy now or wait?" ----
+// Built only from prices we actually recorded (g.h, the best price across stores per day) plus today's
+// prices at the other stores. With short or flat history it says so ("tracking since <date>").
+const DAY = 864e5;
+function dealInfo(g) {
+  const h = g.h, p = g.bestPrice, why = [];
+  const days = h?.since ? Math.max(0, Math.round((Date.now() - Date.parse(h.since)) / DAY)) : 0;
+  const varied = h && h.pts && h.pts.length > 1 && h.hi - h.lo >= 0.01;
+  const vsStores = g.storeCount > 1 && g.belowAvgPct >= 5 ? `${g.belowAvgPct}% below the ${g.storeCount}-store average of ${money(g.avgPrice)}` : null;
+  const sale = (g.offers[0]?.discountPct || 0) >= 10 ? `${g.offers[0].discountPct}% off ${esc(g.offers[0].store)}'s regular price` : null;
+  let level, label;
+  if (varied) {
+    const pos = (p - h.lo) / (h.hi - h.lo);
+    if (p <= h.lo + 0.009) { level = 'low'; label = 'Historical low'; why.push(`The lowest price we've recorded since ${fmtDate(h.since)}`); }
+    else if (p >= h.avg * 1.04 || pos >= 0.75) { level = 'high'; label = 'Higher than usual'; why.push(`${Math.max(1, Math.round((p / h.avg - 1) * 100))}% above its ${money(h.avg)} average; it has been as low as ${money(h.lo)}`); }
+    else { level = 'avg'; label = 'Near average'; why.push(`Close to its ${money(h.avg)} average (range ${money(h.lo)} – ${money(h.hi)})`); }
+  } else {
+    level = 'new'; label = h?.since ? `Tracking since ${fmtDate(h.since)}` : 'New to tracking';
+    why.push(h?.since ? `Same price since we started tracking on ${fmtDate(h.since)}, so it's too early to call a low` : 'No price history yet');
+  }
+  if (h?.chg < 0) why.push(`Dropped ${money(-h.chg)} (${Math.abs(h.pct)}%) on ${fmtDate(h.at)}`);
+  else if (h?.chg > 0) why.push(`Went up ${money(h.chg)} on ${fmtDate(h.at)}`);
+  if (vsStores) why.push(vsStores);
+  if (sale) why.push(sale);
+  let rec = level === 'low' ? 'buy' : level === 'high' ? 'wait' : vsStores || sale || h?.chg < 0 ? 'buy' : 'fair';
+  if (h?.chg > 0 && level !== 'low') rec = 'wait';
+  if (g.inStock === false) { rec = 'oos'; why.unshift('Out of stock at every store we check; track it to hear when the price is right'); }
+  const recLabel = { buy: 'Buy now', wait: 'Wait', fair: 'Fair price', oos: 'Out of stock' }[rec];
+  const recSub = { buy: level === 'low' ? 'Lowest we have seen' : 'Good price right now', wait: 'Likely to come down', fair: 'Buy if you need it now', oos: 'Set a target and track it' }[rec];
+  return { level, label, rec, recLabel, recSub, why, days, since: h?.since };
+}
+const dealQ = (g, want) => { const d = dealInfo(g); return want === 'low' ? d.level === 'low' : d.rec === 'buy'; };
+const indPill = (d) => `<span class="ind ind-${d.level}">${d.level === 'low' ? '★ ' : ''}${esc(d.label)}</span>`;
+function meterHtml(g) {
+  const h = g.h; if (!h || !(h.hi - h.lo >= 0.01)) return '';
+  const P = (v) => Math.max(0, Math.min(100, ((v - h.lo) / (h.hi - h.lo)) * 100)).toFixed(1);
+  return `<div class="meter" aria-label="Today ${money(g.bestPrice)} within the recorded range ${money(h.lo)} to ${money(h.hi)}"><div class="m-bar"><i class="m-avg" style="left:${P(h.avg)}%" title="Average ${money(h.avg)}"></i><b class="m-now" style="left:${P(g.bestPrice)}%"></b></div><div class="m-l"><span>Low ${money(h.lo)}</span><span>Avg ${money(h.avg)}</span><span>High ${money(h.hi)}</span></div></div>`;
+}
+
+// ---- multi-store price chart (custom SVG, no chart library) ----
+const PALETTE = ['#b69cff', '#3ee0a1', '#ffd166', '#5ac8fa', '#ff7a8a', '#f79bd3', '#9ae66e', '#ffa65c', '#7aa2ff', '#e8e3ff'];
+const RANGES = [['1M', 30], ['3M', 90], ['1Y', 365], ['All', 0]];
+const seriesOf = (g) => g.offers.filter((o) => o.h?.pts?.length).slice(0, 10).map((o, i) => ({ id: o.url, store: o.store, sid: o.storeId, tag: o.storeId === 'umarex' ? 'Official store' : (STORE_INFO[o.storeId]?.[1] || ''), now: o.price, pts: o.h.pts, color: PALETTE[i % PALETTE.length] }));
+function chartModel(series, range, W = 680) {
+  const t = todayStr(), first = series.map((s) => s.pts[0][0]).sort()[0] || t;
+  let start = range ? new Date(Date.now() - range * DAY).toLocaleDateString('en-CA') : first;
+  if (start < first) start = first; // never draw before tracking began
+  const lines = series.map((s) => {
+    const out = []; let before = null;
+    for (const p of s.pts) { if (p[0] < start) before = p; else out.push(p); }
+    if (before && (!out.length || out[0][0] > start)) out.unshift([start, before[1]]);
+    if (out.length && out[out.length - 1][0] < t) out.push([t, s.now ?? out[out.length - 1][1]]);
+    return { ...s, c: out };
+  }).filter((s) => s.c.length);
+  const H = Math.round(Math.max(200, Math.min(270, W * 0.34))), pad = [14, 14, 28, 60];
+  let x0 = Date.parse(start), x1 = Date.parse(t); if (x1 - x0 < DAY) x0 = x1 - DAY;
+  const vals = lines.flatMap((s) => s.c.map((p) => p[1]));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 0.01) { lo -= Math.max(1, lo * 0.02); hi += Math.max(1, hi * 0.02); } else { const m = (hi - lo) * 0.08; lo -= m; hi += m; }
+  const X = (d) => pad[3] + ((Date.parse(d) - x0) / (x1 - x0)) * (W - pad[3] - pad[1]);
+  const Y = (v) => pad[0] + (1 - (v - lo) / (hi - lo)) * (H - pad[0] - pad[2]);
+  return { lines, W, H, pad, x0, x1, lo, hi, X, Y, start };
+}
+function chartSvg(m, avg) {
+  const { W, H, pad, X, Y, lo, hi, lines } = m;
+  if (!lines.length) return '<p class="hist-note">Pick at least one store to draw.</p>';
+  const ys = [0, 1, 2, 3].map((i) => lo + ((hi - lo) * (i + 0.5)) / 4);
+  const mid = new Date((m.x0 + m.x1) / 2).toISOString().slice(0, 10);
+  const step = (c) => c.map(([d, v], i) => (i ? `H${X(d).toFixed(1)}V${Y(v).toFixed(1)}` : `M${X(d).toFixed(1)} ${Y(v).toFixed(1)}`)).join('');
+  return `<svg class="chart mchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price by store from ${fmtDate(m.start)} to today">
+    ${ys.map((v) => `<line class="grid-l" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="lbl" x="${pad[3] - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${money(v)}</text>`).join('')}
+    ${avg > lo && avg < hi ? `<line class="avg" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(avg).toFixed(1)}" y2="${Y(avg).toFixed(1)}"/><text class="lbl avg-l" x="${W - pad[1]}" y="${(Y(avg) - 5).toFixed(1)}" text-anchor="end">avg best ${money(avg)}</text>` : ''}
+    ${lines.map((s) => `<path d="${step(s.c)}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>${s.c.filter((p, i) => i < s.c.length - 1 && s.pts.some((q) => q[0] === p[0])).map(([d, v]) => `<circle cx="${X(d).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.6" fill="${s.color}"/>`).join('')}`).join('')}
+    <line class="xh" id="xh" x1="0" x2="0" y1="${pad[0]}" y2="${H - pad[2]}" visibility="hidden"/>
+    <text class="lbl" x="${pad[3]}" y="${H - 8}">${fmtDate(m.start)}</text>${m.x1 - m.x0 >= 6 * DAY ? `<text class="lbl" x="${X(mid).toFixed(1)}" y="${H - 8}" text-anchor="middle">${fmtDate(mid)}</text>` : ''}<text class="lbl" x="${W - pad[1]}" y="${H - 8}" text-anchor="end">Today</text>
+    <rect class="hit" x="${pad[3]}" y="0" width="${W - pad[3] - pad[1]}" height="${H}" fill="transparent"/>
+  </svg>`;
+}
+function chartPanel(g) {
+  const series = seriesOf(g), h = g.h;
+  if (!series.length || !h) return '';
+  return `<section class="panel hist" aria-label="Price history" id="histPanel">
+    <div class="hist-top"><div class="ranges" role="tablist" aria-label="Range">${RANGES.map(([l, d]) => `<button type="button" role="tab" class="rg ${d === 90 ? 'on' : ''}" data-d="${d}" aria-selected="${d === 90}">${l}</button>`).join('')}</div>
+      <span class="fresh">Tracking since ${fmtDate(h.since)}${h.since ? ` · ${Math.max(1, Math.round((Date.now() - Date.parse(h.since)) / DAY))} day${Math.round((Date.now() - Date.parse(h.since)) / DAY) === 1 ? '' : 's'}` : ''}</span></div>
+    <div class="chartbox" id="chartBox"></div>
+    <div class="legend" id="legend">${series.map((s) => `<button type="button" class="lg on" data-id="${esc(s.id)}" aria-pressed="true"><i style="background:${s.color}"></i><span>${esc(s.store)}${s.tag ? ` <small>${esc(s.tag)}</small>` : ''}</span><b>${money(s.now)}</b></button>`).join('')}</div>
+    <div class="hstats"><div class="kv"><small>Now</small><b>${money(g.bestPrice)}</b></div><div class="kv"><small>Lowest</small><b class="dn">${money(h.lo)}</b></div><div class="kv"><small>Highest</small><b class="up">${money(h.hi)}</b></div><div class="kv"><small>Average</small><b>${money(h.avg)}</b></div></div>
+    <p class="hist-note">Best price across stores, recorded daily since ${fmtDate(h.since)}. ${h.pts.length < 3 ? 'Longer ranges fill in as history builds; we never back-fill prices we did not see.' : 'Tap or hover the chart for prices on a day.'} New prices only; used and marketplace listings have no history.</p>
+  </section>`;
+}
+function bindChart(g) {
+  const box = $('#chartBox'); if (!box) return;
+  const series = seriesOf(g), hidden = new Set();
+  let range = 90, m;
+  const draw = () => {
+    m = chartModel(series.filter((s) => !hidden.has(s.id)), range, Math.max(300, Math.round(box.clientWidth || 680)));
+    box.innerHTML = chartSvg(m, g.h.avg) + '<div class="tip" id="tip" hidden></div>';
+    const svg = $('svg', box), tip = $('#tip'), xh = $('#xh');
+    if (!svg) return;
+    const at = (e) => {
+      const r = svg.getBoundingClientRect(), sx = ((e.clientX - r.left) / r.width) * m.W;
+      const ts = m.x0 + ((sx - m.pad[3]) / (m.W - m.pad[3] - m.pad[1])) * (m.x1 - m.x0);
+      const d = new Date(Math.max(m.x0, Math.min(m.x1, ts))).toISOString().slice(0, 10);
+      const rows = m.lines.map((s) => { let v = null; for (const p of s.c) if (p[0] <= d) v = p[1]; return [s, v]; }).filter(([, v]) => v != null).sort((a, b) => a[1] - b[1]);
+      if (!rows.length) return;
+      const x = m.X(d); xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+      tip.innerHTML = `<b>${fmtDate(d)}</b>${rows.slice(0, 4).map(([s, v]) => `<div><i style="background:${s.color}"></i><em>${esc(s.store)}</em><span>${money(v)}</span></div>`).join('')}${rows.length > 4 ? `<div class="more">+${rows.length - 4} more</div>` : ''}`;
+      tip.hidden = false;
+      const px = (x / m.W) * r.width; tip.style.left = (px > r.width / 2 ? Math.max(0, px - tip.offsetWidth - 12) : Math.min(px + 12, r.width - tip.offsetWidth)) + 'px';
+    };
+    svg.addEventListener('pointermove', at); svg.addEventListener('pointerdown', at);
+    svg.addEventListener('pointerleave', () => { tip.hidden = true; xh.setAttribute('visibility', 'hidden'); });
+  };
+  $$('#histPanel .rg').forEach((b) => b.addEventListener('click', () => { range = +b.dataset.d; $$('#histPanel .rg').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); }); draw(); }));
+  $$('#legend .lg').forEach((b) => b.addEventListener('click', () => { const id = b.dataset.id; hidden.has(id) ? hidden.delete(id) : hidden.add(id); b.classList.toggle('on', !hidden.has(id)); b.setAttribute('aria-pressed', !hidden.has(id)); draw(); }));
+  draw();
+}
+
 // ---- cards ----
 const PAGE = 36;
 function tagHtml(b) {
@@ -213,13 +354,14 @@ const sorters = {
   stores: (a, b) => b.storeCount - a.storeCount || a.bestPrice - b.bestPrice,
   score: (a, b) => (b.score?.s || 0) - (a.score?.s || 0) || (b.score?.k === 'ai') - (a.score?.k === 'ai') || a.bestPrice - b.bestPrice,
 };
-const newF = (preset = {}) => ({ sort: 'featured', cats: new Set(), stores: new Set(), brands: new Set(), min: '', max: '', disc: 0, score: 0, instock: false, free: false, drops: false, ...preset });
+const newF = (preset = {}) => ({ sort: 'featured', cats: new Set(), stores: new Set(), brands: new Set(), min: '', max: '', disc: 0, score: 0, dq: '', instock: false, free: false, drops: false, ...preset });
 function applyF(gs, F, skip) {
   return gs.filter((g) => (skip === 'cats' || !F.cats.size || F.cats.has(g.cat))
     && (skip === 'stores' || !F.stores.size || g.offers.some((o) => F.stores.has(o.storeId)))
     && (skip === 'brands' || !F.brands.size || F.brands.has(g.brand || ''))
     && (F.min === '' || g.bestPrice >= +F.min) && (F.max === '' || g.bestPrice <= +F.max)
     && (!F.disc || (g.maxDiscountPct || 0) >= F.disc) && (!F.score || (g.score?.s || 0) >= F.score)
+    && (!F.dq || dealQ(g, F.dq))
     && (!F.instock || g.inStock !== false) && (!F.free || g.freeShip) && (!F.drops || g.h?.chg < 0));
 }
 function counts(gs, fn) { const m = new Map(); for (const g of gs) for (const k of new Set([].concat(fn(g)))) m.set(k, (m.get(k) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); }
@@ -259,6 +401,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
       <div class="fgroup"><h3>Price</h3><div class="frange"><label class="sr" for="fmin">Minimum price</label><input id="fmin" inputmode="decimal" placeholder="$ Min" value="${esc(F.min)}"><span aria-hidden="true">–</span><label class="sr" for="fmax">Maximum price</label><input id="fmax" inputmode="decimal" placeholder="$ Max" value="${esc(F.max)}"></div>
         <div class="chips" style="margin-top:10px">${[[0, 50], [50, 150], [150, 300], [300, '']].map(([a, b]) => `<button type="button" class="chip pr ${String(F.min) === String(a || '') && String(F.max) === String(b) ? 'on' : ''}" data-min="${a || ''}" data-max="${b}">${b === '' ? `$${a}+` : a ? `$${a}–${b}` : `Under $${b}`}</button>`).join('')}</div></div>
       <div class="fgroup"><h3>Score</h3>${[[0, 'Any'], [6, '6/10 or better'], [7, '7/10 or better'], [8, '8/10 or better']].map(([v, l]) => `<label class="fopt"><input type="radio" name="score" data-f="score" value="${v}" ${F.score === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}<p class="fnote">Scores are estimates unless marked AI.</p></div>
+      <div class="fgroup"><h3>Deal quality</h3>${[['', 'Any'], ['good', 'Good deals (buy now)'], ['low', 'Historical lows only']].map(([v, l]) => `<label class="fopt"><input type="radio" name="dq" data-f="dq" value="${v}" ${F.dq === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}<p class="fnote">From our price history and the other stores' prices.</p></div>
       <div class="fgroup"><h3>Discount</h3>${[[0, 'Any'], [10, '10% off or more'], [25, '25% off or more'], [40, '40% off or more']].map(([v, l]) => `<label class="fopt"><input type="radio" name="disc" data-f="disc" value="${v}" ${F.disc === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>
       <div class="fgroup"><h3>Store</h3>${stC.map(([s, n]) => opt('stores', s, storeName[s] || s, n, F.stores.has(s))).join('')}</div>
       ${brC.length ? `<div class="fgroup"><h3>Brand</h3>${(showAllBrands ? brC : brC.slice(0, 8)).map(([b, n]) => opt('brands', b, b, n, F.brands.has(b))).join('')}${brC.length > 8 ? `<button type="button" class="more-btn" id="moreBrands">${showAllBrands ? 'Show fewer' : `Show all ${brC.length}`}</button>` : ''}</div>` : ''}`;
@@ -271,6 +414,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     if (F.min !== '' || F.max !== '') chips.push(['price', '', `${F.min !== '' ? '$' + F.min : '$0'} – ${F.max !== '' ? '$' + F.max : 'any'}`]);
     if (F.disc) chips.push(['disc', '', `${F.disc}%+ off`]);
     if (F.score) chips.push(['score', '', `Score ${F.score}+`]);
+    if (F.dq) chips.push(['dq', '', F.dq === 'low' ? 'Historical lows' : 'Good deals']);
     if (F.instock) chips.push(['instock', '', 'In stock']);
     if (F.free) chips.push(['free', '', 'Free shipping']);
     if (F.drops) chips.push(['drops', '', 'Price dropped']);
@@ -317,6 +461,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     if (F[f] instanceof Set) (el.checked ? F[f].add(el.value) : F[f].delete(el.value));
     else if (f === 'disc') F.disc = +el.value;
     else if (f === 'score') F.score = +el.value;
+    else if (f === 'dq') F.dq = el.value;
     else F[f] = el.checked;
     render();
   });
@@ -328,7 +473,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
   $('#activeF', target).addEventListener('click', (e) => {
     const b = e.target.closest('[data-rm]'); if (!b) return;
     const f = b.dataset.rm;
-    if (F[f] instanceof Set) F[f].delete(b.dataset.v); else if (f === 'price') { F.min = ''; F.max = ''; } else if (f === 'disc') F.disc = 0; else if (f === 'score') F.score = 0; else F[f] = false;
+    if (F[f] instanceof Set) F[f].delete(b.dataset.v); else if (f === 'price') { F.min = ''; F.max = ''; } else if (f === 'disc') F.disc = 0; else if (f === 'score') F.score = 0; else if (f === 'dq') F.dq = ''; else F[f] = false;
     render();
   });
   render();
@@ -363,7 +508,15 @@ async function dealsPage() {
   setQ();
   view(`${crumbs([['Home', '#/'], ['Deals']])}${skCards()}`);
   try {
-    await loadLive('/api/deals', (d) => { S.deals = d; listView(d, { crumb: [['Home', '#/'], ["Today's deals"]], sortDefault: 'featured', title: (n) => `<b>${n}</b> deals from ${d.status.filter((s) => s.ok).length} stores ${freshness(d)}` }); });
+    let drops = cache.get('/api/drops');
+    const strip = () => {
+      if (!drops?.groups?.length || !$('#grid') || $('#dealDrops')) return;
+      const top = [...drops.groups].filter((g) => g.h?.chg < 0).sort(sorters.drop).slice(0, 14);
+      if (top.length) $('#grid').insertAdjacentHTML('beforebegin', `<div id="dealDrops"><div class="sec-h"><h2>Biggest recent drops</h2><a href="#/drops">All drops ${ic('i-right')}</a></div>${carousel('ddCar', top, 30)}</div>`);
+      remember(top, drops.fetchedAt); bindCarousel($('#ddCar'), '#/deals');
+    };
+    api('/api/drops').then((d) => { drops = d; cache.set('/api/drops', d); strip(); }).catch(() => {});
+    await loadLive('/api/deals', (d) => { S.deals = d; listView(d, { crumb: [['Home', '#/'], ["Today's deals"]], sortDefault: 'featured', title: (n) => `<b>${n}</b> deals from ${d.status.filter((s) => s.ok).length} stores ${freshness(d)}` }); strip(); });
     liveStart('', '/api/deals');
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
@@ -382,7 +535,7 @@ function productPage(id, { keepScroll = false } = {}) {
   if (!g) { location.hash = '#/'; return; }
   setQ();
   const L = S.lastList;
-  const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') ? ['Watchlist', L] : L.startsWith('#/b/') ? ['Brand', L] : null;
+  const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') || L.startsWith('#/dashboard') ? ['Dashboard', L] : L.startsWith('#/b/') ? ['Brand', L] : null;
   const best = g.offers[0], multi = g.offers.length > 1, h = g.h;
   const spec = [CATS[g.cat] && g.cat !== 'other' ? CATS[g.cat] : null, g.platform, `${g.storeCount} store${g.storeCount > 1 ? 's' : ''}`, g.inStock === true ? 'In stock' : g.inStock === false ? 'Out of stock' : null].filter(Boolean);
   const spread = multi ? g.offers[g.offers.length - 1].price - g.offers[0].price : 0;
@@ -397,52 +550,52 @@ function productPage(id, { keepScroll = false } = {}) {
       <div class="o-mid">${stock}${ship}${o.originalPrice ? `<span>was ${money(o.originalPrice)}</span>` : ''}${o.fx ? `<span class="fx">≈ USD from ${esc(o.fx.cur)} ${Number(o.fx.price).toLocaleString('en-US')}</span>` : ''}</div>
       <div class="o-right"><div class="o-price">${badge}${money(o.price)}</div><div class="o-sub">${o.h?.chg ? trendHtml(o.h) : `View ${ic('i-ext', 'ic')}`.replace('class="ic"', 'class="ic" style="width:13px;height:13px"')}</div></div></a>`;
   };
-  const histPanel = h ? `<section class="panel hist" aria-label="Price history">
-      <div class="hist-top"><div class="trend">${trendHtml(h, { long: true })}</div>${h.chg ? `<span class="fresh">Since ${fmtDate(h.since)}</span>` : ''}</div>
-      ${chartHtml(h)}
-      <div class="hstats"><div class="kv"><small>Now</small><b>${money(g.bestPrice)}</b></div><div class="kv"><small>Lowest</small><b class="dn">${money(h.lo)}</b></div><div class="kv"><small>Highest</small><b class="up">${money(h.hi)}</b></div><div class="kv"><small>Average</small><b>${money(h.avg)}</b></div></div>
-      ${h.pts.length < 2 ? `<p class="hist-note">One price recorded so far. The chart fills in as the price changes; prices are re-checked twice a day.</p>` : ''}
-    </section>` : '';
+  const d = dealInfo(g), w = watch.get(g);
+  const sugg = h && h.hi - h.lo >= 0.01 && h.lo < g.bestPrice ? h.lo : Math.floor(g.bestPrice * 0.9);
+  const tgtNote = (wt) => wt?.target ? `Alert set at <b>${money(wt.target)}</b>. ${acct.state?.email && acct.state?.confirmed ? `We'll email ${esc(acct.state.email)}.` : `<a href="#/dashboard">Add your email</a> to get it by email; otherwise it shows in your dashboard.`}` : 'Checked automatically a few times a day.';
   view(`${crumbs([['Home', '#/'], ...(back ? [back] : []), [g.brand || 'Product']])}
-  <div class="prod">
+  <div class="prod2">
+    <div class="p-head">
+      ${g.brand ? `<a class="p-brand" href="${g.brandId ? '#/b/' + esc(g.brandId) : '#/search?q=' + encodeURIComponent(g.brand)}">${esc(g.brand)}</a>` : ''}
+      <h1 class="p-title">${esc(g.title)}</h1>
+      <div class="p-spec">${spec.map((s) => `<span>${esc(s)}</span>`).join('')}${g.score ? `<a class="p-score ${scoreCls(g.score.s)}" href="#vpanel" onclick="event.preventDefault();document.getElementById('vpanel').scrollIntoView({behavior:'smooth'})"><b>${g.score.s}</b>/10 <span>${g.score.k === 'ai' ? 'Grok AI score' : 'estimated score'}</span></a>` : ''}</div>
+    </div>
+    <section class="panel dealbox lvl-${d.level}" aria-label="Is this a good price?">
+      <div class="db-top">
+        <div class="db-price"><div class="lbl">BEST PRICE NOW</div>${priceHtml(g.bestPrice)}
+          ${best.originalPrice ? `<div class="was"><s>${money(best.originalPrice)}</s><span class="dn">Save ${money(best.savings)} (${best.discountPct}%)</span></div>` : ''}
+          <div class="at">at <b>${esc(best.store)}</b> · ${best.inStock === true ? '<span class="instock">In stock</span>' : best.inStock === false ? '<span class="oos">Out of stock</span>' : 'check stock'}${best.ship?.free ? ' · <span class="instock">Free shipping</span>' : ''}</div></div>
+        <div class="rec rec-${d.rec}" role="status"><b>${d.recLabel}</b><small>${d.recSub}</small></div>
+      </div>
+      <div class="db-ind">${indPill(d)}${h?.chg ? trendHtml(h) : ''}</div>
+      ${meterHtml(g)}
+      <ul class="db-why">${d.why.map((x) => `<li>${x}</li>`).join('')}</ul>
+      <div class="db-cta"><a class="btn primary" href="${esc(best.url)}" target="_blank" rel="noopener">View at ${esc(best.store)} ${ic('i-ext')}</a>
+        <button class="btn secondary ${w ? 'on' : ''}" id="watchBtn" aria-pressed="${!!w}">${ic('i-heart')}<span>${w ? 'Tracking' : 'Track price'}</span></button></div>
+      <form class="db-target" id="tgtForm"><label for="tgt">Alert me when it drops to</label>
+        <div class="tg-row"><span aria-hidden="true">$</span><input id="tgt" inputmode="decimal" autocomplete="off" placeholder="${Number(sugg).toFixed(2)}" value="${w?.target ?? ''}"><button class="btn secondary sm" type="submit">${w?.target ? 'Update' : 'Set alert'}</button>${w?.target ? '<button class="btn secondary sm" type="button" id="tgtClear">Clear</button>' : ''}</div>
+        <small id="tgtNote">${tgtNote(w)}</small></form>
+      <button type="button" class="btn grok block" data-ask="${g.id}">${ic('i-spark')}<span>Ask Grok: good buy or skip?</span></button>
+      <p class="note">Checked ${g.checkedAt ? ago(g.checkedAt) : 'live'}. Tax extra; confirm the variant at the store.</p>
+    </section>
     <div class="gallery">
       <div class="main-img" id="mainBox">${imgHtml(g.images, g.cat, `id="mainImg" alt="${esc(g.title)}" width="600" height="600" decoding="async"`)}</div>
       ${g.images.length > 1 ? `<div class="thumbs">${g.images.map((src, i) => `<button class="thumb ${i ? '' : 'on'}" data-i="${i}" aria-label="Image ${i + 1}">${imgHtml([src], g.cat, 'alt="" loading="lazy"')}</button>`).join('')}</div>` : ''}
     </div>
-    <div class="info">
-      ${g.brand ? `<a class="p-brand" href="${g.brandId ? '#/b/' + esc(g.brandId) : '#/search?q=' + encodeURIComponent(g.brand)}">${esc(g.brand)}</a>` : ''}
-      <h1 class="p-title">${esc(g.title)}</h1>
-      <div class="p-spec">${spec.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
-      ${g.score ? `<a class="p-score ${scoreCls(g.score.s)}" href="#vpanel" onclick="event.preventDefault();document.getElementById('vpanel').scrollIntoView({behavior:'smooth'})"><b>${g.score.s}</b>/10 <span>${g.score.k === 'ai' ? 'Grok AI score' : 'estimated score'} · see breakdown</span></a>` : ''}
-      <div class="p-hl">
-        ${multi ? `<div class="kv"><small>Store average</small><b>${money(g.avgPrice)}</b></div><div class="kv"><small>You save vs. highest</small><b class="dn">${money(spread)}</b></div>` : ''}
-        ${h ? `<div class="kv"><small>Lowest tracked</small><b>${money(h.lo)}</b></div><div class="kv"><small>Tracking since</small><b>${fmtDate(h.since)}</b></div>` : ''}
-      </div>
-    </div>
-    <aside class="panel buy" aria-label="Best price">
-      <div class="lbl">BEST PRICE</div>
-      ${priceHtml(g.bestPrice)}
-      ${best.originalPrice ? `<div class="was"><s>${money(best.originalPrice)}</s><span class="dn">Save ${money(best.savings)} (${best.discountPct}%)</span></div>` : ''}
-      <div class="trend">${trendHtml(h, { long: true })}</div>
-      <div class="at">at <b>${esc(best.store)}</b>${multi && g.belowAvgPct > 0 ? ` · <span class="dn">${g.belowAvgPct}% below average</span>` : ''}</div>
-      <div class="line">${best.inStock === true ? '<span class="instock">● In stock</span>' : best.inStock === false ? '<span class="oos">● Out of stock</span>' : '<span>● Check stock at store</span>'}</div>
-      ${best.ship ? `<div class="line">${best.ship.free ? '<span class="instock">Free shipping on this item</span>' : esc(best.ship.note)}</div>` : ''}
-      <a class="btn primary block" href="${esc(best.url)}" target="_blank" rel="noopener">View at ${esc(best.store)} ${ic('i-ext')}</a>
-      <button type="button" class="btn grok block" data-ask="${g.id}">${ic('i-spark')}<span>Ask Grok: good buy or skip?</span></button>
-      <button class="btn secondary block ${watch.has(g) ? 'on' : ''}" id="watchBtn" aria-pressed="${watch.has(g)}">${ic('i-heart')}<span>${watch.has(g) ? 'Watching' : 'Add to watchlist'}</span></button>
-      <p class="note">Checked ${g.checkedAt ? ago(g.checkedAt) : 'live'}. Tax extra; confirm the variant at the store.</p>
-    </aside>
+    <div class="p-chart">${chartPanel(g) ? `<div class="sec-h"><h2>Price history</h2>${h.atl ? '<span class="atl">★ ALL-TIME LOW</span>' : ''}</div>${chartPanel(g)}` : ''}</div>
   </div>
-  <section class="panel vpanel" id="vpanel" aria-label="Score and reviews">${verdictSkeleton(g)}</section>
-  <div class="below"><div><div class="sec-h"><h2>Compare ${g.storeCount} store${g.storeCount > 1 ? 's' : ''}</h2></div>
+  <div class="below"><div><div class="sec-h"><h2>Compare ${g.storeCount} store${g.storeCount > 1 ? 's' : ''}</h2>${multi ? `<span class="fresh">avg ${money(g.avgPrice)} · save ${money(spread)} vs highest</span>` : ''}</div>
   <div class="offers">${g.offers.map(offerRow).join('')}</div></div>
-  ${histPanel ? `<div><div class="sec-h"><h2>Price history</h2>${h.atl ? '<span class="atl">★ ALL-TIME LOW</span>' : ''}</div>${histPanel}</div>` : ''}</div>`);
+  <section class="panel vpanel" id="vpanel" aria-label="Score and reviews">${verdictSkeleton(g)}</section></div>`);
   $$('.thumb').forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.i; $('#mainBox').innerHTML = imgHtml([g.images[i], ...g.images.filter((_, j) => j !== i)], g.cat, `id="mainImg" alt="${esc(g.title)}" width="600" height="600" decoding="async"`); $$('.thumb').forEach((x) => x.classList.toggle('on', x === t)); }));
+  bindChart(g);
   verdictLoad(g);
-  $('#watchBtn').addEventListener('click', (e) => { watch.toggle(g); const on = watch.has(g), b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = on ? 'Watching' : 'Add to watchlist'; });
+  const paintW = () => { const wt = watch.get(g), b = $('#watchBtn'); b.classList.toggle('on', !!wt); b.setAttribute('aria-pressed', !!wt); b.querySelector('span').textContent = wt ? 'Tracking' : 'Track price'; $('#tgtNote').innerHTML = tgtNote(wt); };
+  $('#watchBtn').addEventListener('click', () => { watch.toggle(g); if (!watch.has(g)) $('#tgt').value = ''; paintW(); });
+  $('#tgtForm').addEventListener('submit', (e) => { e.preventDefault(); const v = parseFloat($('#tgt').value.replace(/[^0-9.]/g, '')); if (!(v > 0)) { $('#tgtNote').textContent = 'Enter a price, like ' + money(sugg); return; } watch.setTarget(g, v); paintW(); if (v >= g.bestPrice) $('#tgtNote').insertAdjacentHTML('beforeend', ' <span class="dn">It is already at or below that price.</span>'); });
+  $('#tgtClear')?.addEventListener('click', () => { watch.setTarget(g, 0); $('#tgt').value = ''; paintW(); });
   if (!keepScroll) { window.scrollTo(0, 0); liveProduct(g); }
 }
-
 
 // ---- live price check on every visit ----
 // The page renders saved prices first. Then /api/refresh asks the server to re-check any store not
@@ -679,13 +832,16 @@ const STORE_N = 24;
 const POPULAR = ['Tokyo Marui', 'Glock', 'Hi-Capa', 'M4 AEG', 'Gas blowback', 'HPA', 'Sniper rifle', 'Plate carrier', '0.28g BBs'];
 async function homePage() {
   setQ();
-  view(`<section class="hero"><h1>The <em>best price</em> on airsoft gear, every time.</h1>
-      <p>Live airsoft prices from ${STORE_N} trusted stores, matched side by side, with price history.</p>
+  view(`<section class="hero"><h1>Is it a <em>good price?</em> Know before you buy.</h1>
+      <p>Live airsoft prices from ${STORE_N} trusted stores, price history, and a clear buy-now-or-wait call.</p>
+      <form class="hsearch" id="heroForm" role="search"><label class="sr" for="heroQ">Search airsoft gear</label><input id="heroQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Search a gun, brand or part"><button class="btn primary" type="submit">${ic('i-search')}<span>Check price</span></button></form>
+      <div class="hlinks"><a href="#/import">${ic('i-upload')}Import a wishlist</a><a href="#/dashboard">${ic('i-heart')}Your tracked items & alerts</a></div>
       <div class="stats" id="stats"><span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span></div></section>
+    <div class="sec-h"><h2>Top price drops</h2><a href="#/drops">See all ${ic('i-right')}</a></div><div id="homeDrops"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
+    <div class="sec-h"><h2>Highlighted deals</h2><a href="#/deals">See all ${ic('i-right')}</a></div><div id="homeDeals"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
+    <div class="sec-h"><h2>Popular products</h2><span class="fresh">compared across the most stores</span></div><div id="homePop"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <nav class="tiles" aria-label="Categories">${CAT_ORDER.map((c) => `<a class="tile" href="#/c/${c}">${ic('c-' + c)}<span>${CATS[c]}</span></a>`).join('')}</nav>
     <div class="sec-h"><h2>Shop by brand</h2><a href="#/brands">All brands ${ic('i-right')}</a></div><div class="chips brandchips" id="homeBrands">${'<span class="chip sk" style="width:96px"></span>'.repeat(8)}</div>
-    <div class="sec-h"><h2>Today's deals</h2><a href="#/deals">See all ${ic('i-right')}</a></div><div id="homeDeals"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
-    <div class="sec-h"><h2>Price drops</h2><a href="#/drops">See all ${ic('i-right')}</a></div><div id="homeDrops"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <div class="sec-h"><h2>Popular searches</h2></div><div class="chips">${POPULAR.map((c) => `<a class="chip" href="#/search?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>`);
   const tok = ++navToken;
   const deals = (d) => {
@@ -704,6 +860,10 @@ async function homePage() {
     $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 10) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
     bindCarousel($('#dropsCar'), '#/drops');
   };
+  $('#heroForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#heroQ').value; qEl.value = q; go(q); });
+  const pop = (d) => { if (tok !== navToken || !$('#homePop')) return; remember(d.groups, d.fetchedAt); $('#homePop').innerHTML = d.groups.length ? carousel('popCar', d.groups.slice(0, 16), 20) : '<div class="empty sm"><p>Popular products appear once stores load.</p></div>'; bindCarousel($('#popCar'), '#/'); };
+  const c4 = cache.get('/api/popular'); if (c4) pop(c4);
+  api('/api/popular').then((d) => { pop(d); cache.set('/api/popular', d); }).catch(() => {});
   const c1 = cache.get('/api/deals?top=1'), c2 = cache.get('/api/drops');
   if (c1) deals(c1); if (c2) drops(c2);
   liveStart('', '/api/deals?top=1');
@@ -738,14 +898,137 @@ async function brandPage(id) {
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
-function watchlistPage() {
+// ---- dashboard: tracked items, target prices, alerts, email ----
+const rowPrice = (w) => w.cur ?? w.group.bestPrice;
+function dashboardPage() {
   setQ();
   const l = watch.all();
   l.forEach((w) => S.groups.set(w.group.id, w.group));
-  view(crumbs([['Home', '#/'], ['Watchlist']]) + (l.length
-    ? `<div class="rhead"><div class="rcount"><b>${l.length}</b> saved · prices as of when you saved them</div></div><div class="grid" id="wl">${l.map((w) => card(w.group)).join('')}</div>`
-    : `<div class="empty panel">${ic('i-heart')}<h2>Your watchlist is empty</h2><p>Open any product and tap “Add to watchlist”.</p></div>`));
-  if (l.length) bindCards($('#wl'), '#/watchlist');
+  const st = acct.state, email = acct.email();
+  const srv = new Map((st?.items || []).map((x) => [x.key, x]));
+  const events = [...(st?.events || [])].reverse();
+  const hit = l.filter((w) => w.target && rowPrice(w) <= w.target).length;
+  const emailStatus = !email ? 'Add an email to get target-price alerts by email. No password; we send one confirmation link.'
+    : st?.email === email && st.confirmed ? `<span class="instock">● Confirmed</span> · alerts go to <b>${esc(email)}</b>`
+    : `<span class="wait-t">● Waiting for confirmation</span> · open the link we sent to <b>${esc(email)}</b>`;
+  const server = st ? `${st.storage === 'postgres' ? 'Saved in the database' : 'Saved on the price server (it can reset on restarts; your list here is the backup and re-syncs on each visit)'}${st.emailConnected === false ? ' · email sending isn’t connected yet, so alerts show here only' : ''}` : 'Saved in this browser only';
+  view(crumbs([['Home', '#/'], ['Dashboard']]) + `
+    <div class="dash-top">
+      <div class="kv"><small>Tracked</small><b>${l.length}</b></div><div class="kv"><small>With target</small><b>${l.filter((w) => w.target).length}</b></div><div class="kv"><small>Target reached</small><b class="${hit ? 'dn' : ''}">${hit}</b></div><div class="kv"><small>Alerts sent</small><b>${events.length}</b></div>
+    </div>
+    <section class="panel dash-email"><h2>Email alerts</h2>
+      <form id="emailForm" class="tg-row"><label class="sr" for="em">Email</label><input id="em" type="email" autocomplete="email" placeholder="you@example.com" value="${esc(email)}"><button class="btn primary sm" type="submit">${email ? 'Update' : 'Save'}</button>${email ? '<button class="btn secondary sm" type="button" id="emOff">Remove</button>' : ''}</form>
+      <p class="fnote" id="emNote">${emailStatus}</p><p class="fnote">${server}.</p></section>
+    <div class="sec-h"><h2>Tracked items</h2><div class="dash-act"><a class="btn secondary sm" href="#/import">${ic('i-upload')}Import wishlist</a>${l.length ? `<button class="btn secondary sm" id="dashCheck">${ic('i-refresh')}Check prices now</button>` : ''}</div></div>
+    ${l.length ? `<div class="dash-list" id="dl">${l.map((w) => {
+      const g = w.group, cur = rowPrice(w), sv = srv.get(w.key), d = cur - w.savedPrice;
+      const reached = w.target && cur <= w.target;
+      return `<div class="drow" data-k="${esc(w.key)}">
+        <a class="d-img" href="#/p/${esc(g.id)}">${imgHtml(g.images || [], g.cat, 'alt="" loading="lazy" width="64" height="64"')}</a>
+        <div class="d-main"><a class="d-title" href="#/p/${esc(g.id)}">${esc(g.title)}</a>
+          <div class="d-meta">${indPill(dealInfo(g))}<span>Saved ${fmtDate(new Date(w.savedAt).toLocaleDateString('en-CA'))} at ${money(w.savedPrice)}</span>${w.curAt || sv?.checkedAt ? `<span>checked ${ago(w.curAt || sv.checkedAt)}</span>` : ''}</div></div>
+        <div class="d-price"><b>${money(cur)}</b>${Math.abs(d) >= 0.01 ? `<span class="arrow ${d < 0 ? 'dn' : 'up'}">${d < 0 ? '▼' : '▲'} ${money(Math.abs(d))}</span>` : '<span class="flat">no change</span>'}</div>
+        <form class="d-tgt"><label class="sr" for="t-${esc(g.id)}">Target price</label><span>$</span><input id="t-${esc(g.id)}" inputmode="decimal" placeholder="target" value="${w.target ?? ''}"><button class="btn secondary sm" type="submit">Set</button></form>
+        <div class="d-st">${reached ? '<span class="ind ind-low">Target reached</span>' : w.target ? `<span class="fresh">${money(cur - w.target)} to go</span>` : '<span class="fresh">No target</span>'}</div>
+        <button class="d-rm" type="button" aria-label="Stop tracking ${esc(g.title)}">${ic('i-x')}</button></div>`;
+    }).join('')}</div>` : `<div class="empty panel">${ic('i-heart')}<h2>Nothing tracked yet</h2><p>Open any product and tap “Track price”, or <a href="#/import">import a wishlist</a>.</p></div>`}
+    <div class="sec-h"><h2>Alert history</h2></div>
+    ${events.length ? `<div class="panel ev">${events.slice(0, 30).map((e) => `<div class="ev-r"><span class="ind ind-low">${money(e.price)}</span><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a><span class="fresh">target ${money(e.target)} · ${ago(e.at)} · ${e.emailed ? 'emailed' : esc(e.note || 'shown here')}</span></div>`).join('')}</div>`
+      : `<div class="empty panel sm"><p>No alerts yet. Targets are checked against the stores a few times a day while the site is in use${hit ? '; reached targets are recorded on the next check' : ''}.</p></div>`}
+    <p class="fnote dash-foot">Your list lives in this browser. <button class="linkbtn" id="acctDel">Delete my server copy and email</button></p>`);
+  $('#emailForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); const v = $('#em').value.trim();
+    localStorage.setItem('ad_email', v); $('#emNote').innerHTML = '<span class="spin"></span>Saving…';
+    try { const r = await acct.sync({ email: v }); $('#emNote').textContent = r?.note || 'Saved'; setTimeout(dashboardPage, 1800); } catch (err) { $('#emNote').textContent = err.message; }
+  });
+  $('#emOff')?.addEventListener('click', async () => { localStorage.removeItem('ad_email'); try { await acct.sync({ email: '' }); } catch { /* offline */ } dashboardPage(); });
+  $('#acctDel').addEventListener('click', async () => { if (!confirm('Delete the server copy of your tracked items and your email? Your list stays in this browser.')) return; try { await acct.post('delete', {}); } catch { /* ignore */ } localStorage.removeItem('ad_email'); localStorage.removeItem('ad_acct_state'); acct.state = null; dashboardPage(); });
+  const dl = $('#dl');
+  if (dl) {
+    dl.addEventListener('submit', (e) => { e.preventDefault(); const row = e.target.closest('.drow'), v = parseFloat(e.target.querySelector('input').value.replace(/[^0-9.]/g, '')); watch.update(row.dataset.k, { target: v > 0 ? +v.toFixed(2) : null }); dashboardPage(); });
+    dl.addEventListener('click', (e) => { const b = e.target.closest('.d-rm'); if (!b) return; watch.remove(b.closest('.drow').dataset.k); dashboardPage(); });
+  }
+  $('#dashCheck')?.addEventListener('click', () => dashCheck(true));
+  if (acct.needed()) acct.sync().then((s) => { if (location.hash === '#/dashboard' && s && JSON.stringify(s.events) !== JSON.stringify(st?.events)) dashboardPage(); }).catch(() => {});
+  dashCheck(false);
+}
+let dashBusy = false;
+async function dashCheck(all) {
+  if (dashBusy) return; dashBusy = true;
+  const due = watch.all().filter((w) => all || !w.curAt || Date.now() - w.curAt > 3600e3).slice(0, all ? 20 : 8);
+  const btn = $('#dashCheck'); if (btn && due.length) btn.innerHTML = '<span class="spin"></span>Checking…';
+  let changed = false;
+  for (const w of due) {
+    try {
+      const r = await fetch(API + '/api/recheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: w.group.title, offers: w.group.offers.slice(0, 12).map((o) => ({ storeId: o.storeId, url: o.url, price: o.price })) }) }).then((x) => x.json());
+      const ok = (r.offers || []).filter((x) => x.state === 'ok' && x.price > 0);
+      const cur = ok.length ? Math.min(...ok.map((x) => x.price)) : null;
+      watch.update(w.key, { curAt: Date.now(), ...(cur ? { cur } : {}) }); changed = changed || (cur && Math.abs(cur - rowPrice(w)) >= 0.01);
+    } catch { break; }
+  }
+  dashBusy = false;
+  if (location.hash === '#/dashboard' && (all || changed)) dashboardPage();
+}
+
+// ---- wishlist import: paste links/names or upload a CSV, matched against the catalog ----
+function parseWishlist(text) {
+  const rows = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!rows.length) return [];
+  const cells = (l) => { const out = []; let cur = '', q = false; for (const ch of l) { if (ch === '"') q = !q; else if ((ch === ',' || ch === '\t') && !q) { out.push(cur.trim()); cur = ''; } else cur += ch; } out.push(cur.trim()); return out; };
+  const head = cells(rows[0]).map((x) => x.toLowerCase());
+  const col = (re) => head.findIndex((x) => re.test(x));
+  const isCsv = rows.length > 1 && head.length > 1 && (col(/url|link/) >= 0 || col(/name|title|product|item/) >= 0);
+  if (!isCsv) return rows.slice(0, 25).map((line) => ({ line: line.slice(0, 300), target: null }));
+  const u = col(/url|link/), n = col(/name|title|product|item/), t = col(/target|max|alert/);
+  return rows.slice(1, 26).map((r) => { const c = cells(r); return { line: ((u >= 0 && /^https?:/.test(c[u] || '') ? c[u] : '') || (n >= 0 ? c[n] : '') || c.find(Boolean) || '').slice(0, 300), target: t >= 0 ? parseFloat(String(c[t]).replace(/[^0-9.]/g, '')) || null : null }; }).filter((x) => x.line);
+}
+function importPage() {
+  setQ();
+  view(crumbs([['Home', '#/'], ['Dashboard', '#/dashboard'], ['Import wishlist']]) + `
+    <section class="panel imp"><h1 class="p-title">Import a wishlist</h1>
+      <p class="fnote">Paste product links (from any store we compare) or product names, one per line, or upload a CSV with a <b>url</b> or <b>name</b> column (optional <b>target</b> column for an alert price). Up to 25 at a time. Matching uses our own catalog of ${STORE_N} vetted stores; nothing is fetched from other sites.</p>
+      <label class="sr" for="impT">Wishlist</label><textarea id="impT" rows="7" placeholder="https://www.evike.com/products/…&#10;Tokyo Marui Hi-Capa 5.1&#10;Elite Force Glock 17 Gen 5"></textarea>
+      <div class="imp-act"><label class="btn secondary sm file">${ic('i-upload')}Upload CSV<input type="file" id="impF" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="btn primary" id="impGo">Find matches</button></div>
+    </section><div id="impR"></div>`);
+  $('#impF').addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 200e3) { alert('That file is over 200 KB'); return; } $('#impT').value = await f.text(); });
+  $('#impGo').addEventListener('click', async () => {
+    const items = parseWishlist($('#impT').value);
+    if (!items.length) { $('#impR').innerHTML = '<div class="empty sm"><p>Paste at least one link or product name.</p></div>'; return; }
+    $('#impR').innerHTML = `<div class="panel"><span class="spin"></span> Matching ${items.length} item${items.length === 1 ? '' : 's'}…</div>`;
+    let d;
+    try { const r = await fetch(API + '/api/match', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lines: items.map((x) => x.line) }) }); d = await r.json(); if (!r.ok) throw new Error(d.error || 'Match failed'); } catch (err) { $('#impR').innerHTML = `<div class="empty sm"><p>${esc(err.message)}</p></div>`; return; }
+    const res = d.results.map((r, i) => ({ ...r, target: items[i]?.target }));
+    res.forEach((r) => r.match && S.groups.set(r.match.id, r.match));
+    $('#impR').innerHTML = `<div class="sec-h"><h2>${res.filter((r) => r.match).length} of ${res.length} matched</h2><button class="btn primary sm" id="impAdd">Track selected</button></div>
+      <div class="dash-list">${res.map((r, i) => r.match ? `<label class="drow imp-r"><input type="checkbox" data-i="${i}" ${r.confidence !== 'weak' ? 'checked' : ''}>
+        <span class="d-img">${imgHtml(r.match.images || [], r.match.cat, 'alt="" loading="lazy" width="64" height="64"')}</span>
+        <span class="d-main"><a class="d-title" href="#/p/${esc(r.match.id)}">${esc(r.match.title)}</a><span class="d-meta"><span class="conf c-${r.confidence}">${r.confidence} match</span><span>${esc(r.why || '')}</span><span class="q">from “${esc(r.line.slice(0, 70))}”</span></span></span>
+        <span class="d-price"><b>${money(r.match.bestPrice)}</b><span class="fresh">${r.match.storeCount} store${r.match.storeCount > 1 ? 's' : ''}</span>${r.target ? `<span class="fresh">target ${money(r.target)}</span>` : ''}</span></label>`
+      : `<div class="drow imp-r miss"><span class="d-main"><b>No match</b><span class="d-meta"><span class="q">“${esc(r.line.slice(0, 90))}”</span><span>${esc(r.why || '')}</span></span></span><a class="btn secondary sm" href="#/search?q=${encodeURIComponent(r.query || r.line.slice(0, 60))}">Search</a></div>`).join('')}</div>`;
+    $('#impAdd')?.addEventListener('click', () => {
+      const pick = $$('#impR input[type=checkbox]:checked').map((c) => res[+c.dataset.i]);
+      for (const r of pick.reverse()) watch.add(r.match, r.target ? { target: r.target } : {});
+      location.hash = '#/dashboard';
+    });
+  });
+}
+
+// ---- magic link: #/login?k=<account key>&c=<confirm code> ----
+async function loginPage(params) {
+  setQ();
+  view(crumbs([['Home', '#/'], ['Sign in']]) + '<div class="empty panel"><span class="spin"></span><h2>Signing you in…</h2></div>');
+  const k = params.get('k') || '', c = params.get('c') || '';
+  try {
+    if (!/^[A-Za-z0-9_-]{20,64}$/.test(k)) throw new Error('This sign-in link is incomplete.');
+    localStorage.setItem('ad_acct', k);
+    const d = acct.keep(await acct.post('confirm', { c }));
+    if (d.email) localStorage.setItem('ad_email', d.email);
+    // Merge the server's list into this browser (items from another device have no full product data yet).
+    const have = new Set(watch.all().map((w) => w.key)), add = [];
+    for (const it of d.items || []) if (!have.has(it.key)) add.push({ key: it.key, savedAt: Date.parse(it.addedAt) || Date.now(), savedPrice: it.lastPrice || it.curPrice || 0, target: it.target, cur: it.curPrice || undefined, group: { id: 'w' + Math.abs([...it.key].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 7)).toString(36), title: it.title, brand: it.brand, images: [], cat: 'other', bestPrice: it.curPrice || it.lastPrice || 0, storeCount: it.offers.length || 1, offers: (it.offers.length ? it.offers : it.urls.map((url) => ({ url, store: new URL(url).hostname.replace(/^www\./, '') }))).map((o) => ({ ...o, price: it.curPrice || it.lastPrice || 0 })) } });
+    if (add.length) watch.save([...watch.all(), ...add]);
+    history.replaceState(null, '', '#/dashboard'); dashboardPage();
+  } catch (e) { view(crumbs([['Home', '#/'], ['Sign in']]) + `<div class="empty panel"><h2>Couldn’t sign in</h2><p>${esc(e.message)}</p><a class="btn primary" href="#/dashboard">Open dashboard</a></div>`); }
 }
 
 async function storesPage() {
@@ -858,9 +1141,11 @@ function route() {
   if (h.startsWith('#/c/')) { const c = h.slice(4).split('?')[0]; setTabs('home', c); return browsePage(c); }
   if (h.startsWith('#/p/')) { setTabs(lastTab === 'deals' ? 'deals' : lastTab === 'drops' ? 'drops' : 'home'); return productPage(h.slice(4)); }
   if (h === '#/deals') { setTabs('deals'); return dealsPage(); }
-  if (/^#\/(drops|watchlist|stores|more|marketplaces|brands)$/.test(h)) liveStart('', null);
+  if (/^#\/(drops|watchlist|dashboard|import|stores|more|marketplaces|brands)$/.test(h)) liveStart('', null);
   if (h === '#/drops') { setTabs('drops'); return dropsPage(); }
-  if (h === '#/watchlist') { setTabs('watch'); return watchlistPage(); }
+  if (h === '#/watchlist' || h === '#/dashboard') { setTabs('watch'); return dashboardPage(); }
+  if (h === '#/import') { setTabs('watch'); return importPage(); }
+  if (h.startsWith('#/login')) { setTabs('watch'); return loginPage(params); }
   if (h === '#/stores' || h === '#/more') { setTabs('stores'); return storesPage(); }
   if (h === '#/marketplaces') { setTabs('markets'); return marketplacesPage(); }
   if (h === '#/brands') { setTabs('home', 'brands'); return brandsPage(); }
@@ -875,6 +1160,7 @@ const setH = () => document.documentElement.style.setProperty('--hdr-h', hdr.off
 if ('ResizeObserver' in window) new ResizeObserver(setH).observe(hdr); else setH();
 $('#livebar')?.addEventListener('click', liveDetails);
 badgeCount(); route();
+if (acct.needed()) setTimeout(() => acct.sync().catch(() => {}), 4000); // keep the server copy fresh for alerts
 document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.hidden));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 if (window.Capacitor?.isNativePlatform?.()) window.Capacitor.Plugins?.StatusBar?.setStyle?.({ style: 'DARK' }).catch?.(() => {});

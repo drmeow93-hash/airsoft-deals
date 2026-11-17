@@ -76,6 +76,8 @@ async function cycle(reason) {
   // Anything still marked "checking" didn't answer in time; leave it due again soon.
   for (const e of S.stores.values()) if (e.state === 'checking') { e.state = e.checkedAt ? 'ok' : 'error'; if (!e.checkedAt) e.note = 'No answer in time'; e.dueAt = Math.min(e.dueAt, Date.now() + GAP_MS); }
   S.finishedAt = Date.now();
+  // Price alerts piggyback on the cycle: a few due watchlist targets are re-checked right after it.
+  if (ctx.afterCycle) { try { await ctx.afterCycle(); } catch (e) { console.log('[refresh] afterCycle failed', e.message); } }
   console.log(`[refresh] cycle ${S.cycle} done in ${Math.round((S.finishedAt - S.startedAt) / 1000)} s`);
 }
 

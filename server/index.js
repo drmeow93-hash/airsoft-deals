@@ -129,6 +129,83 @@ app.post('/api/verdict', express.json({ limit: '16kb' }), async (req, res) => {
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   try { const r = await verdicts.verdict(req.body, ip); res.status(r.status).set('Cache-Control', 'no-store').json(r.body); } catch (e) { res.status(500).json({ error: 'verdict failed' }); }
 });
+// ---- Accounts: watchlist sync, target-price alerts (email via Resend when RESEND_API_KEY is set) ----
+const accounts = require('./accounts');
+const ipOf = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+for (const [route, fn] of [['sync', accounts.sync], ['confirm', accounts.confirm], ['get', accounts.get], ['delete', accounts.del]]) {
+  app.post('/api/account/' + route, express.json({ limit: '96kb' }), async (req, res) => {
+    try { const r = await fn(req.body || {}, ipOf(req)); res.status(r.status).set('Cache-Control', 'no-store').json(r.body); } catch (e) { console.log('[accounts]', e.message); res.status(500).json({ error: 'Account service unavailable' }); }
+  });
+}
+app.get('/api/account/info', (req, res) => res.set('Cache-Control', 'no-store').json(accounts.info()));
+
+// ---- Wishlist import: match pasted URLs / names / CSV rows to listings, using only local catalogs ----
+// (Shopify snapshots + catalog-index stores already in memory: no store requests, so an import can't
+// cause a burst of traffic.) URLs are turned into a query from their product slug.
+function queryOf(line) {
+  const t = String(line || '').trim();
+  if (/^https?:\/\//i.test(t)) {
+    try {
+      const u = new URL(t);
+      if (!vetting.isVetted(t)) return { q: null, why: 'not a store we track' };
+      const slug = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '').replace(/\.(html?|php)$/i, '').replace(/[-_+]+/g, ' ').replace(/\b\d{4,}\b/g, ' ');
+      return { q: slug.replace(/\s+/g, ' ').trim().slice(0, 80), url: t };
+    } catch { return { q: null, why: 'bad URL' }; }
+  }
+  return { q: t.replace(/[^\w.&' /-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) };
+}
+function localSearch(q) {
+  const items = [];
+  for (const s of stores) {
+    let list = [];
+    try { list = s.local ? s.local(q, 12) : s.index && s.index.idx.items.length ? s.index.idx.items.filter((p) => q.toLowerCase().split(' ').every((w) => p._n.includes(w))).slice(0, 12).map(({ _n, _w, ...p }) => p) : []; } catch { list = []; }
+    for (const p of list) { const x = prep({ ...p }, s); if (x) items.push(x); }
+  }
+  return groupProducts(items);
+}
+const toks = (s) => new Set(String(s).toLowerCase().replace(/[^a-z0-9.]+/g, ' ').split(' ').filter((w) => w.length > 1));
+app.post('/api/match', express.json({ limit: '64kb' }), (req, res) => {
+  const lines = (Array.isArray(req.body?.lines) ? req.body.lines : []).map((l) => String(l || '').slice(0, 400)).filter((l) => l.trim()).slice(0, 25);
+  const out = lines.map((line) => {
+    const { q, url, why } = queryOf(line);
+    if (!q || q.length < 3) return { line, query: q, match: null, why: why || 'too short' };
+    // Drop words until something matches (store titles rarely contain every word of a wishlist line).
+    let words = q.split(' '), groups = [];
+    while (words.length && !(groups = localSearch(words.join(' '))).length) words = words.slice(0, -1);
+    if (!groups.length) return { line, query: q, match: null, why: 'no listing found in our stores' };
+    const want = toks(q);
+    const scoreOf = (g) => { const t = toks(`${g.brand || ''} ${g.title}`); let n = 0; for (const w of want) if (t.has(w)) n++; return n / Math.max(want.size, 1) + (url && g.offers.some((o) => history.normUrl(o.url) === history.normUrl(url)) ? 2 : 0) + g.storeCount * 0.01; };
+    const best = groups.sort((a, b) => scoreOf(b) - scoreOf(a))[0];
+    const conf = scoreOf(best);
+    const frac = Math.min(1, conf >= 2 ? conf - 2 : conf);
+    return { line, query: q, match: slim([best])[0], confidence: conf >= 2 ? 'exact' : conf >= 0.6 ? 'good' : 'weak', why: conf >= 2 ? 'same listing as your link' : `${Math.round(frac * 100)}% of the words match` };
+  });
+  res.set('Cache-Control', 'no-store').json({ results: out });
+});
+
+// Popular products: the most widely stocked items from the popular searches we keep warm.
+const POPULAR_Q = ['Hi-Capa 5.1', 'Glock 17', 'MP5', 'AK47', 'VSR-10', 'M4 MWS', 'Desert Eagle', '1911', 'G36', 'SCAR', 'Hi-Capa 4.3', 'M9', 'AUG', 'L96'];
+app.get('/api/popular', async (req, res) => {
+  sendJson(res, await cached('popular', 10 * 60 * 1000, 6 * 60 * 60 * 1000, async () => {
+    const seen = new Set(), picks = [];
+    for (const q of WARM) {
+      const e = results.get('s:' + q.toLowerCase()); if (!e || !e.body) continue;
+      const gs = JSON.parse(e.body.replace(/^\{"refreshing":true,/, '{')).groups.filter((g) => g.storeCount >= 2 && ['rifles', 'pistols', 'snipers'].includes(g.cat));
+      for (const g of gs.slice(0, 3)) { const k = g.title.toLowerCase(); if (!seen.has(k)) { seen.add(k); picks.push({ ...g, popularFrom: q }); } }
+    }
+    // Cold start (searches not warmed yet): the same kind of picks from the in-memory catalogs, no store requests.
+    let src = 'live';
+    if (picks.length < 6) {
+      src = picks.length ? 'live+catalog' : 'catalog';
+      for (const q of POPULAR_Q) {
+        const g = slim(localSearch(q).filter((x) => x.storeCount >= 2 && ['rifles', 'pistols', 'snipers'].includes(x.cat)).sort((a, b) => b.storeCount - a.storeCount).slice(0, 1))[0];
+        if (g && !seen.has(g.title.toLowerCase())) { seen.add(g.title.toLowerCase()); picks.push({ ...g, popularFrom: q }); }
+      }
+    }
+    return { partial: src !== 'live', body: JSON.stringify({ groups: picks.slice(0, 16), src, fetchedAt: new Date().toISOString() }) };
+  }));
+});
+
 // Visit-triggered refresh: every page view calls this; stale stores are re-checked in one shared
 // background cycle (see server/refresh.js). The page never waits for it.
 app.get('/api/refresh', (req, res) => {
@@ -317,7 +394,8 @@ app.use(express.static(PUB, {
 // Compress API JSON too (search/deals payloads compress ~8x).
 // Background work: catalog indexes load their bundled snapshot instantly, then refresh one at a
 // time in a worker thread. The deals feed and the home-page search chips are kept warm.
-refresh.init({ stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history });
+refresh.init({ stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history, afterCycle: () => accounts.checkAlerts() });
+accounts.init({ recheck: (offers, title) => refresh.recheck(offers, title), latest: (urls) => history.latestFor(urls) });
 const BG = !process.env.NO_BACKGROUND; // NO_BACKGROUND=1 for a UI-only dev server (no crawls, no warming)
 stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(20000 + i * 1000) : s.index.start(1e9)));
 const WARM = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];

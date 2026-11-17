@@ -129,6 +129,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
     product,
     id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, airsoftOnly, catalog,
     search: withFallback(search, (sn, q) => searchSnapshot(sn, q)),
+    local: (q, limit) => { const sn = snapshot(); return sn ? searchSnapshot(sn, q, limit) : []; }, // wishlist import: no network
     deals: withFallback(deals, (sn) => sn.items.filter((p) => p.originalPrice).map(({ _n, ...p }) => p)),
     snapshotInfo: () => { const sn = snapshot(); return sn ? { builtAt: sn.builtAt, products: sn.items.length } : null; },
   };
