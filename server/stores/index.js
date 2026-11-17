@@ -15,12 +15,15 @@ const stores = [
   ...feedStores(), // optional affiliate feeds, enabled via FEED_* env vars
 ];
 
-// Reviewed and intentionally NOT scraped.
+// Stores we can't price-check. They're shown on the "More Stores" tab as plain links.
 const skipped = [
-  { name: 'Evike.com', reason: 'Cloudflare "Just a moment" challenge (HTTP 403) on every page, including robots.txt. No public feed or API that answers without a browser check, and we do not bypass bot protection.' },
-  { name: 'Elite Tactical Supply', reason: 'Cloudflare challenge (HTTP 403) on every page. robots.txt itself allows crawling, but there is no unprotected product feed or API, and we do not bypass the challenge.' },
-  { name: 'Sniper Airsoft', reason: 'Cloudflare challenge (HTTP 403) on every page. robots.txt allows crawling, but there is no unprotected product feed or API.' },
-  { name: 'ReplicaAirguns', reason: 'Not a store: it is a review blog (Squarespace) with no product prices to compare. robots.txt also disallows /search and JSON formats.' },
+  { id: 'evike', name: 'Evike.com', url: 'https://www.evike.com', note: 'Large US retailer (California)', reason: 'Every page sits behind a Cloudflare bot check (HTTP 403), including robots.txt. We don\'t bypass bot checks. Prices could be added later through Evike\'s affiliate feed.' },
+  { id: 'sniperas', name: 'Sniper Airsoft', url: 'https://www.sniper-as.de', note: 'German retailer (prices in EUR)', reason: 'EU store with euro pricing, so it isn\'t compared against US prices. The old sniperairsoft.com domain is now a parked domain for sale.' },
+];
+// Reviewed and dropped: Elite Tactical Supply (elitetacticalsupply.com is a parked domain for sale, and the
+// business is an Ohio firearms gunsmith, not an airsoft store).
+const reviews = [
+  { id: 'replicaairguns', name: 'ReplicaAirguns', url: 'https://www.replicaairguns.com', note: 'Airsoft & BB gun reviews blog. Not a store.' },
 ];
 
-module.exports = { stores, skipped };
+module.exports = { stores, skipped, reviews };

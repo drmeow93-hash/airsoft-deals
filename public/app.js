@@ -15,6 +15,9 @@ const STORE_INFO = {
   airsoftextreme: { name: 'Airsoft Extreme', sub: 'Bay Area' },
   amped: { name: 'Amped Airsoft', sub: 'Pennsylvania' },
   airsoftgi: { name: 'Airsoft GI', sub: 'SoCal' },
+  evike: { name: 'Evike.com', sub: 'California' },
+  sniperas: { name: 'Sniper Airsoft', sub: 'Germany' },
+  replicaairguns: { name: 'ReplicaAirguns', sub: 'Reviews' },
 };
 const wordmark = (id, name) => `<div class="wm wm-${esc(id)}">${esc(STORE_INFO[id]?.name || name)}<small>${esc(STORE_INFO[id]?.sub || '')}</small></div>`;
 
@@ -179,6 +182,7 @@ async function homePage() {
   const chips = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
   app.innerHTML = `<section class="hero"><h1>Find the <em>best price</em> on airsoft gear.</h1>
     <p>Felony&#39;s Airsoft Emporium checks 10 trusted airsoft retailers, matches the same product across stores, and flags real sales so you never overpay.</p>
+    <p class="hero-more"><a href="#/more">More stores we can't price-check →</a></p>
     <div class="chips">${chips.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
     <div class="section-h"><h2>Top deals right now</h2><a href="#/deals">See all deals →</a></div><div id="homeDeals">${skeletons(8)}</div>`;
   app.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => (location.hash = '#/search?q=' + encodeURIComponent(c.dataset.q))));
@@ -211,7 +215,24 @@ async function storesPage() {
     const d = await api('/api/stores');
     app.innerHTML = crumbs([['Home', '#/'], ['Stores']]) +
       `<div class="section-h" style="margin-top:0"><h2>Checked live</h2></div><div class="stores">${d.stores.map((s) => `<div class="scard">${wordmark(s.id, s.name)}<p>${esc(s.location)} · ${esc(s.platform)}</p><p>${esc(s.blurb)}</p>${s.index ? `<p class="idx">${s.index.products ? `${s.index.products.toLocaleString()} products indexed${s.index.builtAt ? ` · updated ${new Date(s.index.builtAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ' so far'}` : `Building index (${s.index.pages} pages read)…`}</p>` : ''}<p><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))} →</a></p></div>`).join('')}</div>
-       <div class="section-h"><h2>Reviewed, not scanned</h2></div><div class="stores">${d.skipped.map((s) => `<div class="scard skip"><h3>${esc(s.name)}</h3><p>${esc(s.reason)}</p></div>`).join('')}</div>`;
+       <div class="section-h"><h2>Can't compare these</h2><a href="#/more">More Stores →</a></div><p class="more-note">${d.skipped.map((s) => esc(s.name)).join(', ')}. These are listed as direct links on the More Stores tab.</p>`;
+  } catch (e) { errorView(e); }
+}
+
+async function moreStoresPage() {
+  $('#q').value = '';
+  app.innerHTML = crumbs([['Home', '#/'], ['More Stores']]) + skeletons(3);
+  try {
+    const d = await api('/api/stores');
+    const link = (s, extra = '') => `<a class="scard more ${extra}" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="more-top">${wordmark(s.id, s.name)}<span class="ext" aria-hidden="true">↗</span></div>
+        <p class="domain">${esc(s.url.replace(/^https?:\/\/(www\.)?/, ''))}</p>
+        <p>${esc(s.note || '')}</p>${s.reason ? `<p class="why">${esc(s.reason)}</p>` : ''}</a>`;
+    app.innerHTML = crumbs([['Home', '#/'], ['More Stores']]) + `
+      <div class="section-h" style="margin-top:0"><h2>More Stores</h2></div>
+      <p class="more-note">We can't compare prices for these stores, so check them directly. Links open in a new tab.</p>
+      <div class="stores">${d.skipped.map((s) => link(s)).join('')}</div>
+      ${d.reviews?.length ? `<div class="section-h"><h2>Reviews</h2></div><p class="more-note">Not a store. Useful for reading reviews before you buy.</p><div class="stores">${d.reviews.map((s) => link(s, 'review')).join('')}</div>` : ''}`;
   } catch (e) { errorView(e); }
 }
 
@@ -226,6 +247,7 @@ function route() {
   if (h === '#/deals') return dealsPage();
   if (h === '#/watchlist') return watchlistPage();
   if (h === '#/stores') return storesPage();
+  if (h === '#/more') return moreStoresPage();
   return homePage();
 }
 $('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#q').value.trim(); if (q.length > 1) { $('#q').blur(); location.hash = '#/search?q=' + encodeURIComponent(q); } });

@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { stores, skipped } = require('./stores');
+const { stores, skipped, reviews } = require('./stores');
 const { enrich, groupProducts } = require('./deals');
 
 const app = express();
@@ -22,6 +22,7 @@ async function fanOut(fn) {
 app.get('/api/stores', (req, res) => res.json({
   stores: stores.map(({ id, name, base, location, blurb, platform, mode, index }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', index: index ? index.info() : undefined })),
   skipped,
+  reviews,
 }));
 
 app.get('/api/search', async (req, res) => {

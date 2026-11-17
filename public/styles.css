@@ -146,3 +146,17 @@ select,.toggle{background:var(--card);color:var(--text);border:1px solid var(--l
 }
 @media (max-width:430px){.action span{display:none}.action svg{width:24px;height:24px}.actions{gap:16px}}
 @media (max-width:360px){.logo{width:32px;height:32px}.actions{gap:12px}.wordmark small{font-size:10px;letter-spacing:.01em;white-space:nowrap}}
+
+/* More Stores tab */
+.more-note{color:var(--sub);font-size:14px;margin:-4px 0 16px}
+.hero-more{margin:-8px 0 16px;font-size:14px}
+.scard.more{display:block;color:var(--text);transition:border-color .15s,transform .15s}
+.scard.more:hover{border-color:var(--accent);transform:translateY(-2px)}
+.more-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.more-top .ext{color:var(--accent2);font-size:18px;line-height:1}
+.scard.more .domain{color:var(--accent2);font-weight:600;margin-top:8px}
+.scard.more .why{color:var(--muted);font-size:12px}
+.scard.more.review{border-style:dashed}
+.wm-evike{color:#fb7185}.wm-sniperas{color:#93c5fd}.wm-replicaairguns{color:#d8b4fe}
+@media (max-width:430px){.actions{gap:14px}.action svg{width:23px;height:23px}}
+@media (max-width:360px){.actions{gap:10px}.action svg{width:21px;height:21px}}

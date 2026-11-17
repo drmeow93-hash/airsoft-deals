@@ -28,11 +28,11 @@ On Render's free plan the instance sleeps after about 15 minutes idle. Indexes r
 
 Requests use an honest User-Agent (`AirsoftDealsFinder/1.0`), never a browser disguise, and responses are cached.
 
-**Still excluded**
-- **Evike.com:** Cloudflare challenge (HTTP 403) on every URL, including robots.txt. We don't bypass bot checks. The way in is their affiliate program (below).
-- **Elite Tactical Supply:** Cloudflare challenge (HTTP 403) on every page, and there's no open product API or feed.
-- **Sniper Airsoft:** Cloudflare challenge (HTTP 403) on every page, and there's no open product API or feed.
-- **ReplicaAirguns:** it's a review blog, not a store, so there are no prices to compare.
+**Not price-checked.** These are listed as direct links on the in-app **More Stores** tab.
+- **Evike.com:** a Cloudflare bot check (HTTP 403) blocks every URL, including robots.txt. We don't bypass bot checks. The way in is their affiliate program (below).
+- **Sniper Airsoft:** the real store is the German shop sniper-as.de, priced in EUR, so it isn't compared against US prices. sniperairsoft.com is a parked domain.
+- **ReplicaAirguns:** a review blog, not a store. It's listed under "Reviews".
+- **Elite Tactical Supply:** dropped. elitetacticalsupply.com is a parked domain for sale, and the business is an Ohio firearms gunsmith, not an airsoft store.
 
 ### Affiliate / product feeds
 `server/stores/feed.js` can add any store from an official product feed (CSV, TSV, or JSON, optionally gzipped). Set these environment variables on Render:
