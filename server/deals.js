@@ -52,10 +52,19 @@ function judge(p, store) {
   const a = isAirsoft(p, c, store);
   return a.ok ? { ok: true, cat: c.cat } : { ok: false, reason: a.reason };
 }
+// Image URLs as stores publish them: relative ("image/cache/..." on OpenCart pages with <base href>),
+// protocol-less ("//cdn..."), or plain http. Make them absolute https so they load on our https page.
+function fixImage(src, base) {
+  if (!src || typeof src !== 'string' || /^data:/i.test(src)) return null;
+  let s = src.trim();
+  if (s.startsWith('//')) s = 'https:' + s;
+  try { const u = new URL(s, (base || 'https://invalid.example') + '/'); if (u.hostname === 'invalid.example') return null; if (u.protocol === 'http:') u.protocol = 'https:'; return u.protocol === 'https:' ? u.toString() : null; } catch { return null; }
+}
 function prep(p, store) {
   // Outbound links must point at a vetted domain, and absurd prices (joke listings like $69,420) are dropped.
   if (p.url && !/^https?:/i.test(p.url) && store.base) { try { p.url = new URL(p.url, store.base + '/').toString(); } catch { /* left as is */ } }
   if (!isVetted(p.url) || !(p.price > 0 && p.price < 15000)) return null;
+  p.image = fixImage(p.image, store.base);
   const j = judge(p, store);
   const url = p.url || p.title;
   if (!j.ok) {
@@ -203,4 +212,4 @@ function groupProducts(items) {
   return groups;
 }
 
-module.exports = { enrich, prep, judgeCached, groupProducts, categoryOf, platformOf, isMatch, features, filterStats, brandList, noteBrand, brands };
+module.exports = { fixImage, enrich, prep, judgeCached, groupProducts, categoryOf, platformOf, isMatch, features, filterStats, brandList, noteBrand, brands };

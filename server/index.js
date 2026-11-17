@@ -21,7 +21,8 @@ app.use((req, res, next) => {
 });
 
 // Smaller JSON: offers drop fields the app never reads (they repeat the group's own title/brand/category).
-const slim = (gs) => gs.map((g) => ({ ...g, offers: g.offers.map(({ title, brand, brandId, cat, indexedAt, image, tags, ptype, cats, ...o }) => o) }));
+// Each group carries its score badge (cached AI score, else the labeled estimate; null if we can't judge).
+const slim = (gs) => gs.map((g) => ({ ...g, score: verdicts.scoreFor(g), offers: g.offers.map(({ title, brand, brandId, cat, indexedAt, image, tags, ptype, cats, ...o }) => o) }));
 const STORE_TIMEOUT_MS = 4000; // one slow store can't hold up the whole page
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -141,7 +142,8 @@ app.get('/api/refresh/status', (req, res) => res.set('Cache-Control', 'no-store'
 app.post('/api/recheck', express.json({ limit: '16kb' }), async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json({ offers: await refresh.recheck(req.body && req.body.offers, String((req.body && req.body.title) || '').slice(0, 120)), minutes: refresh.PRODUCT_MS / 60000 }); } catch (e) { res.status(500).json({ error: 'recheck failed' }); }
 });
-app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), backoff: require('./http').backoffStatus() }); });
+app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
+app.get('/img', require('./imgproxy').handler);
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
 app.get('/api/vetting', (req, res) => res.json(vetting.doc));
 

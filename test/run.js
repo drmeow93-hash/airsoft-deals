@@ -44,28 +44,76 @@ console.log(`Held-out sample: ${hok}/${held.length} = ${(100 * hok / held.length
   if (vfail.length) process.exitCode = 1;
 }
 
-// ---- Ask Grok: AI answer parsing + rule-based quick take (no network) ----
+// ---- Score /10: AI answer parsing + labeled estimate (no network) ----
 {
   delete process.env.XAI_API_KEY;
   const v = require('../server/verdict');
   const fails = []; let n = 0;
   const ok = (cond, msg) => { n++; if (!cond) fails.push('  ' + msg); };
-  const a = v.parseJson('Sure! {"verdict":"Good","score":8.4,"summary":"Solid.","pros":["a","b","c","d","e"],"cons":[],"whoFor":"x","confidence":"high","unsure":null}');
+  const a = v.parseJson('Sure! {"verdict":"Good","score":8.4,"summary":"Solid.","subscores":{"build":9,"performance":null,"value":"7","reliability":12},"pros":["a","b","c","d","e"],"cons":[],"issues":[{"issue":"Mag leaks","fix":"Oil gaskets"},{"fix":"no issue text"}],"reviewSummary":"x","whoFor":"x","confidence":"high","unsure":null}');
   ok(a.verdict === 'Good' && a.score === 8 && a.pros.length === 4, 'parses fenced JSON, rounds score, caps lists');
+  ok(a.sub.build === 9 && a.sub.performance === null && a.sub.value === 7 && a.sub.reliability === 10, 'sub-scores: clamps to 1-10, keeps null');
+  ok(a.issues.length === 1, 'drops issues without text');
   let threw = false; try { v.parseJson('{"verdict":"Amazing","score":11}'); } catch { threw = true; }
   ok(threw, 'rejects an unknown verdict');
   const p = (b, extra = {}) => v.clean({ title: 'X', brand: b, bestPrice: 100, avgPrice: 100, offers: [{ store: 'A', price: 100 }], ...extra });
   ok(v.quickTake(p('Tokyo Marui')).verdict === 'Good', 'premium brand -> Good');
   ok(v.quickTake(p('Double Eagle')).verdict === 'Skip', 'toy-grade brand -> Skip');
-  ok(v.quickTake(p('Nobody Knows')).confidence === 'low', 'unknown brand -> low confidence');
+  ok(v.quickTake(p('Nobody Knows')).score === null, 'unknown brand, no reviews -> no score (never a made-up number)');
+  ok(v.quickTake(p('Nobody Knows'), { avg: 4.6, count: 8, sources: [] }).score >= 7, 'unknown brand with real 4.6/5 ratings -> scored from them');
+  ok(v.quickTake(p('Tokyo Marui'), { avg: 2, count: 10, sources: [] }).score < v.quickTake(p('Tokyo Marui')).score, 'bad real ratings pull the score down');
   ok(v.tierOf('Angel Custom', 'Angel Custom barrel for Tokyo Marui') !== 'premium', 'brand field beats a "for Tokyo Marui" title');
+  ok(v.tierOf('', 'Gun works well') === 'unrated', 'a maker name must lead the title ("works well" is not WELL)');
+  const gbb = v.quickTake(v.clean({ title: 'VFC Glock 17 GBB', brand: 'VFC', cat: 'pistols', platform: 'GBB', bestPrice: 150, offers: [{ store: 'A', price: 150 }] }));
+  ok(gbb.issues.some((x) => /leak/i.test(x.issue)) && /in general/.test(gbb.issuesScope), 'GBB -> gas-leak issues, labeled as general guidance');
+  ok(gbb.sub.upgradeability === 9, 'Glock platform -> high upgradeability');
   ok(v.clean({ title: 'a'.repeat(500), offers: [{ store: 'A', price: -5 }, { store: 'B', price: 'x' }] }).offers.length === 0, 'drops bad prices');
-  v.verdict({ title: 'Tokyo Marui Hi-Capa' }, '1.2.3.4').then((r) => {
-    ok(r.body.kind === 'quick' && /AI not connected/.test(r.body.label), 'no key -> labeled quick take, never an AI answer');
-    console.log(`Ask Grok: ${n - fails.length}/${n} checks pass`);
+  ok(v.reviewSummary(null).count === 0 && /reviews/.test(v.reviewSummary(null).text), 'no reviews -> says so, no quotes');
+  v.verdict({ title: 'Tokyo Marui Hi-Capa', brand: 'Tokyo Marui' }, '1.2.3.4').then((r) => {
+    ok(r.body.kind === 'estimate' && /AI analysis not connected/.test(r.body.label) && r.body.aiAvailable === false, 'no key -> labeled estimate, never an AI answer');
+    console.log(`Score/Ask Grok: ${n - fails.length}/${n} checks pass`);
     fails.forEach((m) => console.log(m));
     if (fails.length) process.exitCode = 1;
   });
+}
+
+// ---- Real reviews: Judge.me + JSON-LD parsers (fixtures shaped like the stores' pages) ----
+{
+  const R = require('../server/reviews');
+  const fails = []; let n = 0;
+  const ok = (cond, msg) => { n++; if (!cond) fails.push('  ' + msg); };
+  const jdgm = `<style>.jdgm-prev-badge[data-average-rating='0.00']{display:none}</style><div class='jdgm-rev-widg' data-average-rating='4.80' data-number-of-reviews='5'>
+    <div class='jdgm-rev jdgm-divider-top' data-verified-buyer='true' data-product-url='/products/trigger'> <span class='jdgm-rev__rating' data-score='5'></span><time class='jdgm-rev__timestamp' datetime='2025-10-11T00:00:00Z'></time><span class='jdgm-rev__author'>U.C.</span><b class='jdgm-rev__title'>Good quality</b><div class='jdgm-rev__body'><p>Good quality &amp; good functionality.</p></div></div>
+    <div class='jdgm-rev jdgm-divider-top' data-verified-buyer='false' data-product-url='/products/other-item'> <span class='jdgm-rev__rating' data-score='1'></span><div class='jdgm-rev__body'><p>Store-wide review of another item</p></div></div></div>`;
+  const j = R.parse(jdgm, 'https://wgcshop.com/products/trigger');
+  ok(j && j.avg === 4.8 && j.count === 5, 'Judge.me summary from the widget, not the CSS rule');
+  ok(j.reviews.length === 1 && j.reviews[0].text === 'Good quality & good functionality.' && j.reviews[0].verified, 'keeps only this product\'s reviews, decodes text');
+  const ld = `<script type="application/ld+json">{"@type":"Product","aggregateRating":{"@type":"AggregateRating","ratingValue":"9","reviewCount":"4","bestRating":"10"},"review":[{"@type":"Review","author":{"@type":"Person","name":"G"},"datePublished":"2021-01-27","description":"Product Information:\\r\\nGreat gun. Pros: Cons:","reviewRating":{"ratingValue":"5"}}]}</script>`;
+  const l = R.parse(ld, 'https://www.airsoftgi.com/product/x/');
+  ok(l && l.avg === 4.5 && l.count === 4 && l.reviews[0].text === 'Great gun.', 'JSON-LD rating normalized to /5, boilerplate stripped');
+  ok(R.parse('<html>no reviews</html>', 'https://x.com/p') === null, 'no review data -> null (nothing invented)');
+  ok(R.parse('<script type="application/ld+json">{"@type":"Review","reviewBody":"orphan"}</script>', 'https://x.com/p') === null, 'loose reviews without a store rating summary are not shown');
+  console.log(`Review parsers: ${n - fails.length}/${n} checks pass`);
+  fails.forEach((m) => console.log(m)); if (fails.length) process.exitCode = 1;
+}
+
+// ---- Images: URL repair + image proxy allowlist ----
+{
+  const { fixImage } = require('../server/deals');
+  const { allowedUrl } = require('../server/imgproxy');
+  const cases = [
+    [fixImage('image/cache.search/catalog/A-480x480.jpg', 'https://www.airsoftmegastore.com'), 'https://www.airsoftmegastore.com/image/cache.search/catalog/A-480x480.jpg'],
+    [fixImage('//cdn.shopify.com/s/x.jpg', 'https://a.com'), 'https://cdn.shopify.com/s/x.jpg'],
+    [fixImage('http://www.redwolfairsoft.com/x.jpg', 'https://www.redwolfairsoft.com'), 'https://www.redwolfairsoft.com/x.jpg'],
+    [fixImage('data:image/gif;base64,R0l', 'https://a.com'), null],
+    [!!allowedUrl('https://cdn.shopify.com/s/files/1/x.jpg'), true],
+    [!!allowedUrl('https://www.airsoftmegastore.com/image/x.jpg'), true],
+    [!!allowedUrl('https://evil.example.com/x.jpg'), false],
+    [!!allowedUrl('http://cdn.shopify.com/x.jpg'), false],
+  ];
+  const bad = cases.filter(([got, want]) => got !== want);
+  console.log(`Images: ${cases.length - bad.length}/${cases.length} checks pass`);
+  bad.forEach((c) => console.log('  wrong:', c)); if (bad.length) process.exitCode = 1;
 }
 
 // ---- Live refresh: robots matcher for per-product re-checks ----

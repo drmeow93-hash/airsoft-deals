@@ -6,6 +6,24 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const ic = (id, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+// ---- images: each store's photo in turn, then our same-origin fallback (/img), then a branded placeholder ----
+const PH_CATS = new Set(['rifles', 'pistols', 'snipers', 'gear', 'optics', 'parts', 'bbs', 'mags', 'holsters', 'batteries', 'gas']);
+const phHtml = (cat, failed) => `<div class="ph${failed ? ' failed' : ''}" role="img" aria-label="No photo available">${ic(PH_CATS.has(cat) ? 'c-' + cat : 'i-spark', 'ph-ic')}<span>No photo</span></div>`;
+function imgHtml(srcs, cat, attrs = '') {
+  const list = (srcs || []).filter((u) => /^https:\/\//.test(u || '')).map((u) => u.replace(/ /g, '%20'));
+  if (!list.length) return phHtml(cat);
+  return `<img ${attrs} src="${esc(list[0])}" data-srcs="${esc(list.join(' '))}" data-cat="${esc(cat || '')}" onerror="imgFail(this)">`;
+}
+window.imgFail = (el) => {
+  const list = (el.dataset.srcs || '').split(' ').filter(Boolean);
+  const i = +(el.dataset.i || 0) + 1;
+  if (i < list.length) { el.dataset.i = i; el.src = list[i]; return; }
+  if (!el.dataset.px && list[0]) { el.dataset.px = '1'; el.src = API + '/img?u=' + encodeURIComponent(list[0]); return; }
+  el.onerror = null; el.outerHTML = phHtml(el.dataset.cat, true);
+};
+// ---- score /10 ----
+const scoreCls = (s) => (s >= 7 ? 'good' : s >= 5 ? 'ok' : 'skip');
+const scoreBadge = (g) => (g.score ? `<span class="sbadge ${scoreCls(g.score.s)}" title="${g.score.k === 'ai' ? 'Score by Grok AI' : 'Estimated score (not AI): brand reputation, price and real customer ratings'}"><b>${g.score.s}</b><small>/10</small><i>${g.score.k === 'ai' ? 'AI' : 'est.'}</i></span>` : '');
 function priceHtml(n) {
   const [d, c] = Number(n).toFixed(2).split('.');
   return `<span class="price" aria-label="${money(n)}"><span class="cur">$</span>${Number(d).toLocaleString('en-US')}<sup>${c}</sup></span>`;
@@ -151,9 +169,9 @@ function card(g, i = 99) {
   // The first few images are the page's largest paint, so they load eagerly; the rest lazily.
   const load = i < 4 ? `loading="eager"${i < 2 ? ' fetchpriority="high"' : ''}` : 'loading="lazy"';
   return `<div class="pcard" data-id="${g.id}" tabindex="0" role="link" aria-label="${esc(g.title)}, ${money(g.bestPrice)}">
-    <div class="pimg">${g.images[0] ? `<img ${load} decoding="async" width="300" height="300" src="${esc(g.images[0])}" alt="" onerror="this.remove()">` : ''}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
+    <div class="pimg">${imgHtml(g.images, g.cat, `${load} decoding="async" width="300" height="300" alt=""`)}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
     <div class="pbody">
-      ${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : ''}
+      ${g.brand || g.score ? `<div class="prow1">${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : '<span></span>'}${scoreBadge(g)}</div>` : ''}
       <div class="ptitle">${esc(g.title)}</div>
       <div class="pprice">${priceHtml(g.bestPrice)}${g.listPrice ? `<s>${money(g.listPrice)}</s><span class="pct">-${g.discountPct}%</span>` : ''}</div>
       <div class="trend">${trendHtml(g.h)}${sparkline(g.h)}</div>
@@ -186,21 +204,22 @@ function bindCarousel(el, from) {
 }
 
 // ---- list view: filters sidebar (sheet on mobile) + sort + grid ----
-const SORTS = [['featured', 'Featured'], ['price', 'Price: low to high'], ['price-desc', 'Price: high to low'], ['drop', 'Biggest price drop'], ['discount', 'Biggest discount'], ['stores', 'Most stores']];
+const SORTS = [['featured', 'Featured'], ['score', 'Highest score'], ['price', 'Price: low to high'], ['price-desc', 'Price: high to low'], ['drop', 'Biggest price drop'], ['discount', 'Biggest discount'], ['stores', 'Most stores']];
 const sorters = {
   price: (a, b) => a.bestPrice - b.bestPrice,
   'price-desc': (a, b) => b.bestPrice - a.bestPrice,
   drop: (a, b) => (a.h?.chg < 0 ? a.h.pct : 0) - (b.h?.chg < 0 ? b.h.pct : 0) || b.maxDiscountPct - a.maxDiscountPct,
   discount: (a, b) => (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0) || b.belowAvgPct - a.belowAvgPct,
   stores: (a, b) => b.storeCount - a.storeCount || a.bestPrice - b.bestPrice,
+  score: (a, b) => (b.score?.s || 0) - (a.score?.s || 0) || (b.score?.k === 'ai') - (a.score?.k === 'ai') || a.bestPrice - b.bestPrice,
 };
-const newF = (preset = {}) => ({ sort: 'featured', cats: new Set(), stores: new Set(), brands: new Set(), min: '', max: '', disc: 0, instock: false, free: false, drops: false, ...preset });
+const newF = (preset = {}) => ({ sort: 'featured', cats: new Set(), stores: new Set(), brands: new Set(), min: '', max: '', disc: 0, score: 0, instock: false, free: false, drops: false, ...preset });
 function applyF(gs, F, skip) {
   return gs.filter((g) => (skip === 'cats' || !F.cats.size || F.cats.has(g.cat))
     && (skip === 'stores' || !F.stores.size || g.offers.some((o) => F.stores.has(o.storeId)))
     && (skip === 'brands' || !F.brands.size || F.brands.has(g.brand || ''))
     && (F.min === '' || g.bestPrice >= +F.min) && (F.max === '' || g.bestPrice <= +F.max)
-    && (!F.disc || (g.maxDiscountPct || 0) >= F.disc)
+    && (!F.disc || (g.maxDiscountPct || 0) >= F.disc) && (!F.score || (g.score?.s || 0) >= F.score)
     && (!F.instock || g.inStock !== false) && (!F.free || g.freeShip) && (!F.drops || g.h?.chg < 0));
 }
 function counts(gs, fn) { const m = new Map(); for (const g of gs) for (const k of new Set([].concat(fn(g)))) m.set(k, (m.get(k) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); }
@@ -239,6 +258,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
       ${catC.length > 1 || F.cats.size ? `<div class="fgroup"><h3>Category</h3>${catC.map(([c, n]) => opt('cats', c, CATS[c] || c, n, F.cats.has(c))).join('')}</div>` : ''}
       <div class="fgroup"><h3>Price</h3><div class="frange"><label class="sr" for="fmin">Minimum price</label><input id="fmin" inputmode="decimal" placeholder="$ Min" value="${esc(F.min)}"><span aria-hidden="true">–</span><label class="sr" for="fmax">Maximum price</label><input id="fmax" inputmode="decimal" placeholder="$ Max" value="${esc(F.max)}"></div>
         <div class="chips" style="margin-top:10px">${[[0, 50], [50, 150], [150, 300], [300, '']].map(([a, b]) => `<button type="button" class="chip pr ${String(F.min) === String(a || '') && String(F.max) === String(b) ? 'on' : ''}" data-min="${a || ''}" data-max="${b}">${b === '' ? `$${a}+` : a ? `$${a}–${b}` : `Under $${b}`}</button>`).join('')}</div></div>
+      <div class="fgroup"><h3>Score</h3>${[[0, 'Any'], [6, '6/10 or better'], [7, '7/10 or better'], [8, '8/10 or better']].map(([v, l]) => `<label class="fopt"><input type="radio" name="score" data-f="score" value="${v}" ${F.score === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}<p class="fnote">Scores are estimates unless marked AI.</p></div>
       <div class="fgroup"><h3>Discount</h3>${[[0, 'Any'], [10, '10% off or more'], [25, '25% off or more'], [40, '40% off or more']].map(([v, l]) => `<label class="fopt"><input type="radio" name="disc" data-f="disc" value="${v}" ${F.disc === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>
       <div class="fgroup"><h3>Store</h3>${stC.map(([s, n]) => opt('stores', s, storeName[s] || s, n, F.stores.has(s))).join('')}</div>
       ${brC.length ? `<div class="fgroup"><h3>Brand</h3>${(showAllBrands ? brC : brC.slice(0, 8)).map(([b, n]) => opt('brands', b, b, n, F.brands.has(b))).join('')}${brC.length > 8 ? `<button type="button" class="more-btn" id="moreBrands">${showAllBrands ? 'Show fewer' : `Show all ${brC.length}`}</button>` : ''}</div>` : ''}`;
@@ -250,6 +270,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     F.brands.forEach((b) => chips.push(['brands', b, b]));
     if (F.min !== '' || F.max !== '') chips.push(['price', '', `${F.min !== '' ? '$' + F.min : '$0'} – ${F.max !== '' ? '$' + F.max : 'any'}`]);
     if (F.disc) chips.push(['disc', '', `${F.disc}%+ off`]);
+    if (F.score) chips.push(['score', '', `Score ${F.score}+`]);
     if (F.instock) chips.push(['instock', '', 'In stock']);
     if (F.free) chips.push(['free', '', 'Free shipping']);
     if (F.drops) chips.push(['drops', '', 'Price dropped']);
@@ -295,6 +316,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     if (!f) { if (el.id === 'fmin') F.min = el.value.replace(/[^0-9.]/g, ''); if (el.id === 'fmax') F.max = el.value.replace(/[^0-9.]/g, ''); render(); return; }
     if (F[f] instanceof Set) (el.checked ? F[f].add(el.value) : F[f].delete(el.value));
     else if (f === 'disc') F.disc = +el.value;
+    else if (f === 'score') F.score = +el.value;
     else F[f] = el.checked;
     render();
   });
@@ -306,7 +328,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
   $('#activeF', target).addEventListener('click', (e) => {
     const b = e.target.closest('[data-rm]'); if (!b) return;
     const f = b.dataset.rm;
-    if (F[f] instanceof Set) F[f].delete(b.dataset.v); else if (f === 'price') { F.min = ''; F.max = ''; } else if (f === 'disc') F.disc = 0; else F[f] = false;
+    if (F[f] instanceof Set) F[f].delete(b.dataset.v); else if (f === 'price') { F.min = ''; F.max = ''; } else if (f === 'disc') F.disc = 0; else if (f === 'score') F.score = 0; else F[f] = false;
     render();
   });
   render();
@@ -384,13 +406,14 @@ function productPage(id, { keepScroll = false } = {}) {
   view(`${crumbs([['Home', '#/'], ...(back ? [back] : []), [g.brand || 'Product']])}
   <div class="prod">
     <div class="gallery">
-      <div class="main-img">${g.images[0] ? `<img id="mainImg" src="${esc(g.images[0])}" alt="${esc(g.title)}" width="600" height="600" decoding="async">` : ''}</div>
-      ${g.images.length > 1 ? `<div class="thumbs">${g.images.map((src, i) => `<button class="thumb ${i ? '' : 'on'}" data-src="${esc(src)}" aria-label="Image ${i + 1}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+      <div class="main-img" id="mainBox">${imgHtml(g.images, g.cat, `id="mainImg" alt="${esc(g.title)}" width="600" height="600" decoding="async"`)}</div>
+      ${g.images.length > 1 ? `<div class="thumbs">${g.images.map((src, i) => `<button class="thumb ${i ? '' : 'on'}" data-i="${i}" aria-label="Image ${i + 1}">${imgHtml([src], g.cat, 'alt="" loading="lazy"')}</button>`).join('')}</div>` : ''}
     </div>
     <div class="info">
       ${g.brand ? `<a class="p-brand" href="${g.brandId ? '#/b/' + esc(g.brandId) : '#/search?q=' + encodeURIComponent(g.brand)}">${esc(g.brand)}</a>` : ''}
       <h1 class="p-title">${esc(g.title)}</h1>
       <div class="p-spec">${spec.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
+      ${g.score ? `<a class="p-score ${scoreCls(g.score.s)}" href="#vpanel" onclick="event.preventDefault();document.getElementById('vpanel').scrollIntoView({behavior:'smooth'})"><b>${g.score.s}</b>/10 <span>${g.score.k === 'ai' ? 'Grok AI score' : 'estimated score'} · see breakdown</span></a>` : ''}
       <div class="p-hl">
         ${multi ? `<div class="kv"><small>Store average</small><b>${money(g.avgPrice)}</b></div><div class="kv"><small>You save vs. highest</small><b class="dn">${money(spread)}</b></div>` : ''}
         ${h ? `<div class="kv"><small>Lowest tracked</small><b>${money(h.lo)}</b></div><div class="kv"><small>Tracking since</small><b>${fmtDate(h.since)}</b></div>` : ''}
@@ -410,10 +433,12 @@ function productPage(id, { keepScroll = false } = {}) {
       <p class="note">Checked ${g.checkedAt ? ago(g.checkedAt) : 'live'}. Tax extra; confirm the variant at the store.</p>
     </aside>
   </div>
+  <section class="panel vpanel" id="vpanel" aria-label="Score and reviews">${verdictSkeleton(g)}</section>
   <div class="below"><div><div class="sec-h"><h2>Compare ${g.storeCount} store${g.storeCount > 1 ? 's' : ''}</h2></div>
   <div class="offers">${g.offers.map(offerRow).join('')}</div></div>
   ${histPanel ? `<div><div class="sec-h"><h2>Price history</h2>${h.atl ? '<span class="atl">★ ALL-TIME LOW</span>' : ''}</div>${histPanel}</div>` : ''}</div>`);
-  $$('.thumb').forEach((t) => t.addEventListener('click', () => { $('#mainImg').src = t.dataset.src; $$('.thumb').forEach((x) => x.classList.toggle('on', x === t)); }));
+  $$('.thumb').forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.i; $('#mainBox').innerHTML = imgHtml([g.images[i], ...g.images.filter((_, j) => j !== i)], g.cat, `id="mainImg" alt="${esc(g.title)}" width="600" height="600" decoding="async"`); $$('.thumb').forEach((x) => x.classList.toggle('on', x === t)); }));
+  verdictLoad(g);
   $('#watchBtn').addEventListener('click', (e) => { watch.toggle(g); const on = watch.has(g), b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = on ? 'Watching' : 'Add to watchlist'; });
   if (!keepScroll) { window.scrollTo(0, 0); liveProduct(g); }
 }
@@ -545,12 +570,83 @@ async function liveProduct(g) {
 }
 setInterval(() => { if (!document.hidden && !live.custom) liveBar(); }, 5000);
 
-// ---- Ask Grok sheet ----
+// ---- Score /10: verdict panel (product page) + Ask Grok sheet ----
+// One request per product: POST /api/verdict returns the score, sub-scores, pros/cons, common issues,
+// real customer reviews (with sources) and who it's for. Without an AI key it's a labeled estimate.
 const verdictCache = new Map();
-function askSheet(g) {
+function verdictBody(g, ai) {
+  const h = g.h;
+  return JSON.stringify({ ai: !!ai, title: g.title, brand: g.brand, cat: g.cat, platform: g.platform, bestPrice: g.bestPrice, avgPrice: g.avgPrice, offers: g.offers.map((o) => ({ store: o.store, storeId: o.storeId, url: o.url, price: o.price, originalPrice: o.originalPrice, inStock: o.inStock })), h: h ? { lo: h.lo, hi: h.hi, avg: h.avg, since: h.since, prev: h.prev, chg: h.chg, pts: h.pts } : null });
+}
+function fetchVerdict(g, ai = false) {
+  const key = g.title + '|' + (g.brand || '') + (ai ? '|ai' : '');
+  if (verdictCache.has(key)) return verdictCache.get(key);
+  const req = fetch(API + '/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: verdictBody(g, ai) })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Server error ' + r.status))));
+  req.catch(() => verdictCache.delete(key));
+  verdictCache.set(key, req);
+  return req;
+}
+const SUBS = [['build', 'Build quality'], ['performance', 'Performance'], ['value', 'Value'], ['reliability', 'Reliability'], ['upgradeability', 'Upgradeability']];
+const stars = (n) => `<span class="stars" aria-label="${n} out of 5 stars">${'★'.repeat(Math.round(n))}<span>${'★'.repeat(5 - Math.round(n))}</span></span>`;
+// Better-rated listings at a similar price, from what this visitor has already loaded (real listings only).
+function alternatives(g, v) {
+  const mine = v?.score ?? g.score?.s ?? 0;
+  const lo = g.bestPrice * 0.75, hi = g.bestPrice * 1.3;
+  const seen = new Set([g.title.toLowerCase()]);
+  return [...S.groups.values()].filter((x) => x.id !== g.id && x.cat === g.cat && x.score && x.score.s > mine && x.bestPrice >= lo && x.bestPrice <= hi && x.inStock !== false && (!g.platform || !x.platform || x.platform === g.platform))
+    .sort((a, b) => b.score.s - a.score.s || a.bestPrice - b.bestPrice)
+    .filter((x) => { const k = x.title.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3);
+}
+function verdictSkeleton(g) {
+  return `<div class="vp-head"><div class="vp-ring ${g.score ? scoreCls(g.score.s) : ''}" style="--p:${(g.score?.s || 0) * 10}"><b>${g.score ? g.score.s : '–'}</b><small>/10</small></div><div><h2 class="vp-title">Score &amp; reviews</h2><div class="gs-load"><span class="spin"></span>Checking store reviews…</div></div></div>`;
+}
+function verdictHtml(g, v, { compact = false } = {}) {
+  const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join('');
+  const sc = v.score;
+  const cls = sc == null ? 'none' : scoreCls(sc);
+  const R = v.reviews || { count: 0, quotes: [], sources: [], checked: [] };
+  const isAI = v.kind === 'ai';
+  const subs = v.sub ? SUBS.filter(([k]) => v.sub[k] != null) : [];
+  const alts = compact ? [] : alternatives(g, v);
+  return `<div class="vp-head"><div class="vp-ring ${cls}" style="--p:${(sc || 0) * 10}"><b>${sc ?? '–'}</b><small>/10</small></div>
+      <div><div class="vp-verdict ${cls}">${esc(v.verdict)}</div><div class="gs-lbl ${isAI ? 'ai' : 'quick'}">${isAI ? ic('i-spark') : ''}${esc(v.label)}${v.cached ? ' · saved answer' : ''}</div></div></div>
+    ${v.summary ? `<p class="gs-sum">${esc(v.summary)}</p>` : ''}
+    ${subs.length ? `<div class="vp-subs">${subs.map(([k, l]) => `<div class="vp-sub"><span>${l}</span><div class="bar"><i class="${scoreCls(v.sub[k])}" style="width:${v.sub[k] * 10}%"></i></div><b>${v.sub[k]}</b></div>`).join('')}</div>` : ''}
+    <div class="gs-pc">${v.pros?.length ? `<div><h3 class="dn">Pros</h3><ul class="pros">${li(v.pros)}</ul></div>` : ''}${v.cons?.length ? `<div><h3 class="up">Cons</h3><ul class="cons">${li(v.cons)}</ul></div>` : ''}</div>
+    <h3 class="gs-sub">Customer reviews</h3>
+    ${R.count ? `<div class="vp-rev-top"><span class="vp-rate">${stars(R.avg)}<b>${R.avg}/5</b></span><span class="vp-from">${R.count} review${R.count === 1 ? '' : 's'} from ${R.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.store)} (${s.count})${ic('i-ext')}</a>`).join(', ')}</span></div>
+      <p class="gs-sum">${esc(isAI && v.aiReviewSummary ? v.aiReviewSummary : R.text)}</p>
+      ${(compact ? R.quotes.slice(0, 2) : R.quotes).map((q) => `<blockquote class="vp-q"><div>${q.rating ? stars(q.rating) : ''}${q.title ? `<b>${esc(q.title)}</b>` : ''}</div><p>“${esc(q.text)}”</p><cite>${esc(q.author || 'Customer')}${q.verified ? ' · verified buyer' : ''}${q.date ? ' · ' + fmtDate(q.date) + ' ' + q.date.slice(0, 4) : ''} · <a href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.store)}</a></cite></blockquote>`).join('')}`
+    : `<p class="gs-sum muted">${esc(R.text || 'No customer reviews found.')}</p>`}
+    ${R.checked?.length ? `<p class="vp-src">Checked: ${R.checked.map((c) => `${esc(c.store)} (${c.state === 'reviews' ? 'reviews' : c.state === 'none' ? 'no reviews yet' : esc(c.note || 'unavailable')})`).join(' · ')}. Reviews are the customers' own words from the store's page.</p>` : ''}
+    ${v.issues?.length ? `<h3 class="gs-sub">Common issues &amp; fixes</h3><ul class="vp-issues">${v.issues.map((x) => `<li><b>${esc(x.issue)}</b><span>${esc(x.fix)}</span></li>`).join('')}</ul>${v.issuesScope ? `<p class="vp-src">${esc(v.issuesScope)}.</p>` : ''}` : ''}
+    ${v.whoFor ? `<div class="gs-who"><small>Who it's for</small>${esc(v.whoFor)}</div>` : ''}
+    ${v.priceTake ? `<p class="gs-sum">${esc(v.priceTake)}</p>` : ''}
+    ${alts.length ? `<h3 class="gs-sub">Better-rated at a similar price</h3><div class="vp-alts">${alts.map((x) => `<a class="vp-alt" href="#/p/${x.id}"><div class="vp-alt-img">${imgHtml(x.images, x.cat, 'loading="lazy" alt="" width="56" height="56"')}</div><div><div class="ptitle">${esc(x.title)}</div><div class="vp-alt-m"><span class="sbadge ${scoreCls(x.score.s)} inline"><b>${x.score.s}</b><small>/10</small><i>${x.score.k === 'ai' ? 'AI' : 'est.'}</i></span>${money(x.bestPrice)} · ${esc(x.bestStore)}</div></div></a>`).join('')}</div>` : ''}
+    ${v.aiAvailable && !isAI && !compact ? `<button type="button" class="btn grok block" data-full="${g.id}">${ic('i-spark')}<span>Get Grok's full AI analysis</span></button>` : ''}
+    ${v.unsure ? `<p class="gs-unsure">Not sure about: ${esc(v.unsure)}</p>` : ''}
+    <p class="gs-foot">${isAI ? `AI-generated by Grok (${esc(v.model || '')}) from the reviews and prices shown here. It can be wrong.${v.confidence ? ` Confidence: ${esc(v.confidence)}.` : ''}` : `Estimate, not AI: built from brand reputation tiers, the platform, price versus other stores and our history, and real store ratings.${v.aiAvailable ? '' : ' Full AI analysis isn\'t connected yet.'}`}</p>`;
+}
+function verdictLoad(g, ai = false) {
+  const el = $('#vpanel'); if (!el) return;
+  fetchVerdict(g, ai).then((v) => {
+    if (!el.isConnected) return;
+    el.innerHTML = verdictHtml(g, v);
+    bindCards(el);
+  }).catch((e) => { if (el.isConnected) el.innerHTML = `<div class="empty sm">Couldn't load the score right now (${esc(e.message)}).</div>`; });
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-full]'); if (!b) return;
+  const g = S.groups.get(b.dataset.full); if (!g) return;
+  b.disabled = true; b.querySelector('span').textContent = 'Grok is analyzing…';
+  if (b.closest('#vpanel')) verdictLoad(g, true); else askSheet(g, true);
+});
+
+function askSheet(g, ai = true) {
   let sh = $('#gsheet');
   if (!sh) {
-    document.body.insertAdjacentHTML('beforeend', `<div class="gscrim" id="gscrim"></div><section class="gsheet" id="gsheet" role="dialog" aria-modal="true" aria-labelledby="gsTitle"><div class="gs-h"><h2 id="gsTitle">${ic('i-spark')}Ask Grok</h2><button type="button" id="gsClose" aria-label="Close">${ic('i-x')}</button></div><div class="gs-b" id="gsBody"></div></section>`);
+    document.body.insertAdjacentHTML('beforeend', `<div class="gscrim" id="gscrim"></div><section class="gsheet" id="gsheet" role="dialog" aria-modal="true" aria-labelledby="gsTitle"><div class="gs-h"><h2 id="gsTitle">${ic('i-spark')}Ask Grok · score /10</h2><button type="button" id="gsClose" aria-label="Close">${ic('i-x')}</button></div><div class="gs-b" id="gsBody"></div></section>`);
     sh = $('#gsheet');
     const close = () => { sh.classList.remove('open'); $('#gscrim').classList.remove('on'); document.body.style.overflow = ''; };
     $('#gsClose').onclick = $('#gscrim').onclick = close;
@@ -559,29 +655,18 @@ function askSheet(g) {
   }
   const body = $('#gsBody');
   const h = g.h;
-  const priceBox = `<div class="gs-price">
+  const priceBox = `<h3 class="gs-sub">Price check</h3><div class="gs-price">
       <div class="kv"><small>Best now</small><b>${money(g.bestPrice)}</b><span>${esc(g.bestStore)}</span></div>
       ${g.storeCount > 1 ? `<div class="kv"><small>Store average</small><b>${money(g.avgPrice)}</b><span>${g.storeCount} stores</span></div>` : ''}
       ${h ? `<div class="kv"><small>Lowest tracked</small><b class="dn">${money(h.lo)}</b><span>since ${fmtDate(h.since)}</span></div><div class="kv"><small>Trend</small><b>${h.chg ? (h.chg < 0 ? '<span class="dn">▼ ' : '<span class="up">▲ ') + money(Math.abs(h.chg)) + '</span>' : 'Flat'}</b><span>${h.pts.length} price point${h.pts.length === 1 ? '' : 's'}</span></div>` : ''}
     </div>`;
-  const head = `<div class="gs-prod">${g.images[0] ? `<img src="${esc(g.images[0])}" alt="" width="64" height="64">` : ''}<div><div class="brandline">${esc(g.brand || '')}</div><div class="gs-t">${esc(g.title)}</div></div></div>`;
+  const head = `<div class="gs-prod">${imgHtml(g.images, g.cat, 'alt="" width="64" height="64"')}<div><div class="brandline">${esc(g.brand || '')}</div><div class="gs-t">${esc(g.title)}</div></div></div>`;
   body.innerHTML = head + `<div class="gs-load"><span class="spin"></span>Grok is sizing this up…</div>` + priceBox;
   sh.classList.add('open'); $('#gscrim').classList.add('on'); document.body.style.overflow = 'hidden'; $('#gsClose').focus();
-  const key = g.id + '|' + g.title;
-  const req = verdictCache.get(key) || fetch(API + '/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: g.title, brand: g.brand, cat: g.cat, platform: g.platform, bestPrice: g.bestPrice, avgPrice: g.avgPrice, offers: g.offers.map((o) => ({ store: o.store, price: o.price, originalPrice: o.originalPrice, inStock: o.inStock })), h: h ? { lo: h.lo, hi: h.hi, avg: h.avg, since: h.since, prev: h.prev, chg: h.chg, pts: h.pts } : null }) }).then((r) => (r.ok ? r.json() : Promise.reject(new Error('Server error ' + r.status))));
-  verdictCache.set(key, req);
-  req.then((v) => {
+  fetchVerdict(g, ai).then((v) => {
     if (!sh.classList.contains('open')) return;
-    const cls = v.verdict === 'Good' ? 'good' : v.verdict === 'Decent' ? 'ok' : 'skip';
-    const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join('');
-    body.innerHTML = head + `<div class="gs-verdict ${cls}"><div class="gs-score"><b>${v.score}</b><small>/10</small></div><div><div class="gs-v">${esc(v.verdict)}</div><div class="gs-lbl ${v.kind}">${v.kind === 'ai' ? ic('i-spark') : ''}${esc(v.label)}${v.cached ? ' · saved answer' : ''}</div></div></div>
-      ${v.summary ? `<p class="gs-sum">${esc(v.summary)}</p>` : ''}
-      <div class="gs-pc">${v.pros.length ? `<div><h3 class="dn">Pros</h3><ul class="pros">${li(v.pros)}</ul></div>` : ''}${v.cons.length ? `<div><h3 class="up">Cons</h3><ul class="cons">${li(v.cons)}</ul></div>` : ''}</div>
-      ${v.whoFor ? `<div class="gs-who"><small>Who it's for</small>${esc(v.whoFor)}</div>` : ''}
-      <h3 class="gs-sub">Price check</h3>${v.priceTake ? `<p class="gs-sum">${esc(v.priceTake)}</p>` : ''}${priceBox}
-      ${v.unsure ? `<p class="gs-unsure">Not sure about: ${esc(v.unsure)}</p>` : ''}
-      <p class="gs-foot">${v.kind === 'ai' ? `AI-generated by Grok (${esc(v.model || '')}) from the product name and the prices we track. It can be wrong; check reviews before you buy.${v.confidence ? ` Confidence: ${esc(v.confidence)}.` : ''}` : 'Not an AI answer. A rule-based estimate from brand reputation, price versus other stores, and our price history.'}</p>`;
-  }).catch((e) => { verdictCache.delete(key); if (sh.classList.contains('open')) body.innerHTML = head + `<div class="empty sm">Couldn't get a verdict right now (${esc(e.message)}). Try again in a moment.</div>` + priceBox; });
+    body.innerHTML = head + verdictHtml(g, v, { compact: true }) + priceBox + `<a class="btn secondary block" href="#/p/${g.id}">Full breakdown on the product page</a>`;
+  }).catch((e) => { if (sh.classList.contains('open')) body.innerHTML = head + `<div class="empty sm">Couldn't get a verdict right now (${esc(e.message)}). Try again in a moment.</div>` + priceBox; });
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-ask]'); if (!b) return;
@@ -698,7 +783,7 @@ async function loadMarketplaceSection(q, el) {
     const m = await api('/api/marketplace-search?q=' + encodeURIComponent(q));
     if (!el.isConnected) return;
     const listings = m.listings.length ? `<div class="grid">${m.listings.map((l) => `<a class="pcard" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">
-        <div class="pimg">${l.image ? `<img loading="lazy" src="${esc(l.image)}" alt="">` : ''}<div class="tags">${l.condition ? `<span class="tag">${esc(l.condition.toUpperCase())}</span>` : ''}</div></div>
+        <div class="pimg">${imgHtml([l.image], '', 'loading="lazy" alt=""')}<div class="tags">${l.condition ? `<span class="tag">${esc(l.condition.toUpperCase())}</span>` : ''}</div></div>
         <div class="pbody"><div class="brandline">${esc(l.marketplace)} · ${esc(l.format)}</div><div class="ptitle">${esc(l.title)}</div><div class="pprice">${priceHtml(l.price)}</div></div></a>`).join('')}</div>` : '';
     el.innerHTML = `<section class="mkt-section"><div class="sec-h"><h2>Used &amp; marketplace</h2><a href="#/marketplaces">All marketplaces ${ic('i-right')}</a></div>${listings}<div class="mkt-links"><span>Search used:</span>${m.links.map((l) => `<a class="btn secondary sm" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)}</a>`).join('')}</div></section>`;
   } catch { /* optional section */ }
