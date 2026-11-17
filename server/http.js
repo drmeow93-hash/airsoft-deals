@@ -68,7 +68,7 @@ const money = (s) => {
 };
 
 // Ask store CDNs for a card-sized image instead of the full-size original (much smaller downloads).
-function thumb(url, w = 500) {
+function thumb(url, w = 400) {
   if (!url) return url;
   try {
     const u = new URL(url);

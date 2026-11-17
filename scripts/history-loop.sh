@@ -6,7 +6,7 @@ while true; do
   echo "== $(TZ=America/Chicago date) collecting"
   git pull -q --rebase origin main || true
   if node scripts/collect-history.js; then
-    git add data/history
+    git add data/history server/snapshot
     if ! git diff --cached --quiet; then
       git -c user.name=price-history-bot -c user.email=drmeow93-hash@users.noreply.github.com \
         commit -qm "Price history $(TZ=America/Chicago date '+%Y-%m-%d %H:%M %Z') [skip render]"

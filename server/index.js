@@ -8,12 +8,19 @@ const zlib = require('zlib');
 const { enrich, prep, judgeCached, groupProducts, filterStats, brandList, noteBrand, brands } = require('./deals');
 const marketplaces = require('./marketplaces');
 const history = require('./history');
+const verdicts = require('./verdict');
 const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
 
 const app = express();
 app.disable('x-powered-by');
-app.use((req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); next(); });
+app.use((req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  if (req.method === 'OPTIONS') { res.set({ 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' }); return res.sendStatus(204); }
+  next();
+});
 
+// Smaller JSON: offers drop fields the app never reads (they repeat the group's own title/brand/category).
+const slim = (gs) => gs.map((g) => ({ ...g, offers: g.offers.map(({ title, brand, brandId, cat, indexedAt, image, tags, ptype, cats, ...o }) => o) }));
 const STORE_TIMEOUT_MS = 4000; // one slow store can't hold up the whole page
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -32,7 +39,7 @@ async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
   let slow = 0;
   const status = settled.map((r, i) => {
     const s = stores[i];
-    if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined }; }
+    if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined, snapshotAt: r.value.snapshotAt, note: r.value.snapshotAt ? `live search unavailable (${r.value.liveError}); showing prices from ${r.value.snapshotAt.slice(0, 10)}` : undefined }; }
     if (r.slow) { slow++; return { store: s.name, id: s.id, ok: false, slow: true, error: 'Still loading' }; }
     const error = String(r.error?.message || r.error);
     return { store: s.name, id: s.id, ok: false, indexing: /^Building catalog index/.test(error), error };
@@ -82,7 +89,7 @@ function sendJson(res, { body, cache }) {
 async function computeSearch(q, timeoutMs) {
   const out = await fanOut((s) => s.search(q), timeoutMs);
   const groups = groupProducts(out.items).sort((a, b) => b.storeCount - a.storeCount || a.bestPrice - b.bestPrice);
-  return { partial: out.slow > 0, body: JSON.stringify({ query: q, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
+  return { partial: out.slow > 0, body: JSON.stringify({ query: q, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
 
 async function computeDeals() {
@@ -100,7 +107,7 @@ async function computeDeals() {
   const lists = Object.values(byStore).map((l) => l.sort((a, b) => b.discountPct - a.discountPct));
   const mixed = [];
   for (let i = 0; lists.some((l) => l[i]); i++) lists.forEach((l) => l[i] && mixed.push(l[i]));
-  return { partial: out.slow > 0, body: JSON.stringify({ groups: mixed, status: out.status, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
+  return { partial: out.slow > 0, body: JSON.stringify({ groups: slim(mixed), status: out.status, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
 
 app.get('/api/stores', (req, res) => res.json({
@@ -114,6 +121,12 @@ app.get('/api/stores', (req, res) => res.json({
 }));
 
 // The full legitimacy-vetting record (every domain, every check, pass/fail, date), for auditing.
+// Ask Grok: buyer's verdict for one product (AI with XAI_API_KEY, otherwise a labeled rule-based quick take).
+app.post('/api/verdict', express.json({ limit: '16kb' }), async (req, res) => {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  try { const r = await verdicts.verdict(req.body, ip); res.status(r.status).set('Cache-Control', 'no-store').json(r.body); } catch (e) { res.status(500).json({ error: 'verdict failed' }); }
+});
+app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
 app.get('/api/vetting', (req, res) => res.json(vetting.doc));
 
 app.get('/api/marketplaces', (req, res) => res.json({ marketplaces: marketplaces.list() }));
@@ -154,7 +167,7 @@ async function computeBrowse(cat) {
     return s.search(CAT_TERMS[cat]);
   });
   const groups = groupProducts(out.items).filter((g) => g.cat === cat).sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
-  return { partial: out.slow > 0, body: JSON.stringify({ cat, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+  return { partial: out.slow > 0, body: JSON.stringify({ cat, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
 }
 app.get('/api/browse', async (req, res) => {
   const cat = String(req.query.cat || '');
@@ -169,7 +182,7 @@ async function computeDrops() {
   const groups = groupProducts(items).filter((g) => g.h && g.h.chg < 0)
     .sort((a, b) => a.h.pct - b.h.pct);
   const m = history.meta();
-  return { partial: false, body: JSON.stringify({ groups, history: { since: m.since, updated: m.updated, tracked: m.tracked }, fetchedAt: new Date().toISOString(), status: [] }) };
+  return { partial: false, body: JSON.stringify({ groups: slim(groups), history: { since: m.since, updated: m.updated, tracked: m.tracked }, fetchedAt: new Date().toISOString(), status: [] }) };
 }
 app.get('/api/drops', async (req, res) => sendJson(res, await cached('drops', 10 * 60 * 1000, 60 * 60 * 1000, computeDrops)));
 
@@ -193,7 +206,7 @@ async function computeBrand(id) {
   });
   const groups = groupProducts(out.items).filter((g) => g.brandId === id || g.offers.some((o) => o.brandId === id))
     .sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
-  return { partial: out.slow > 0, body: JSON.stringify({ brand: { id: b.id, name: b.name, aliases: b.aliases, licensed: b.licensed || undefined }, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+  return { partial: out.slow > 0, body: JSON.stringify({ brand: { id: b.id, name: b.name, aliases: b.aliases, licensed: b.licensed || undefined }, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
 }
 app.get('/api/brand', async (req, res) => {
   const id = String(req.query.id || '');

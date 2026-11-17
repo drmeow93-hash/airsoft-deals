@@ -140,6 +140,7 @@ function chartHtml(h) {
 }
 
 // ---- cards ----
+const PAGE = 36;
 function tagHtml(b) {
   const cls = b === 'ALL-TIME LOW' ? 'atl' : b.startsWith('LOWEST') ? 'low' : b === 'HOT DEAL' ? 'hot' : /OFF$/.test(b) ? 'off' : '';
   return `<span class="tag ${cls}">${esc(b)}</span>`;
@@ -150,7 +151,7 @@ function card(g, i = 99) {
   // The first few images are the page's largest paint, so they load eagerly; the rest lazily.
   const load = i < 4 ? `loading="eager"${i < 2 ? ' fetchpriority="high"' : ''}` : 'loading="lazy"';
   return `<div class="pcard" data-id="${g.id}" tabindex="0" role="link" aria-label="${esc(g.title)}, ${money(g.bestPrice)}">
-    <div class="pimg">${g.images[0] ? `<img ${load} decoding="async" width="300" height="300" src="${esc(g.images[0])}" alt="" onerror="this.remove()">` : ''}<div class="tags">${tags.map(tagHtml).join('')}</div></div>
+    <div class="pimg">${g.images[0] ? `<img ${load} decoding="async" width="300" height="300" src="${esc(g.images[0])}" alt="" onerror="this.remove()">` : ''}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
     <div class="pbody">
       ${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : ''}
       <div class="ptitle">${esc(g.title)}</div>
@@ -161,8 +162,9 @@ function card(g, i = 99) {
 }
 function bindCards(root, from) {
   $$('.pcard[data-id]', root).forEach((el) => {
+    if (el._b) return; el._b = 1;
     const go = () => { S.lastList = from || location.hash || '#/'; location.hash = '#/p/' + el.dataset.id; };
-    el.addEventListener('click', go);
+    el.addEventListener('click', (e) => { if (!e.target.closest('[data-ask]')) go(); });
     el.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), go()));
   });
 }
@@ -262,8 +264,25 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     $('#facets', target).innerHTML = facetHtml();
     $('#activeF', target).innerHTML = activeHtml();
     $('.rtools', target).classList.toggle('hidden', !data.groups.length);
-    $('#grid', target).innerHTML = gs.length ? `<div class="grid">${gs.map((g, i) => card(g, i)).join('')}</div>` : (empty && !data.groups.length ? empty : `<div class="empty">${ic('i-search')}<h2>No matches</h2><p>Try fewer filters or a broader search.</p></div>`);
-    bindCards($('#grid', target));
+    // Long lists render in pages of 36 cards; the next page is added as you scroll near the end.
+    const grid = $('#grid', target);
+    if (grid._io) grid._io.disconnect();
+    grid.innerHTML = gs.length ? `<div class="grid">${gs.slice(0, PAGE).map((g, i) => card(g, i)).join('')}</div>` : (empty && !data.groups.length ? empty : `<div class="empty">${ic('i-search')}<h2>No matches</h2><p>Try fewer filters or a broader search.</p></div>`);
+    bindCards(grid);
+    let shown = Math.min(PAGE, gs.length);
+    if (shown < gs.length && 'IntersectionObserver' in window) {
+      const sent = document.createElement('div'); sent.className = 'grid-sentinel'; grid.appendChild(sent);
+      grid._io = new IntersectionObserver((ents) => {
+        if (!ents.some((e) => e.isIntersecting)) return;
+        const tmp = document.createElement('div');
+        tmp.innerHTML = gs.slice(shown, shown + PAGE).map((g, i) => card(g, shown + i)).join('');
+        bindCards(tmp);
+        $('.grid', grid).append(...tmp.children);
+        shown += PAGE;
+        if (shown >= gs.length) { grid._io.disconnect(); sent.remove(); }
+      }, { rootMargin: '900px 0px' });
+      grid._io.observe(sent);
+    } else if (shown < gs.length) { grid.querySelector('.grid').insertAdjacentHTML('beforeend', gs.slice(shown).map((g, i) => card(g, shown + i)).join('')); bindCards(grid); }
   };
   const side = $('#side', target), scrim = $('#scrim', target);
   const sheet = (on) => { side.classList.toggle('open', on); scrim.classList.toggle('on', on); document.body.style.overflow = on ? 'hidden' : ''; if (on) $('#closeF', target).focus(); };
@@ -383,6 +402,7 @@ function productPage(id) {
       <div class="line">${best.inStock === true ? '<span class="instock">● In stock</span>' : best.inStock === false ? '<span class="oos">● Out of stock</span>' : '<span>● Check stock at store</span>'}</div>
       ${best.ship ? `<div class="line">${best.ship.free ? '<span class="instock">Free shipping on this item</span>' : esc(best.ship.note)}</div>` : ''}
       <a class="btn primary block" href="${esc(best.url)}" target="_blank" rel="noopener">View at ${esc(best.store)} ${ic('i-ext')}</a>
+      <button type="button" class="btn grok block" data-ask="${g.id}">${ic('i-spark')}<span>Ask Grok: good buy or skip?</span></button>
       <button class="btn secondary block ${watch.has(g) ? 'on' : ''}" id="watchBtn" aria-pressed="${watch.has(g)}">${ic('i-heart')}<span>${watch.has(g) ? 'Watching' : 'Add to watchlist'}</span></button>
       <p class="note">Checked ${g.checkedAt ? ago(g.checkedAt) : 'live'}. Tax extra; confirm the variant at the store.</p>
     </aside>
@@ -394,6 +414,51 @@ function productPage(id) {
   $('#watchBtn').addEventListener('click', (e) => { watch.toggle(g); const on = watch.has(g), b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = on ? 'Watching' : 'Add to watchlist'; });
   window.scrollTo(0, 0);
 }
+
+// ---- Ask Grok sheet ----
+const verdictCache = new Map();
+function askSheet(g) {
+  let sh = $('#gsheet');
+  if (!sh) {
+    document.body.insertAdjacentHTML('beforeend', `<div class="gscrim" id="gscrim"></div><section class="gsheet" id="gsheet" role="dialog" aria-modal="true" aria-labelledby="gsTitle"><div class="gs-h"><h2 id="gsTitle">${ic('i-spark')}Ask Grok</h2><button type="button" id="gsClose" aria-label="Close">${ic('i-x')}</button></div><div class="gs-b" id="gsBody"></div></section>`);
+    sh = $('#gsheet');
+    const close = () => { sh.classList.remove('open'); $('#gscrim').classList.remove('on'); document.body.style.overflow = ''; };
+    $('#gsClose').onclick = $('#gscrim').onclick = close;
+    document.addEventListener('keydown', (e) => e.key === 'Escape' && sh.classList.contains('open') && close());
+    window.addEventListener('hashchange', close);
+  }
+  const body = $('#gsBody');
+  const h = g.h;
+  const priceBox = `<div class="gs-price">
+      <div class="kv"><small>Best now</small><b>${money(g.bestPrice)}</b><span>${esc(g.bestStore)}</span></div>
+      ${g.storeCount > 1 ? `<div class="kv"><small>Store average</small><b>${money(g.avgPrice)}</b><span>${g.storeCount} stores</span></div>` : ''}
+      ${h ? `<div class="kv"><small>Lowest tracked</small><b class="dn">${money(h.lo)}</b><span>since ${fmtDate(h.since)}</span></div><div class="kv"><small>Trend</small><b>${h.chg ? (h.chg < 0 ? '<span class="dn">▼ ' : '<span class="up">▲ ') + money(Math.abs(h.chg)) + '</span>' : 'Flat'}</b><span>${h.pts.length} price point${h.pts.length === 1 ? '' : 's'}</span></div>` : ''}
+    </div>`;
+  const head = `<div class="gs-prod">${g.images[0] ? `<img src="${esc(g.images[0])}" alt="" width="64" height="64">` : ''}<div><div class="brandline">${esc(g.brand || '')}</div><div class="gs-t">${esc(g.title)}</div></div></div>`;
+  body.innerHTML = head + `<div class="gs-load"><span class="spin"></span>Grok is sizing this up…</div>` + priceBox;
+  sh.classList.add('open'); $('#gscrim').classList.add('on'); document.body.style.overflow = 'hidden'; $('#gsClose').focus();
+  const key = g.id + '|' + g.title;
+  const req = verdictCache.get(key) || fetch(API + '/api/verdict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: g.title, brand: g.brand, cat: g.cat, platform: g.platform, bestPrice: g.bestPrice, avgPrice: g.avgPrice, offers: g.offers.map((o) => ({ store: o.store, price: o.price, originalPrice: o.originalPrice, inStock: o.inStock })), h: h ? { lo: h.lo, hi: h.hi, avg: h.avg, since: h.since, prev: h.prev, chg: h.chg, pts: h.pts } : null }) }).then((r) => (r.ok ? r.json() : Promise.reject(new Error('Server error ' + r.status))));
+  verdictCache.set(key, req);
+  req.then((v) => {
+    if (!sh.classList.contains('open')) return;
+    const cls = v.verdict === 'Good' ? 'good' : v.verdict === 'Decent' ? 'ok' : 'skip';
+    const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join('');
+    body.innerHTML = head + `<div class="gs-verdict ${cls}"><div class="gs-score"><b>${v.score}</b><small>/10</small></div><div><div class="gs-v">${esc(v.verdict)}</div><div class="gs-lbl ${v.kind}">${v.kind === 'ai' ? ic('i-spark') : ''}${esc(v.label)}${v.cached ? ' · saved answer' : ''}</div></div></div>
+      ${v.summary ? `<p class="gs-sum">${esc(v.summary)}</p>` : ''}
+      <div class="gs-pc">${v.pros.length ? `<div><h3 class="dn">Pros</h3><ul class="pros">${li(v.pros)}</ul></div>` : ''}${v.cons.length ? `<div><h3 class="up">Cons</h3><ul class="cons">${li(v.cons)}</ul></div>` : ''}</div>
+      ${v.whoFor ? `<div class="gs-who"><small>Who it's for</small>${esc(v.whoFor)}</div>` : ''}
+      <h3 class="gs-sub">Price check</h3>${v.priceTake ? `<p class="gs-sum">${esc(v.priceTake)}</p>` : ''}${priceBox}
+      ${v.unsure ? `<p class="gs-unsure">Not sure about: ${esc(v.unsure)}</p>` : ''}
+      <p class="gs-foot">${v.kind === 'ai' ? `AI-generated by Grok (${esc(v.model || '')}) from the product name and the prices we track. It can be wrong; check reviews before you buy.${v.confidence ? ` Confidence: ${esc(v.confidence)}.` : ''}` : 'Not an AI answer. A rule-based estimate from brand reputation, price versus other stores, and our price history.'}</p>`;
+  }).catch((e) => { verdictCache.delete(key); if (sh.classList.contains('open')) body.innerHTML = head + `<div class="empty sm">Couldn't get a verdict right now (${esc(e.message)}). Try again in a moment.</div>` + priceBox; });
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ask]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const g = S.groups.get(b.dataset.ask) || watch.all().map((w) => w.group).find((x) => x.id === b.dataset.ask);
+  if (g) askSheet(g);
+}, true);
 
 const STORE_N = 24;
 const POPULAR = ['Tokyo Marui', 'Glock', 'Hi-Capa', 'M4 AEG', 'Gas blowback', 'HPA', 'Sniper rifle', 'Plate carrier', '0.28g BBs'];

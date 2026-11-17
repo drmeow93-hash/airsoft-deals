@@ -48,6 +48,16 @@ async function collect(s) {
   return items;
 }
 
+// Search snapshot for Shopify stores, bundled with each deploy (server/snapshot/). The app searches it
+// only when the store's live search is unavailable, e.g. while Shopify asks our server to slow down (429).
+const zlib = require('zlib');
+function writeSnapshot(s, items) {
+  const slim = items.map(({ title, brand, ptype, tags, price, originalPrice, fx, inStock, image, url }) => ({ title, brand, ptype, tags: tags && tags.slice(0, 8), price, originalPrice, fx, inStock, image, url }));
+  const dir = path.join(__dirname, '..', 'server', 'snapshot');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `shopify-${s.id}.json.gz`), zlib.gzipSync(JSON.stringify({ store: s.id, builtAt: NOW, items: slim }), { level: 9 }));
+}
+
 function readStore(id) {
   try { return JSON.parse(fs.readFileSync(path.join(DIR, `${id}.json`), 'utf8')); } catch { return { v: 1, store: id, since: TODAY, updated: null, items: {} }; }
 }
@@ -102,6 +112,7 @@ function writeStore(file) {
     }
     file.updated = NOW;
     writeStore(file);
+    if (s.platform === 'Shopify' && s.catalog) writeSnapshot(s, items);
   }));
   const keep = oldDrops.filter((d) => !okStores.has(d.storeId));
   const cutoff = new Date(Date.now() - 21 * 864e5).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });

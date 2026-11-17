@@ -43,3 +43,27 @@ console.log(`Held-out sample: ${hok}/${held.length} = ${(100 * hok / held.length
   vfail.forEach((m) => console.log(m));
   if (vfail.length) process.exitCode = 1;
 }
+
+// ---- Ask Grok: AI answer parsing + rule-based quick take (no network) ----
+{
+  delete process.env.XAI_API_KEY;
+  const v = require('../server/verdict');
+  const fails = []; let n = 0;
+  const ok = (cond, msg) => { n++; if (!cond) fails.push('  ' + msg); };
+  const a = v.parseJson('Sure! {"verdict":"Good","score":8.4,"summary":"Solid.","pros":["a","b","c","d","e"],"cons":[],"whoFor":"x","confidence":"high","unsure":null}');
+  ok(a.verdict === 'Good' && a.score === 8 && a.pros.length === 4, 'parses fenced JSON, rounds score, caps lists');
+  let threw = false; try { v.parseJson('{"verdict":"Amazing","score":11}'); } catch { threw = true; }
+  ok(threw, 'rejects an unknown verdict');
+  const p = (b, extra = {}) => v.clean({ title: 'X', brand: b, bestPrice: 100, avgPrice: 100, offers: [{ store: 'A', price: 100 }], ...extra });
+  ok(v.quickTake(p('Tokyo Marui')).verdict === 'Good', 'premium brand -> Good');
+  ok(v.quickTake(p('Double Eagle')).verdict === 'Skip', 'toy-grade brand -> Skip');
+  ok(v.quickTake(p('Nobody Knows')).confidence === 'low', 'unknown brand -> low confidence');
+  ok(v.tierOf('Angel Custom', 'Angel Custom barrel for Tokyo Marui') !== 'premium', 'brand field beats a "for Tokyo Marui" title');
+  ok(v.clean({ title: 'a'.repeat(500), offers: [{ store: 'A', price: -5 }, { store: 'B', price: 'x' }] }).offers.length === 0, 'drops bad prices');
+  v.verdict({ title: 'Tokyo Marui Hi-Capa' }, '1.2.3.4').then((r) => {
+    ok(r.body.kind === 'quick' && /AI not connected/.test(r.body.label), 'no key -> labeled quick take, never an AI answer');
+    console.log(`Ask Grok: ${n - fails.length}/${n} checks pass`);
+    fails.forEach((m) => console.log(m));
+    if (fails.length) process.exitCode = 1;
+  });
+}

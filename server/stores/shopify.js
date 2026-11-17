@@ -1,6 +1,32 @@
 // Shopify storefronts: public predictive-search JSON for search, /products.json for the sale feed
 // and the price-history catalog. Both paths are allowed by these stores' robots.txt.
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
 const { get, money } = require('../http');
+
+// Fallback catalog written by the price-history collector (scripts/collect-history.js) from the same
+// public /products.json route. Searched locally only when the live search fails, for example while
+// Shopify rate-limits our server (HTTP 429). Results say which snapshot date they came from.
+const snorm = (s) => String(s).toLowerCase().replace(/[^a-z0-9.]+/g, ' ').trim();
+function loadSnapshot(id) {
+  try {
+    const snap = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, '..', 'snapshot', `shopify-${id}.json.gz`))));
+    for (const p of snap.items) { p._n = snorm(`${p.brand || ''} ${p.title}`); }
+    return snap;
+  } catch { return null; }
+}
+function searchSnapshot(snap, q, limit = 24) {
+  const terms = snorm(q).split(' ').filter(Boolean);
+  if (!terms.length) return [];
+  const hits = [];
+  for (const p of snap.items) {
+    let score = 0, ok = true;
+    for (const t of terms) { if (!p._n.includes(t)) { ok = false; break; } score += p._n.includes(` ${t} `) || p._n.startsWith(t + ' ') ? 2 : 1; }
+    if (ok) hits.push([score - p._n.length / 500, p]);
+  }
+  return hits.sort((a, b) => b[0] - a[0]).slice(0, limit).map(([, { _n, ...p }]) => p);
+}
 
 // One price per product everywhere (search, deals, history): the cheapest variant, so price
 // history never flips between variants.
@@ -45,6 +71,19 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
     };
   };
 
+  let snap; // loaded on first need
+  const snapshot = () => (snap === undefined ? (snap = loadSnapshot(id)) : snap);
+  const withFallback = (live, local) => async (...a) => {
+    try { return await live(...a); } catch (e) {
+      const sn = snapshot();
+      if (!sn) throw e;
+      const out = local(sn, ...a);
+      out.snapshotAt = sn.builtAt;
+      out.liveError = String(e.message || e);
+      return out;
+    }
+  };
+
   async function search(q) {
     const u = `${base}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=10&resources[options][unavailable_products]=last`;
     const data = await get(u, { json: true, pool: 'shopify' });
@@ -74,7 +113,12 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
     return out;
   }
 
-  return { id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, airsoftOnly, search, deals, catalog };
+  return {
+    id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, airsoftOnly, catalog,
+    search: withFallback(search, (sn, q) => searchSnapshot(sn, q)),
+    deals: withFallback(deals, (sn) => sn.items.filter((p) => p.originalPrice).map(({ _n, ...p }) => p)),
+    snapshotInfo: () => { const sn = snapshot(); return sn ? { builtAt: sn.builtAt, products: sn.items.length } : null; },
+  };
 }
 
 module.exports = { makeShopifyStore, fromProduct };
