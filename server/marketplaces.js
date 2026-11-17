@@ -2,9 +2,10 @@
 // None of them can be read automatically within their rules, so they're links (with a prefilled
 // search) unless an official API key is configured (eBay Browse API).
 const { UA } = require('./http');
+const { isVetted } = require('./vetting');
 
 const enc = encodeURIComponent;
-const marketplaces = [
+const allMarketplaces = [
   {
     id: 'hopup', name: 'HopUp', url: 'https://www.hopupairsoft.com', note: 'The biggest US airsoft buy/sell app. New and used gear from players.',
     search: (q) => `https://www.hopupairsoft.com/search?q=${enc(q)}`,
@@ -36,6 +37,8 @@ const marketplaces = [
     why: 'Link only. Group posts need a login and there is no public API.',
   },
 ];
+// Only marketplaces whose domain passed vetting (data/vetting.json) are shown or linked.
+const marketplaces = allMarketplaces.filter((m) => isVetted(m.url) && isVetted(m.search('test')));
 
 // Optional: official eBay Browse API (free developer account at developer.ebay.com).
 // Set EBAY_CLIENT_ID and EBAY_CLIENT_SECRET on the server to show live eBay listings.
@@ -58,6 +61,7 @@ async function ebaySearch(q) {
   const hit = ebayCache.get(q);
   if (hit && hit.exp > Date.now()) return hit.val;
   const token = await ebayAuth();
+  if (!isVetted('https://api.ebay.com/')) throw new Error('eBay is not a vetted domain');
   const r = await fetch(`https://api.ebay.com/buy/browse/v1/item_summary/search?q=${enc(q)}&category_ids=31680&limit=24`, {
     headers: { Authorization: `Bearer ${token}`, 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US', 'User-Agent': UA },
   });
@@ -72,7 +76,7 @@ async function ebaySearch(q) {
     format: (it.buyingOptions || []).includes('AUCTION') ? 'Auction' : 'Buy It Now',
     image: it.image?.imageUrl || it.thumbnailImages?.[0]?.imageUrl || null,
     url: it.itemAffiliateWebUrl || it.itemWebUrl,
-  })).filter((x) => x.price);
+  })).filter((x) => x.price && isVetted(x.url));
   ebayCache.set(q, { val, exp: Date.now() + 10 * 60 * 1000 });
   return val;
 }

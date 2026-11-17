@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-17T04:44:15.957Z",
- "tracked": 29826,
+ "updated": "2026-11-17T05:57:08.470Z",
+ "tracked": 46145,
  "files": [
   "airsoftatlanta.json",
   "airsoftextreme.json",
@@ -9,15 +9,22 @@
   "airsoftstation.json",
   "amped.json",
   "ballahack.json",
+  "blackopsnc.json",
   "brill.json",
-  "clandestine.json",
   "drops.json",
   "echo1.json",
   "ehobbyasia.json",
+  "extremeri.json",
   "foxairsoft.json",
   "megastore.json",
+  "polarstar.json",
+  "primary.json",
   "redwolf.json",
   "speedqb.json",
+  "ssairsoft.json",
+  "taccity.json",
+  "umarex.json",
+  "vipairsoft.json",
   "wgc.json",
   "wolverine.json"
  ]

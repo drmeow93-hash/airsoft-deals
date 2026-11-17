@@ -1,9 +1,12 @@
 // Polite HTTP helper: honest User-Agent, timeout, tiny in-memory cache.
 const UA = 'AirsoftDealsFinder/1.0 (personal price-comparison app; respects robots.txt)';
+const { isVetted } = require('./vetting');
 const cache = new Map();
 const inflight = new Map(); // identical concurrent requests share one fetch
 
 async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000 } = {}) {
+  // Allowlist: only domains that passed the legitimacy vetting (data/vetting.json) are ever fetched.
+  if (!isVetted(url)) throw new Error(`Blocked: ${(() => { try { return new URL(url).hostname; } catch { return url; } })()} is not a vetted domain`);
   const key = (json ? 'j:' : 'h:') + url;
   const hit = cache.get(key);
   if (hit && hit.exp > Date.now()) return hit.val;

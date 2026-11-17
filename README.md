@@ -4,7 +4,9 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 
 ## Stores
 
-**Searched live on every query**
+Every store, link, field and marketplace below passed the legitimacy check in [Legitimacy vetting](#legitimacy-vetting). The server refuses to fetch from, or link to, any domain that isn't on that allowlist.
+
+**Searched live on every query (21)**
 
 | Store | Route (all allowed by the store's robots.txt) |
 |---|---|
@@ -15,15 +17,22 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 | SpeedQB (UT) | Same as above |
 | Brill Armory | Same as above |
 | Echo1 USA (CA) | Same as above |
+| SS Airsoft (store.ssairsoft.com) | Same as above (new in v4) |
+| Extreme Airsoft RI | Same as above (new in v4) |
+| VIP Airsoft | Same as above (new in v4) |
+| Black Ops Paintball & Airsoft (NC) | Same as above (new in v4); paintball items are removed by the airsoft filter |
+| PolarStar (HPA engines) | Same as above, with the strict airsoft-only filter (new in v4) |
+| Primary Airsoft | Same as above, with the strict airsoft-only filter (new in v4) |
+| Tac City Airsoft | Same as above (new in v4) |
 | WGC Shop (HK) | Same as above. Prices exist only in HKD, so they're converted to USD at 7.8 HKD/USD and the original HKD price is shown next to the offer. |
+| Umarex USA (Elite Force) | nopCommerce `/search?q=` HTML (allowed). Manufacturer direct shop (new in v4). |
 | RedWolf Airsoft (HK) | Magento `/catalogsearch/result/` HTML (allowed; storefront currency is USD) |
-| Clandestine Airsoft | Zen Cart `main_page=search_result` HTML (no robots.txt restrictions) |
 | Airsoft Station (KY) | BigCommerce `/search.php`; deals from `/deals/` |
 | Airsoft Megastore (CA) | OpenCart `route=product/search`; deals from `/Mega-Deals` |
-| Wolverine Airsoft (PA) | WooCommerce Store API `/wp-json/wc/store/v1/products` (public, not disallowed). Its HTML pages show a Cloudflare check to scripts, so we don't touch those. |
+| Wolverine Airsoft (PA) | WooCommerce Store API `/wp-json/wc/store/v1/products` (public, not disallowed). Its HTML pages show a bot check to scripts, so we don't touch those. |
 | eHobbyAsia (HK, ships US) | HTML `/search` page only. robots.txt disallows `/products.json` and `/search.json`, so we use no JSON endpoint. |
 
-**Background catalog index** (for stores whose search is disallowed). These are crawled slowly in the background at or above each store's Crawl-delay, kept in memory, and searched locally. Nothing is fetched per user search.
+**Background catalog index (3)**, for stores whose search is disallowed. These are crawled slowly in the background at or above each store's Crawl-delay, kept in memory, and searched locally. Nothing is fetched per user search.
 
 | Store | What's indexed | Pace / refresh |
 |---|---|---|
@@ -31,21 +40,79 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 | Amped Airsoft (PA) | 7 main BigCommerce categories at 100 per page (`/search.php` is disallowed) | 2.5 s per request / every 6 h |
 | Airsoft GI (CA) | `/specials.php` + `/Airsoft-Guns/` listing pages (its search pages are disallowed) | 5.5 s per request (Crawl-delay 5) / every 12 h |
 
-On Render's free plan the instance sleeps after about 15 minutes idle. Indexes rebuild when it wakes: Airsoft Extreme and Amped take about 1–3 minutes, Airsoft GI about 6–8 minutes. While a store is indexing, the app labels it "indexing…" instead of hiding it.
+On Render's free plan the instance sleeps after about 15 minutes idle. Indexes rebuild when it wakes: Airsoft Extreme and Amped take about 1–3 minutes, Airsoft GI about 6–8 minutes. While a store is indexing, the app labels it "indexing…" instead of hiding it. Each live store gets at most 4 s per search; `/api/search?fast=1` returns whatever answered in about 1.2 s and the app fills in the rest.
 
 Requests use an honest User-Agent (`AirsoftDealsFinder/1.0`), never a browser disguise, and responses are cached.
 
-**Not price-checked.** These are listed as direct links on the in-app **Stores** tab (re-checked Nov 2026).
-- **Evike.com:** a Cloudflare bot check (HTTP 403) blocks every URL, including robots.txt. We don't bypass bot checks. The way in is their affiliate program (below).
-- **MiR Tactical, Airsoft Junkiez:** BigCommerce stores behind a Cloudflare challenge (captcha).
-- **Taiwangun, JK Army:** Cloudflare challenge pages.
-- **US Airsoft:** robots.txt disallows its search (`/s/search`) and there's no public product JSON.
-- **Novritsch (US):** robots.txt disallows the WooCommerce API (`/wp-json/`) and the site search (`?s=`).
-- **East Coast Airsoft, OPSGEAR:** products are drawn by JavaScript from an `/api` path that robots.txt disallows.
-- **Nashville Airsoft:** products load through a JavaScript store widget; no public JSON or plain results page.
-- **Sniper Airsoft:** the real store is the German shop sniper-as.de, priced in EUR, so it isn't compared against US prices.
-- **ReplicaAirguns:** a review blog, not a store. It's listed under "Reviews".
-- **Dropped:** Just Airsoft Guns (parked domain), Xtreme Airsoft Superstore, Liberty Tactical, GI Tactical, Airsoft Tactical (domains don't resolve or are parked), Elite Tactical Supply (parked; a firearms gunsmith).
+**More stores: link only (20).** These are listed as direct links on the in-app **Stores** tab, each with the reason it isn't price-checked:
+- **Evike.com** (www.evike.com): Cloudflare bot check on every page
+- **MiR Tactical** (mirtactical.com): robots.txt disallows its search (search.php)
+- **Airsoft Junkiez** (www.airsoftjunkiez.com): robots.txt disallows its search (search.php)
+- **Novritsch (US)** (us.novritsch.com): bot-verification page; robots.txt disallows its API and search
+- **Taiwangun** (www.taiwangun.com): captcha on search pages; prices in EUR/PLN
+- **JK Army** (www.jkarmy.com): Cloudflare bot check on every page
+- **East Coast Airsoft** (eastcoastairsoft.com): products load by JavaScript from a disallowed /api
+- **Nashville Airsoft** (nashvilleairsoft.com): JavaScript store widget, no product feed
+- **Sniper Airsoft (DE)** (www.sniper-as.de): EU store priced in EUR
+- **Survival Mode Tactical** (thesurvivalmode.com): robots.txt disallows its search (search.php)
+- **Stampede Tactical (Holy Cowz Airsoft)** (stampedetactical.com): robots.txt disallows its search (search.php)
+- **KWA USA** (store.kwausa.com): Cloudflare bot check
+- **G&G Armament (101 Tech USA)** (101techusa.com): robots.txt disallows its search
+- **Elite Force Airsoft** (www.eliteforceairsoft.com): no search results page; its items are price-checked through Umarex USA (same company)
+- **PTS Syndicate** (www.ptssyndicate.com): brand site with no product feed
+- **ANSgear** (ansgear.com): robots.txt disallows its search (search.php)
+- **Pyramyd AIR** (www.pyramydair.com): no plain search page or public feed; mostly pellet airguns
+- **Airgun Depot** (www.airgundepot.com): robots.txt disallows its search
+- **SKD Tactical** (skdtac.com): robots.txt disallows its search (search.php)
+- **OpticsPlanet** (www.opticsplanet.com): bot check ("Before we continue")
+
+**Fields & pro shops (23).** Fields and arenas with no online shop are listed in their own group on the Stores tab: StrikeForce Sports (www.strikeforcesports.net), Ricochet Tactical (ricochettactical.com), Battalion Airsoft Arena (www.battalionairsoftarena.com), Gamepod Combat Zone (combatzonecqc.com), West Coast Adventure Park (westcoastadventurepark.com), Miami Airsoft (miamiairsoft.com), Raptor Airsoft (raptorairsoft.com), High Ground Airsoft (highgroundairsoft.com), Motor City Airsoft (www.motorcityairsoft.com), Gunny's Warfare Center (www.gunnyswarfarecenter.com), Futureball (www.futureball.com), Xtreme Kombat (Xtreme Adventure Park) (xtremeparkadventures.com), 878 Airsoft (878airsoft.com), ForestFire Airsoft (forestfireairsoft.com), Power Ops Airsoft (www.poweropsairsoft.com), D14 Airsoft (d14airsoft.com), UBG Airsoft (ubgllc.com), Texas Paintball & Airsoft (www.txpb.com), Replay Airsoft (www.replayairsoft.com), Black Ops Airsoft (www.blackops-airsoft.com), Paintball & Airsoft Station (WA) (www.paintballstation.com), Tactical Airsoft Supply / Airsoft Arena (801airsoft.com), Modern Airsoft (modernairsoft.com).
+
+**Excluded by vetting (not shown or linked anywhere):**
+- **Clandestine Airsoft:** No business address or phone on the site (contact form/email only) and none found in business listings; previously a live store, now removed.
+- **Krytac:** No return or shipping policy found for direct online orders (only a warranty page that routes RMAs to Evike).
+- **US Airsoft:** Site is a JavaScript app; return/shipping/privacy policies could not be confirmed.
+- **Airsoft Master:** No privacy policy page found (terms cover shipping/returns only).
+- **Lancer Tactical:** No privacy policy page found on its Wix store (returns are only described in its FAQ).
+- **ActionSportGames (ASG):** Brand distributor site with no address/phone we could confirm and no direct sales.
+- **Thunder Kiss NW:** Contact page and home page show no address or phone we could confirm.
+- **OPSGEAR:** Reputation: Trustpilot 2.9 (1,076) with shipping/no-tracking complaints, Yelp lists it closed (1.3), a forum "scam" thread; no address/phone on the site.
+- **Monk Customs (US):** Reputation: Reddit reports of wrong/undelivered orders and unresponsive support; no address or phone on the site.
+- **Tapp Airsoft:** No business address or phone anywhere on the site or its policies (email only).
+- **The Real Deal Airsoft:** No refund, shipping or privacy policy pages.
+- **Umbrella Armory:** umbrellaarmory.com now redirects to an unrelated German .eu site; the official domain could not be confirmed.
+- **Valken Sports:** HTTPS handshake fails (from our box and an outside fetcher), so a valid certificate could not be confirmed.
+- **LA Capa Customs:** HTTPS handshake fails (from our box and an outside fetcher).
+- **Code Red Airsoft Park:** No working HTTPS (site is served over plain http only).
+- **Ohio Valley Airsoft:** TLS certificate does not match the domain.
+- **CartCon1 Airsoft:** cartcon1 domains redirect to a different name (Battle Ridge) behind a bot check; could not confirm it is the same business.
+- **Frontier Fortress:** Domain shows a blank page and is not the site listed for the field (only directory/Facebook listings); official site not confirmed.
+- **Camp R&R:** Site returns a server error (HTTP 500) to every request; could not be checked.
+- **US Patriot Tactical:** Not an airsoft store (military uniforms and boots); its product JSON is closed.
+
+**Skipped (dead, parked, closed or no website):**
+- Full Auto Airsoft: faairsoft.com shows "This store is unavailable" (Shopify store closed)
+- Airsoft Gateway: airsoftgateway.com Shopify store is "Unavailable Shop"
+- Sector 7 Airsoft: sector7airsoft.com is a parked domain; no other site found
+- Stampede Airsoft: stampedeairsoft.com is parked; the business is Stampede Tactical (linked)
+- UBG Airsoft (ubgairsoft.com): ubgairsoft.com is parked; the business uses ubgllc.com (linked)
+- Dreadnought Airsoft: permanently closed
+- Stryker Airsoft: permanently closed June 2024 (site is now StrikeForce NJ)
+- Cincinnati Airsoft: no website found (only a 2009 LLC registration)
+- Palmetto Edge Airsoft: no website found
+- Wild West Airsoft: no website found (Reddit mentions only)
+- Allstar Airsoft: no website found (directory listings only)
+- Ambush Airsoft: no US website found (ambushairsoft.com does not exist; a UK field uses .co.uk)
+- Zulu 24 Airsoft: Facebook/Instagram only
+- Poco Loco Airsoft: Facebook only
+- Holy Cowz Airsoft: Facebook only; its shop is Stampede Tactical (linked)
+- Bloomies Airsoft: no own website (sells through HopUp)
+- Sherlock Tech: no airsoft business found under this name
+- AEX Portland: no such store; AEX (Airsoft Extreme) is California-only and already live
+- American Airsoft: no matching business; americanairsoftfactory.com does not resolve
+- Survival Mode Airsoft (survivalmodeairsoft.com): domain does not exist; the business is thesurvivalmode.com (linked)
+
+Earlier rounds also dropped Just Airsoft Guns, Xtreme Airsoft Superstore, Liberty Tactical, GI Tactical, Airsoft Tactical and Elite Tactical Supply (parked or non-resolving domains).
 
 ### Affiliate / product feeds
 `server/stores/feed.js` can add any store from an official product feed (CSV, TSV, or JSON, optionally gzipped). Set these environment variables on Render:
@@ -161,3 +228,18 @@ Listings are grouped as one product only when accessory type words agree, genera
 
 ## Front end
 Amazon-style layout in the galaxy theme: full-width search with category dropdown and autocomplete, category row, filter sidebar (sheet on phones), product cards with price-change arrows and sparklines, buy box, store comparison table and price-history chart. The server minifies JS/CSS with esbuild at boot, inlines the CSS, and serves brotli/gzip pre-compressed assets and JSON.
+
+## Legitimacy vetting
+
+`node scripts/vet.js [ids...]` checks every entry in `data/vetting-input.json` and writes `data/vetting.json`. Each entry records the domain, every check with its result, the verdict, and the date. The checks:
+
+- **Official domain:** confirmed by cross-reference (brand pages, dealer lists, business listings), plus an automatic lookalike test (edit distance ≤ 1 against every other vetted domain, punycode rejected).
+- **DNS and HTTPS:** real DNS over HTTPS, a valid certificate, and no 5xx errors.
+- **Domain age** from RDAP. Anything under 1 year old is flagged.
+- **Contact:** a contact page plus a real address or phone, from the site's own pages (or recorded manual evidence with a source).
+- **Policies:** return, shipping and privacy pages.
+- **Pricing:** fails if 25% or more of items are priced at 40% or less of their compare-at price.
+- **Reputation:** Trustpilot, BBB, Reddit and Yelp, recorded per entry.
+- **Scam lists:** HaGeZi fake/TIF, BlocklistProject scam/fraud/phishing, Phishing.Database, OpenPhish.
+
+Anything failing or doubtful is excluded entirely, not linked. `server/vetting.js` builds the allowlist from passing entries. `server/http.js` refuses to fetch anything else, `server/deals.js` drops any offer whose link isn't vetted, and marketplaces, fields and link-only stores are all built from the allowlist. You can see the full record at `/api/vetting`. To re-check, run `node scripts/vet.js`, or `node scripts/vet.js <id> ...` for specific entries.

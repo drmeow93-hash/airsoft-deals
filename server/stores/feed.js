@@ -49,6 +49,7 @@ function makeFeedStore(id, name) {
     delayMs: 0,
     refreshMs: (Number(process.env.FEED_REFRESH_HOURS) || 6) * 3600 * 1000,
     crawl: async ({ add }) => {
+      if (!require('../vetting').isVetted(url)) throw new Error('Feed host is not a vetted domain (add it to data/vetting-input.json and run scripts/vet.js)');
       const res = await fetch(url, { headers: { 'User-Agent': UA } });
       if (!res.ok) throw new Error(`Feed HTTP ${res.status}`);
       let buf = Buffer.from(await res.arrayBuffer());

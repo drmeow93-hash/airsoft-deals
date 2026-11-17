@@ -365,3 +365,9 @@ a.scard:hover{border-color:rgba(182,156,255,.5);transform:translateY(-2px)}
 @media (prefers-reduced-motion:reduce){.galaxy i,.sk,.spin{animation:none!important}.shoot{display:none}.pcard,.scard.more{transition:none}}
 
 @media (prefers-reduced-motion:reduce){.view,.pcard,.tile,.side,.tab::after,.car-track{animation:none!important;transition:none!important;scroll-behavior:auto}}
+.scard .why{font-size:12px;color:var(--sub);opacity:.85;line-height:1.35}
+.stores.fields .scard{padding:12px 14px}
+.sec-h small.muted{font-size:13px;font-weight:500;color:var(--muted);margin-left:6px}
+.vetnote{display:flex;align-items:flex-start;gap:8px;margin:-4px 0 14px;font-size:13px;color:var(--muted);line-height:1.45}
+.vetnote .ic{width:18px;height:18px;flex:none;color:var(--accent2);margin-top:1px}
+.vetnote a{color:var(--accent2);text-decoration:underline}

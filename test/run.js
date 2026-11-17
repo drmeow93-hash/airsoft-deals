@@ -23,3 +23,23 @@ const held = require('./heldout-sample.json');
 let hok = 0;
 for (const r of held) { const p = { title: r.title, ptype: r.ptype, price: r.price }; const a = isAirsoft(p); const good = r.airsoft === false ? !a.ok : a.ok && classify(p).cat === r.cat; if (good) hok++; else console.log(`  [held-out] want ${r.cat || 'drop'}, got ${classify(p).cat}${a.ok ? '' : ' (dropped: ' + a.reason + ')'}: ${r.title}`); }
 console.log(`Held-out sample: ${hok}/${held.length} = ${(100 * hok / held.length).toFixed(1)}%`);
+
+// Vetting allowlist: every store, link, field and marketplace the app uses passed vetting, and
+// anything else (excluded entries, lookalikes, random domains) is refused for scraping and links.
+{
+  const { isVetted, doc } = require('../server/vetting');
+  const { stores, skipped, fields, reviews } = require('../server/stores');
+  const mk = require('../server/marketplaces').list();
+  const vfail = []; let nv = 0;
+  const must = (url, want, why) => { nv++; if (isVetted(url) !== want) vfail.push(`  ${want ? 'should allow' : 'should block'} ${url} (${why})`); };
+  for (const s of stores) must(s.base, true, 'live store');
+  for (const s of [...skipped, ...fields, ...reviews]) must(s.url, true, 'link');
+  for (const m of mk) must(m.url, true, 'marketplace');
+  for (const e of doc.entries.filter((x) => x.kind === 'excluded')) must(e.url, false, 'excluded: ' + e.failed[0].slice(0, 60));
+  for (const u of ['https://evike-airsoft-sale.shop', 'https://www.evlke.com', 'https://airsoftgi.com.deals.xyz', 'https://foxairsoft.myshopify.com', 'https://example.com', 'ftp://www.evike.com']) must(u, false, 'not vetted');
+  must('https://store.ssairsoft.com/products/x', true, 'subdomain of vetted root');
+  must('https://vipairsoft.myshopify.com/products/x', true, 'exact shared-platform host');
+  console.log(`Vetting allowlist: ${nv - vfail.length}/${nv} checks pass`);
+  vfail.forEach((m) => console.log(m));
+  if (vfail.length) process.exitCode = 1;
+}

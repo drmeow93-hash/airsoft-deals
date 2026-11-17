@@ -1,0 +1,980 @@
+[
+ {
+  "id": "airsoftatlanta",
+  "name": "Airsoft Atlanta",
+  "kind": "store",
+  "url": "https://www.airsoftatlanta.com",
+  "official": "web search cross-check (Nov 2026); Birdeye listing for the Doraville GA store links here",
+  "reputation": "Birdeye 452 reviews, generally positive; r/airsoft \"is airsoftatlanta.com legit\" thread: yes, fast shipping"
+ },
+ {
+  "id": "airsoftnmore",
+  "name": "Airsoft N More",
+  "kind": "store",
+  "url": "https://airsoftnmore.com",
+  "official": "web search cross-check (Nov 2026); BBB profile (Los Angeles) lists this domain",
+  "reputation": "MIXED: BBB B- (one unanswered complaint); good local reviews; old forum complaints about slow online-order replies. Real LA storefront since 2009."
+ },
+ {
+  "id": "speedqb",
+  "name": "SpeedQB",
+  "kind": "store",
+  "url": "https://www.speedqb.com",
+  "official": "web search cross-check (Nov 2026); Wolverine/SpeedQB product pages link here",
+  "reputation": "Well-known US HPA/gear brand; no scam reports found"
+ },
+ {
+  "id": "foxairsoft",
+  "name": "Fox Airsoft",
+  "kind": "store",
+  "url": "https://www.foxairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 3.4 (few reviews); long-running US retailer, no scam reports"
+ },
+ {
+  "id": "ballahack",
+  "name": "Ballahack Airsoft",
+  "kind": "store",
+  "url": "https://www.ballahackairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "MIXED: 4.8/5 public ratings; a 2024 r/airsoft thread raises customer-service/staffing concerns"
+ },
+ {
+  "id": "brill",
+  "name": "Brill Armory",
+  "kind": "store",
+  "url": "https://brillarmory.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "r/airsoft: regarded as a reliable parts retailer",
+  "manual": {
+   "contact": "Brill Armory LLC, 3600 Fletcher Dr, Los Angeles CA 90065 (CA company registry); phone (914) 420-3917 (business listing); contact page brillarmory.com/pages/contact"
+  }
+ },
+ {
+  "id": "echo1",
+  "name": "Echo1 USA",
+  "kind": "store",
+  "url": "https://echo1usa.com",
+  "official": "web search cross-check (Nov 2026); brand site of Echo1/JAG Arms",
+  "reputation": "Established US airsoft brand; no scam reports"
+ },
+ {
+  "id": "wgc",
+  "name": "WGC Shop",
+  "kind": "store",
+  "url": "https://wgcshop.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot listing; r/airsoft & r/GasBlowBack: legit HK retailer, mixed service, slow dispatch at times"
+ },
+ {
+  "id": "redwolf",
+  "name": "RedWolf Airsoft",
+  "kind": "store",
+  "url": "https://www.redwolfairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.0 (190); complaints are about slow international shipping"
+ },
+ {
+  "id": "clandestine",
+  "name": "Clandestine Airsoft",
+  "kind": "excluded",
+  "url": "https://www.clandestineairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "r/airsoft & MiA forum: well regarded, fast shipping",
+  "why": "No business address or phone on the site (contact form/email only) and none found in business listings; previously a live store, now removed."
+ },
+ {
+  "id": "airsoftstation",
+  "name": "Airsoft Station",
+  "kind": "store",
+  "url": "https://airsoftstation.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.5; 4.7 local rating"
+ },
+ {
+  "id": "megastore",
+  "name": "Airsoft Megastore",
+  "kind": "store",
+  "url": "https://www.airsoftmegastore.com",
+  "official": "web search cross-check (Nov 2026); BBB profile (Santa Fe Springs CA)",
+  "reputation": "MIXED: Trustpilot 2.6 (149), BBB not rated (2 complaints in 3 yrs). Long-running real retailer (domain 2007), not a scam."
+ },
+ {
+  "id": "wolverine",
+  "name": "Wolverine Airsoft",
+  "kind": "store",
+  "url": "https://www.wolverineairsoft.com",
+  "official": "web search cross-check (Nov 2026); HPA maker, sold by SpeedQB/Evike",
+  "reputation": "Established HPA manufacturer; no scam reports",
+  "manual": {
+   "contact": "Contact & policy pages exist (Cloudflare check blocks our page fetch; checked via search results)",
+   "policies": "Warranty/returns/privacy pages listed in search results"
+  }
+ },
+ {
+  "id": "ehobbyasia",
+  "name": "eHobbyAsia",
+  "kind": "store",
+  "url": "https://www.ehobbyasia.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.0 (64); r/airsoft: legit since early 2000s; some refund/support complaints"
+ },
+ {
+  "id": "airsoftextreme",
+  "name": "Airsoft Extreme (AEX)",
+  "kind": "store",
+  "url": "https://www.airsoftextreme.com",
+  "official": "web search cross-check (Nov 2026); Warhead distributor list links here",
+  "reputation": "Oldest US airsoft retail chain, 4 California stores"
+ },
+ {
+  "id": "amped",
+  "name": "Amped Airsoft",
+  "kind": "store",
+  "url": "https://ampedairsoft.com",
+  "official": "web search cross-check (Nov 2026); BBB profile (Pittsburgh)",
+  "reputation": "BBB A+; Trustpilot 3.8",
+  "manual": {
+   "policies": "ampedairsoft.com/privacy-policy/ and /Shipping-and-Return-Policy/ (privacy page also lists 2250 Noblestown Rd, Pittsburgh PA, (724) 366-6590)"
+  }
+ },
+ {
+  "id": "airsoftgi",
+  "name": "Airsoft GI",
+  "kind": "store",
+  "url": "https://www.airsoftgi.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "MIXED: Trustpilot 2.3 (1,851), BBB D-. Large real retailer with physical stores since 2003; complaints are service/shipping, not fraud."
+ },
+ {
+  "id": "ssairsoft",
+  "name": "SS Airsoft",
+  "kind": "store",
+  "url": "https://store.ssairsoft.com",
+  "official": "web search cross-check (Nov 2026) (ssairsoft.com links to store.ssairsoft.com)",
+  "reputation": "Reddit mixed-to-positive; directory reviews positive; Atlanta shop",
+  "manual": {
+   "lookalike": "distinct business from US Airsoft (usairsoft.com); both confirmed official"
+  }
+ },
+ {
+  "id": "extremeri",
+  "name": "Extreme Airsoft RI",
+  "kind": "store",
+  "url": "https://extremeairsoftri.com",
+  "official": "web search cross-check (Nov 2026); Facebook /extremeri; 1425 Kingstown Rd, South Kingstown RI",
+  "reputation": "Local reviews praise staff and pro shop"
+ },
+ {
+  "id": "vipairsoft",
+  "name": "VIP Airsoft",
+  "kind": "store",
+  "url": "https://vipairsoft.myshopify.com",
+  "official": "web search cross-check (Nov 2026); vipairsoft.net (arena) shop links; policies list 3841 E Baseline Rd, Gilbert AZ",
+  "reputation": "Yelp/Loc8 reviews: pro shop praised"
+ },
+ {
+  "id": "blackopsnc",
+  "name": "Black Ops Paintball & Airsoft (NC)",
+  "kind": "store",
+  "url": "https://blackopswebstore.com",
+  "official": "web search cross-check (Nov 2026); blackopspaintball.org contact page lists this store, 2112 River Rd Fayetteville NC",
+  "reputation": "Tripadvisor/Loc8: pro shop well regarded"
+ },
+ {
+  "id": "polarstar",
+  "name": "PolarStar Airsoft",
+  "kind": "store",
+  "url": "https://polarstarairsoft.com",
+  "official": "web search cross-check (Nov 2026); manufacturer site referenced by Evike product pages",
+  "reputation": "Established HPA manufacturer; 121 product reviews on its F2 kit"
+ },
+ {
+  "id": "primary",
+  "name": "Primary Airsoft",
+  "kind": "store",
+  "url": "https://primaryairsoft.us",
+  "official": "web search cross-check (Nov 2026) (US shop; EU shop is primaryairsoft.eu)",
+  "reputation": "r/Speedsoft & r/airsoft: adapters regarded as reliable, responsive support",
+  "manual": {
+   "contact": "93 London Drive, Hamden CT 06517 and info@primaryairsoft.us in its refund policy (no separate contact page)"
+  }
+ },
+ {
+  "id": "taccity",
+  "name": "Tac City Airsoft",
+  "kind": "store",
+  "url": "https://taccityairsoft.com",
+  "official": "web search cross-check (Nov 2026); 2430 Artesia Ave, Fullerton CA",
+  "reputation": "Arena reviews mixed (refereeing); pro shop legit"
+ },
+ {
+  "id": "krytac",
+  "name": "Krytac",
+  "kind": "excluded",
+  "url": "https://krytac.com",
+  "official": "web search cross-check (Nov 2026); manufacturer",
+  "reputation": "Established US airsoft manufacturer",
+  "why": "No return or shipping policy found for direct online orders (only a warranty page that routes RMAs to Evike)."
+ },
+ {
+  "id": "umarex",
+  "name": "Umarex USA (Elite Force)",
+  "kind": "store",
+  "url": "https://www.umarexusa.com",
+  "official": "web search cross-check (Nov 2026); parent of the Elite Force airsoft brand",
+  "reputation": "Trustpilot 4.2 (4,284)"
+ },
+ {
+  "id": "evike",
+  "name": "Evike.com",
+  "kind": "link",
+  "url": "https://www.evike.com",
+  "why": "Cloudflare bot check on every page",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.4 (8,324)",
+  "manual": {
+   "contact": "Address/phone in Trustpilot & search listings (pages blocked to our checker)",
+   "policies": "Return/shipping/privacy pages listed in search results"
+  }
+ },
+ {
+  "id": "mirtactical",
+  "name": "MiR Tactical",
+  "kind": "link",
+  "url": "https://mirtactical.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Birdeye 4.5; one 2026 Reddit \"sketchy\" post, otherwise buyers report no issues"
+ },
+ {
+  "id": "airsoftjunkiez",
+  "name": "Airsoft Junkiez",
+  "kind": "link",
+  "url": "https://www.airsoftjunkiez.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "r/airsoft: generally legit, some delays"
+ },
+ {
+  "id": "usairsoft",
+  "name": "US Airsoft",
+  "kind": "excluded",
+  "url": "https://www.usairsoft.com",
+  "why": "Site is a JavaScript app; return/shipping/privacy policies could not be confirmed.",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Long-running California store; no scam reports found"
+ },
+ {
+  "id": "novritsch",
+  "name": "Novritsch (US)",
+  "kind": "link",
+  "url": "https://us.novritsch.com",
+  "why": "bot-verification page; robots.txt disallows its API and search",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.5 (1,412)",
+  "manual": {
+   "contact": "Contact details on novritsch.com (pages blocked to our checker)",
+   "policies": "Policies listed in search results"
+  }
+ },
+ {
+  "id": "taiwangun",
+  "name": "Taiwangun",
+  "kind": "link",
+  "url": "https://www.taiwangun.com",
+  "why": "captcha on search pages; prices in EUR/PLN",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 4.1 (724)",
+  "manual": {
+   "policies": "taiwangun.com/terms-of-use.html (30-day returns), /privacy-policy.html, /cost-of-delivery.html"
+  }
+ },
+ {
+  "id": "jkarmy",
+  "name": "JK Army",
+  "kind": "link",
+  "url": "https://www.jkarmy.com",
+  "why": "Cloudflare bot check on every page",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Trustpilot 3.1 (5 reviews); HK retailer since 2009",
+  "manual": {
+   "contact": "HK address in search listings (pages blocked)",
+   "policies": "Not verifiable through the bot check"
+  }
+ },
+ {
+  "id": "eastcoastairsoft",
+  "name": "East Coast Airsoft",
+  "kind": "link",
+  "url": "https://eastcoastairsoft.com",
+  "why": "products load by JavaScript from a disallowed /api",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "r/airsoft: positive local reports",
+  "manual": {
+   "policies": "eastcoastairsoft.com/products/pages/returns and /products/pages/privacy-policy"
+  }
+ },
+ {
+  "id": "nashvilleairsoft",
+  "name": "Nashville Airsoft",
+  "kind": "link",
+  "url": "https://nashvilleairsoft.com",
+  "why": "JavaScript store widget, no product feed",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "4.3 (588 reviews)",
+  "manual": {
+   "policies": "nashvilleairsoft.com/shipping and /tos (returns, shipping, privacy)"
+  }
+ },
+ {
+  "id": "sniperas",
+  "name": "Sniper Airsoft (DE)",
+  "kind": "link",
+  "url": "https://www.sniper-as.de",
+  "why": "EU store priced in EUR",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Google 4.6 (1,086); Trustpilot 3.0 (150)",
+  "manual": {
+   "age": ".de registry publishes no creation date; Sniper-Airsoft Supply GmbH has 1,086 Google reviews (long-running)",
+   "contact": "Impressum page (sniper-as.de/informationen/impressum/), showroom in Pirmasens",
+   "policies": "Widerrufsrecht/R\u00fcckgabe, Versand and Datenschutz pages linked in the footer"
+  }
+ },
+ {
+  "id": "survivalmode",
+  "name": "Survival Mode Tactical",
+  "kind": "link",
+  "url": "https://thesurvivalmode.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026); 16931 Chamber Springs Rd, Siloam Springs AR",
+  "reputation": "Runs SMT Airsoft field (4.9 Google, 100+ reviews)"
+ },
+ {
+  "id": "stampede",
+  "name": "Stampede Tactical (Holy Cowz Airsoft)",
+  "kind": "link",
+  "url": "https://stampedetactical.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026); Holy Cowz Airsoft field listing links here, New Port Richey FL",
+  "reputation": "Holy Cowz field 4.8 (206 reviews)"
+ },
+ {
+  "id": "airsoftmaster",
+  "name": "Airsoft Master",
+  "kind": "excluded",
+  "url": "https://www.airsoftmaster.com",
+  "why": "No privacy policy page found (terms cover shipping/returns only).",
+  "official": "web search cross-check (Nov 2026); Yelp: 14750 Nelson Ave E, City of Industry CA",
+  "reputation": "Yelp 101 reviews"
+ },
+ {
+  "id": "strikeforce",
+  "name": "StrikeForce Sports",
+  "kind": "field",
+  "url": "https://www.strikeforcesports.net",
+  "official": "web search cross-check (Nov 2026); 125 Route 110, Farmingdale NY",
+  "reputation": "Long Island indoor arena & pro shop",
+  "note": "Farmingdale, NY (indoor arena & pro shop)"
+ },
+ {
+  "id": "ricochet",
+  "name": "Ricochet Tactical",
+  "kind": "field",
+  "url": "https://ricochettactical.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "No complaints found",
+  "note": "Levittown, NY (arena & shop)"
+ },
+ {
+  "id": "kwa",
+  "name": "KWA USA",
+  "kind": "link",
+  "url": "https://store.kwausa.com",
+  "why": "Cloudflare bot check",
+  "official": "web search cross-check (Nov 2026); manufacturer",
+  "reputation": "Established US manufacturer since 2003",
+  "manual": {
+   "contact": "Address/phone on kwausa.com (store pages blocked to our checker)",
+   "policies": "Store policies listed in search results"
+  }
+ },
+ {
+  "id": "gg",
+  "name": "G&G Armament (101 Tech USA)",
+  "kind": "link",
+  "url": "https://101techusa.com",
+  "why": "robots.txt disallows its search",
+  "official": "web search cross-check (Nov 2026): 101 Tech USA is G&G's sole direct US distributor (guay2.com is behind a bot check)",
+  "reputation": "Official distributor"
+ },
+ {
+  "id": "eliteforce",
+  "name": "Elite Force Airsoft",
+  "kind": "link",
+  "url": "https://www.eliteforceairsoft.com",
+  "why": "no search results page; its items are price-checked through Umarex USA (same company)",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Umarex USA brand"
+ },
+ {
+  "id": "lancer",
+  "name": "Lancer Tactical",
+  "kind": "excluded",
+  "url": "https://www.lancertactical.com",
+  "why": "No privacy policy page found on its Wix store (returns are only described in its FAQ).",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Established US brand"
+ },
+ {
+  "id": "pts",
+  "name": "PTS Syndicate",
+  "kind": "link",
+  "url": "https://www.ptssyndicate.com",
+  "why": "brand site with no product feed",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Established brand (Hong Kong)",
+  "manual": {
+   "policies": "n/a (brand site, does not sell direct)"
+  }
+ },
+ {
+  "id": "asg",
+  "name": "ActionSportGames (ASG)",
+  "kind": "excluded",
+  "url": "https://actionsportgames.com",
+  "why": "Brand distributor site with no address/phone we could confirm and no direct sales.",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Large licensed-replica distributor (Denmark)"
+ },
+ {
+  "id": "ansgear",
+  "name": "ANSgear",
+  "kind": "link",
+  "url": "https://ansgear.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Long-running paintball/airsoft retailer (domain 2005)"
+ },
+ {
+  "id": "pyramydair",
+  "name": "Pyramyd AIR",
+  "kind": "link",
+  "url": "https://www.pyramydair.com",
+  "why": "no plain search page or public feed; mostly pellet airguns",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Major US airgun retailer since 1998"
+ },
+ {
+  "id": "airgundepot",
+  "name": "Airgun Depot",
+  "kind": "link",
+  "url": "https://www.airgundepot.com",
+  "why": "robots.txt disallows its search",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Major US airgun retailer since 2002"
+ },
+ {
+  "id": "skd",
+  "name": "SKD Tactical",
+  "kind": "link",
+  "url": "https://skdtac.com",
+  "why": "robots.txt disallows its search (search.php)",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Long-running tactical retailer (domain 1999)"
+ },
+ {
+  "id": "opticsplanet",
+  "name": "OpticsPlanet",
+  "kind": "link",
+  "url": "https://www.opticsplanet.com",
+  "why": "bot check (\"Before we continue\")",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Major US optics retailer since 2000",
+  "manual": {
+   "contact": "Address/phone in search listings (pages blocked to our checker)",
+   "policies": "Policies listed in search results"
+  }
+ },
+ {
+  "id": "battalion",
+  "name": "Battalion Airsoft Arena",
+  "kind": "field",
+  "url": "https://www.battalionairsoftarena.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Jacksonville, FL"
+ },
+ {
+  "id": "gamepod",
+  "name": "Gamepod Combat Zone",
+  "kind": "field",
+  "url": "https://combatzonecqc.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Antioch, CA"
+ },
+ {
+  "id": "wcap",
+  "name": "West Coast Adventure Park",
+  "kind": "field",
+  "url": "https://westcoastadventurepark.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "California"
+ },
+ {
+  "id": "miamiairsoft",
+  "name": "Miami Airsoft",
+  "kind": "field",
+  "url": "https://miamiairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Miami, FL (indoor arena)"
+ },
+ {
+  "id": "raptor",
+  "name": "Raptor Airsoft",
+  "kind": "field",
+  "url": "https://raptorairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Field"
+ },
+ {
+  "id": "highground",
+  "name": "High Ground Airsoft",
+  "kind": "field",
+  "url": "https://highgroundairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Spring, TX"
+ },
+ {
+  "id": "motorcity",
+  "name": "Motor City Airsoft",
+  "kind": "field",
+  "url": "https://www.motorcityairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Michigan",
+  "manual": {
+   "contact": "phone 586-307-5190 on the home page"
+  }
+ },
+ {
+  "id": "gunnys",
+  "name": "Gunny's Warfare Center",
+  "kind": "field",
+  "url": "https://www.gunnyswarfarecenter.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Marshville, NC"
+ },
+ {
+  "id": "futureball",
+  "name": "Futureball",
+  "kind": "field",
+  "url": "https://www.futureball.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Whitmore Lake, MI"
+ },
+ {
+  "id": "thunderkiss",
+  "name": "Thunder Kiss NW",
+  "kind": "excluded",
+  "url": "https://www.thunderkissnw.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Vancouver, WA",
+  "why": "Contact page and home page show no address or phone we could confirm."
+ },
+ {
+  "id": "xtremekombat",
+  "name": "Xtreme Kombat (Xtreme Adventure Park)",
+  "kind": "field",
+  "url": "https://xtremeparkadventures.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Raleigh-Durham, NC (xtremekombat.com redirects here)"
+ },
+ {
+  "id": "878airsoft",
+  "name": "878 Airsoft",
+  "kind": "field",
+  "url": "https://878airsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Field & shop"
+ },
+ {
+  "id": "forestfire",
+  "name": "ForestFire Airsoft",
+  "kind": "field",
+  "url": "https://forestfireairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Field"
+ },
+ {
+  "id": "powerops",
+  "name": "Power Ops Airsoft",
+  "kind": "field",
+  "url": "https://www.poweropsairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Madison, GA"
+ },
+ {
+  "id": "d14",
+  "name": "D14 Airsoft",
+  "kind": "field",
+  "url": "https://d14airsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Sanger, TX"
+ },
+ {
+  "id": "ubg",
+  "name": "UBG Airsoft",
+  "kind": "field",
+  "url": "https://ubgllc.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Bridgewater, MA (field & pro shop)"
+ },
+ {
+  "id": "txpb",
+  "name": "Texas Paintball & Airsoft",
+  "kind": "field",
+  "url": "https://www.txpb.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Jonestown, TX",
+  "manual": {
+   "contact": "18300 Medina Vista Lane, Jonestown TX 78645, 512-257-8728 on txpb.com/contact"
+  }
+ },
+ {
+  "id": "replay",
+  "name": "Replay Airsoft",
+  "kind": "field",
+  "url": "https://www.replayairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Glen Burnie, MD (arena & retail)"
+ },
+ {
+  "id": "blackopswi",
+  "name": "Black Ops Airsoft",
+  "kind": "field",
+  "url": "https://www.blackops-airsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Bristol, WI",
+  "manual": {
+   "contact": "Site title/contact pages show Bristol, Wisconsin 53104; airsoftc3 listing confirms"
+  }
+ },
+ {
+  "id": "paintballstation",
+  "name": "Paintball & Airsoft Station (WA)",
+  "kind": "field",
+  "url": "https://www.paintballstation.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Mount Vernon, WA (Airsoft Acres)"
+ },
+ {
+  "id": "tas801",
+  "name": "Tactical Airsoft Supply / Airsoft Arena",
+  "kind": "field",
+  "url": "https://801airsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Salt Lake City, UT (tacticalairsoftsupply.com redirects here)"
+ },
+ {
+  "id": "modernairsoft",
+  "name": "Modern Airsoft",
+  "kind": "field",
+  "url": "https://modernairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "note": "Oceanside & Alpine, CA"
+ },
+ {
+  "id": "hopup",
+  "name": "HopUp",
+  "kind": "marketplace",
+  "url": "https://www.hopupairsoft.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Largest US airsoft buy/sell app"
+ },
+ {
+  "id": "ebay",
+  "name": "eBay",
+  "kind": "marketplace",
+  "url": "https://www.ebay.com",
+  "official": "well-known",
+  "reputation": "Major marketplace",
+  "manual": {
+   "contact": "Corporate (San Jose CA)",
+   "policies": "Money Back Guarantee, privacy"
+  }
+ },
+ {
+  "id": "gunbroker",
+  "name": "GunBroker",
+  "kind": "marketplace",
+  "url": "https://www.gunbroker.com",
+  "official": "well-known",
+  "reputation": "Major US auction site since 1999",
+  "manual": {
+   "contact": "Corporate contact on site (blocked to our checker)",
+   "policies": "User agreement & privacy (blocked to our checker)"
+  }
+ },
+ {
+  "id": "reddit",
+  "name": "r/airsoftmarket (Reddit)",
+  "kind": "marketplace",
+  "url": "https://www.reddit.com",
+  "official": "well-known",
+  "reputation": "Community marketplace; check seller feedback",
+  "manual": {
+   "contact": "Reddit Inc.",
+   "policies": "User agreement & privacy"
+  }
+ },
+ {
+  "id": "facebook",
+  "name": "Facebook Marketplace / groups",
+  "kind": "marketplace",
+  "url": "https://www.facebook.com",
+  "official": "well-known",
+  "reputation": "Local listings; meet safely",
+  "manual": {
+   "contact": "Meta Platforms",
+   "policies": "Commerce policies & privacy"
+  }
+ },
+ {
+  "id": "replicaairguns",
+  "name": "ReplicaAirguns",
+  "kind": "review",
+  "url": "https://www.replicaairguns.com",
+  "official": "web search cross-check (Nov 2026)",
+  "reputation": "Long-running review blog (2010)"
+ },
+ {
+  "id": "opsgear",
+  "name": "OPSGEAR",
+  "kind": "excluded",
+  "url": "https://opsgear.com",
+  "why": "Reputation: Trustpilot 2.9 (1,076) with shipping/no-tracking complaints, Yelp lists it closed (1.3), a forum \"scam\" thread; no address/phone on the site."
+ },
+ {
+  "id": "monkcustoms",
+  "name": "Monk Customs (US)",
+  "kind": "excluded",
+  "url": "https://monkcustoms-usa.com",
+  "why": "Reputation: Reddit reports of wrong/undelivered orders and unresponsive support; no address or phone on the site."
+ },
+ {
+  "id": "tapp",
+  "name": "Tapp Airsoft",
+  "kind": "excluded",
+  "url": "https://tappairsoft.com",
+  "why": "No business address or phone anywhere on the site or its policies (email only)."
+ },
+ {
+  "id": "realdeal",
+  "name": "The Real Deal Airsoft",
+  "kind": "excluded",
+  "url": "https://www.therealdealairsoft.com",
+  "why": "No refund, shipping or privacy policy pages."
+ },
+ {
+  "id": "umbrella",
+  "name": "Umbrella Armory",
+  "kind": "excluded",
+  "url": "https://umbrellaarmory.com",
+  "why": "umbrellaarmory.com now redirects to an unrelated German .eu site; the official domain could not be confirmed."
+ },
+ {
+  "id": "valken",
+  "name": "Valken Sports",
+  "kind": "excluded",
+  "url": "https://www.valken.com",
+  "why": "HTTPS handshake fails (from our box and an outside fetcher), so a valid certificate could not be confirmed."
+ },
+ {
+  "id": "lacapa",
+  "name": "LA Capa Customs",
+  "kind": "excluded",
+  "url": "https://lacapacustoms.com",
+  "why": "HTTPS handshake fails (from our box and an outside fetcher)."
+ },
+ {
+  "id": "codered",
+  "name": "Code Red Airsoft Park",
+  "kind": "excluded",
+  "url": "https://www.coderedairsoftpark.com",
+  "why": "No working HTTPS (site is served over plain http only)."
+ },
+ {
+  "id": "ohiovalley",
+  "name": "Ohio Valley Airsoft",
+  "kind": "excluded",
+  "url": "https://ohiovalleyairsoft.com",
+  "why": "TLS certificate does not match the domain."
+ },
+ {
+  "id": "cartcon1",
+  "name": "CartCon1 Airsoft",
+  "kind": "excluded",
+  "url": "https://battleridgeairsoft.com",
+  "why": "cartcon1 domains redirect to a different name (Battle Ridge) behind a bot check; could not confirm it is the same business."
+ },
+ {
+  "id": "frontierfortress",
+  "name": "Frontier Fortress",
+  "kind": "excluded",
+  "url": "https://frontierfortress.com",
+  "why": "Domain shows a blank page and is not the site listed for the field (only directory/Facebook listings); official site not confirmed."
+ },
+ {
+  "id": "camprr",
+  "name": "Camp R&R",
+  "kind": "excluded",
+  "url": "https://www.camprandr.com",
+  "why": "Site returns a server error (HTTP 500) to every request; could not be checked."
+ },
+ {
+  "id": "uspatriot",
+  "name": "US Patriot Tactical",
+  "kind": "excluded",
+  "url": "https://www.uspatriottactical.com",
+  "why": "Not an airsoft store (military uniforms and boots); its product JSON is closed."
+ },
+ {
+  "id": null,
+  "name": "Full Auto Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "faairsoft.com shows \"This store is unavailable\" (Shopify store closed)"
+ },
+ {
+  "id": null,
+  "name": "Airsoft Gateway",
+  "kind": "skipped",
+  "url": null,
+  "why": "airsoftgateway.com Shopify store is \"Unavailable Shop\""
+ },
+ {
+  "id": null,
+  "name": "Sector 7 Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "sector7airsoft.com is a parked domain; no other site found"
+ },
+ {
+  "id": null,
+  "name": "Stampede Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "stampedeairsoft.com is parked; the business is Stampede Tactical (linked)"
+ },
+ {
+  "id": null,
+  "name": "UBG Airsoft (ubgairsoft.com)",
+  "kind": "skipped",
+  "url": null,
+  "why": "ubgairsoft.com is parked; the business uses ubgllc.com (linked)"
+ },
+ {
+  "id": null,
+  "name": "Dreadnought Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "permanently closed"
+ },
+ {
+  "id": null,
+  "name": "Stryker Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "permanently closed June 2024 (site is now StrikeForce NJ)"
+ },
+ {
+  "id": null,
+  "name": "Cincinnati Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no website found (only a 2009 LLC registration)"
+ },
+ {
+  "id": null,
+  "name": "Palmetto Edge Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no website found"
+ },
+ {
+  "id": null,
+  "name": "Wild West Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no website found (Reddit mentions only)"
+ },
+ {
+  "id": null,
+  "name": "Allstar Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no website found (directory listings only)"
+ },
+ {
+  "id": null,
+  "name": "Ambush Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no US website found (ambushairsoft.com does not exist; a UK field uses .co.uk)"
+ },
+ {
+  "id": null,
+  "name": "Zulu 24 Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "Facebook/Instagram only"
+ },
+ {
+  "id": null,
+  "name": "Poco Loco Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "Facebook only"
+ },
+ {
+  "id": null,
+  "name": "Holy Cowz Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "Facebook only; its shop is Stampede Tactical (linked)"
+ },
+ {
+  "id": null,
+  "name": "Bloomies Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no own website (sells through HopUp)"
+ },
+ {
+  "id": null,
+  "name": "Sherlock Tech",
+  "kind": "skipped",
+  "url": null,
+  "why": "no airsoft business found under this name"
+ },
+ {
+  "id": null,
+  "name": "AEX Portland",
+  "kind": "skipped",
+  "url": null,
+  "why": "no such store; AEX (Airsoft Extreme) is California-only and already live"
+ },
+ {
+  "id": null,
+  "name": "American Airsoft",
+  "kind": "skipped",
+  "url": null,
+  "why": "no matching business; americanairsoftfactory.com does not resolve"
+ },
+ {
+  "id": null,
+  "name": "Survival Mode Airsoft (survivalmodeairsoft.com)",
+  "kind": "skipped",
+  "url": null,
+  "why": "domain does not exist; the business is thesurvivalmode.com (linked)"
+ }
+]

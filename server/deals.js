@@ -1,3 +1,4 @@
+const { isVetted } = require('./vetting');
 // Deal detection, categories, and cross-store grouping ("the same product at different stores").
 const { thumb } = require('./http');
 const history = require('./history');
@@ -52,6 +53,9 @@ function judge(p, store) {
   return a.ok ? { ok: true, cat: c.cat } : { ok: false, reason: a.reason };
 }
 function prep(p, store) {
+  // Outbound links must point at a vetted domain, and absurd prices (joke listings like $69,420) are dropped.
+  if (p.url && !/^https?:/i.test(p.url) && store.base) { try { p.url = new URL(p.url, store.base + '/').toString(); } catch { /* left as is */ } }
+  if (!isVetted(p.url) || !(p.price > 0 && p.price < 15000)) return null;
   const j = judge(p, store);
   const url = p.url || p.title;
   if (!j.ok) {

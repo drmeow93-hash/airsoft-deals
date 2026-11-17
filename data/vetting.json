@@ -1,0 +1,3793 @@
+{
+ "generatedAt": "2026-11-17T05:53:59.774Z",
+ "method": "scripts/vet.js — DNS over HTTPS, HTTPS fetch, RDAP registration date, contact & policy pages, Shopify/WooCommerce price sample, lookalike check, public blocklists; official-domain and reputation evidence recorded per entry from web searches (Trustpilot, BBB, Reddit, Yelp/Google listings, brand and distributor pages).",
+ "rule": "Only entries with status \"pass\" are scraped or linked by the app. Anything failing or doubtful is excluded entirely.",
+ "blocklists": {
+  "HaGeZi Fake (scam shops)": 18777,
+  "HaGeZi Threat Intelligence (mini)": 182751,
+  "BlocklistProject Scam": 8527,
+  "BlocklistProject Fraud": 256268,
+  "BlocklistProject Phishing": 190215,
+  "Phishing.Database (active)": 392082,
+  "OpenPhish": 269
+ },
+ "counts": {
+  "store:pass": 24,
+  "excluded:fail": 20,
+  "link:pass": 20,
+  "field:pass": 23,
+  "marketplace:pass": 5,
+  "review:pass": 1,
+  "skipped:skipped": 20
+ },
+ "entries": [
+  {
+   "id": "airsoftatlanta",
+   "name": "Airsoft Atlanta",
+   "kind": "store",
+   "url": "https://www.airsoftatlanta.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2000-05-03",
+    "ageDays": 9694,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Birdeye listing for the Doraville GA store links here",
+   "reputation": "Birdeye 452 reviews, generally positive; r/airsoft \"is airsoftatlanta.com legit\" thread: yes, fast shipping",
+   "host": "www.airsoftatlanta.com",
+   "allow": [
+    "airsoftatlanta.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airsoftnmore",
+   "name": "Airsoft N More",
+   "kind": "store",
+   "url": "https://airsoftnmore.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-08-26",
+    "ageDays": 6292,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); BBB profile (Los Angeles) lists this domain",
+   "reputation": "MIXED: BBB B- (one unanswered complaint); good local reviews; old forum complaints about slow online-order replies. Real LA storefront since 2009.",
+   "host": "airsoftnmore.com",
+   "allow": [
+    "airsoftnmore.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "speedqb",
+   "name": "SpeedQB",
+   "kind": "store",
+   "url": "https://www.speedqb.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-06-10",
+    "ageDays": 4908,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 95,
+     "deep60offPct": 12,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Wolverine/SpeedQB product pages link here",
+   "reputation": "Well-known US HPA/gear brand; no scam reports found",
+   "host": "www.speedqb.com",
+   "allow": [
+    "speedqb.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "foxairsoft",
+   "name": "Fox Airsoft",
+   "kind": "store",
+   "url": "https://www.foxairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2006-02-11",
+    "ageDays": 7584,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 3.4 (few reviews); long-running US retailer, no scam reports",
+   "host": "www.foxairsoft.com",
+   "allow": [
+    "foxairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ballahack",
+   "name": "Ballahack Airsoft",
+   "kind": "store",
+   "url": "https://www.ballahackairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2007-08-15",
+    "ageDays": 7034,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "MIXED: 4.8/5 public ratings; a 2024 r/airsoft thread raises customer-service/staffing concerns",
+   "host": "www.ballahackairsoft.com",
+   "allow": [
+    "ballahackairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "brill",
+   "name": "Brill Armory",
+   "kind": "store",
+   "url": "https://brillarmory.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-05-13",
+    "ageDays": 4936,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": "manual: Brill Armory LLC, 3600 Fletcher Dr, Los Angeles CA 90065 (CA company registry); phone (914) 420-3917 (business listing); contact page brillarmory.com/pages/contact",
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "r/airsoft: regarded as a reliable parts retailer",
+   "host": "brillarmory.com",
+   "allow": [
+    "brillarmory.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "echo1",
+   "name": "Echo1 USA",
+   "kind": "store",
+   "url": "https://echo1usa.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2006-10-02",
+    "ageDays": 7351,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); brand site of Echo1/JAG Arms",
+   "reputation": "Established US airsoft brand; no scam reports",
+   "host": "echo1usa.com",
+   "allow": [
+    "echo1usa.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "wgc",
+   "name": "WGC Shop",
+   "kind": "store",
+   "url": "https://wgcshop.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2003-02-02",
+    "ageDays": 8689,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": false,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot listing; r/airsoft & r/GasBlowBack: legit HK retailer, mixed service, slow dispatch at times",
+   "host": "wgcshop.com",
+   "allow": [
+    "wgcshop.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "redwolf",
+   "name": "RedWolf Airsoft",
+   "kind": "store",
+   "url": "https://www.redwolfairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "1999-04-27",
+    "ageDays": 10066,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.0 (190); complaints are about slow international shipping",
+   "host": "www.redwolfairsoft.com",
+   "allow": [
+    "redwolfairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "clandestine",
+   "name": "Clandestine Airsoft",
+   "kind": "excluded",
+   "url": "https://www.clandestineairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-06-16",
+    "ageDays": 5633,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "r/airsoft & MiA forum: well regarded, fast shipping",
+   "why": "No business address or phone on the site (contact form/email only) and none found in business listings; previously a live store, now removed.",
+   "host": "www.clandestineairsoft.com",
+   "allow": [
+    "clandestineairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: No business address or phone on the site (contact form/email only) and none found in business listings; previously a live store, now removed.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "airsoftstation",
+   "name": "Airsoft Station",
+   "kind": "store",
+   "url": "https://airsoftstation.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2007-03-22",
+    "ageDays": 7180,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.5; 4.7 local rating",
+   "host": "airsoftstation.com",
+   "allow": [
+    "airsoftstation.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "megastore",
+   "name": "Airsoft Megastore",
+   "kind": "store",
+   "url": "https://www.airsoftmegastore.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2007-06-25",
+    "ageDays": 7085,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); BBB profile (Santa Fe Springs CA)",
+   "reputation": "MIXED: Trustpilot 2.6 (149), BBB not rated (2 complaints in 3 yrs). Long-running real retailer (domain 2007), not a scam.",
+   "host": "www.airsoftmegastore.com",
+   "allow": [
+    "airsoftmegastore.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "wolverine",
+   "name": "Wolverine Airsoft",
+   "kind": "store",
+   "url": "https://www.wolverineairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2013-10-31",
+    "ageDays": 4765,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Contact & policy pages exist (Cloudflare check blocks our page fetch; checked via search results)",
+    "policies": "manual: Warranty/returns/privacy pages listed in search results",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); HPA maker, sold by SpeedQB/Evike",
+   "reputation": "Established HPA manufacturer; no scam reports",
+   "host": "www.wolverineairsoft.com",
+   "allow": [
+    "wolverineairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ehobbyasia",
+   "name": "eHobbyAsia",
+   "kind": "store",
+   "url": "https://www.ehobbyasia.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2004-04-28",
+    "ageDays": 8238,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.0 (64); r/airsoft: legit since early 2000s; some refund/support complaints",
+   "host": "www.ehobbyasia.com",
+   "allow": [
+    "ehobbyasia.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airsoftextreme",
+   "name": "Airsoft Extreme (AEX)",
+   "kind": "store",
+   "url": "https://www.airsoftextreme.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2000-01-17",
+    "ageDays": 9801,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Warhead distributor list links here",
+   "reputation": "Oldest US airsoft retail chain, 4 California stores",
+   "host": "www.airsoftextreme.com",
+   "allow": [
+    "airsoftextreme.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "amped",
+   "name": "Amped Airsoft",
+   "kind": "store",
+   "url": "https://ampedairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2007-08-03",
+    "ageDays": 7046,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "manual: ampedairsoft.com/privacy-policy/ and /Shipping-and-Return-Policy/ (privacy page also lists 2250 Noblestown Rd, Pittsburgh PA, (724) 366-6590)",
+    "policyPages": {
+     "refund": true,
+     "privacy": false,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); BBB profile (Pittsburgh)",
+   "reputation": "BBB A+; Trustpilot 3.8",
+   "host": "ampedairsoft.com",
+   "allow": [
+    "ampedairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airsoftgi",
+   "name": "Airsoft GI",
+   "kind": "store",
+   "url": "https://www.airsoftgi.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2003-03-29",
+    "ageDays": 8634,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "MIXED: Trustpilot 2.3 (1,851), BBB D-. Large real retailer with physical stores since 2003; complaints are service/shipping, not fraud.",
+   "host": "www.airsoftgi.com",
+   "allow": [
+    "airsoftgi.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ssairsoft",
+   "name": "SS Airsoft",
+   "kind": "store",
+   "url": "https://store.ssairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-10-21",
+    "ageDays": 6236,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 1,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": "reviewed: distinct business from US Airsoft (usairsoft.com); both confirmed official",
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026) (ssairsoft.com links to store.ssairsoft.com)",
+   "reputation": "Reddit mixed-to-positive; directory reviews positive; Atlanta shop",
+   "host": "store.ssairsoft.com",
+   "allow": [
+    "ssairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "extremeri",
+   "name": "Extreme Airsoft RI",
+   "kind": "store",
+   "url": "https://extremeairsoftri.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-12-13",
+    "ageDays": 4722,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 1,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Facebook /extremeri; 1425 Kingstown Rd, South Kingstown RI",
+   "reputation": "Local reviews praise staff and pro shop",
+   "host": "extremeairsoftri.com",
+   "allow": [
+    "extremeairsoftri.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "vipairsoft",
+   "name": "VIP Airsoft",
+   "kind": "store",
+   "url": "https://vipairsoft.myshopify.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2006-03-03",
+    "ageDays": 7564,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); vipairsoft.net (arena) shop links; policies list 3841 E Baseline Rd, Gilbert AZ",
+   "reputation": "Yelp/Loc8 reviews: pro shop praised",
+   "host": "vipairsoft.myshopify.com",
+   "allow": [
+    "vipairsoft.myshopify.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "blackopsnc",
+   "name": "Black Ops Paintball & Airsoft (NC)",
+   "kind": "store",
+   "url": "https://blackopswebstore.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2017-12-09",
+    "ageDays": 3265,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); blackopspaintball.org contact page lists this store, 2112 River Rd Fayetteville NC",
+   "reputation": "Tripadvisor/Loc8: pro shop well regarded",
+   "host": "blackopswebstore.com",
+   "allow": [
+    "blackopswebstore.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "polarstar",
+   "name": "PolarStar Airsoft",
+   "kind": "store",
+   "url": "https://polarstarairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-02-25",
+    "ageDays": 6474,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 161,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); manufacturer site referenced by Evike product pages",
+   "reputation": "Established HPA manufacturer; 121 product reviews on its F2 kit",
+   "host": "polarstarairsoft.com",
+   "allow": [
+    "polarstarairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "primary",
+   "name": "Primary Airsoft",
+   "kind": "store",
+   "url": "https://primaryairsoft.us",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2018-12-07",
+    "ageDays": 2902,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": false,
+    "contact": "manual: 93 London Drive, Hamden CT 06517 and info@primaryairsoft.us in its refund policy (no separate contact page)",
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 35,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026) (US shop; EU shop is primaryairsoft.eu)",
+   "reputation": "r/Speedsoft & r/airsoft: adapters regarded as reliable, responsive support",
+   "host": "primaryairsoft.us",
+   "allow": [
+    "primaryairsoft.us"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "taccity",
+   "name": "Tac City Airsoft",
+   "kind": "store",
+   "url": "https://taccityairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-06-06",
+    "ageDays": 6373,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": {
+     "sample": 250,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); 2430 Artesia Ave, Fullerton CA",
+   "reputation": "Arena reviews mixed (refereeing); pro shop legit",
+   "host": "taccityairsoft.com",
+   "allow": [
+    "taccityairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "krytac",
+   "name": "Krytac",
+   "kind": "excluded",
+   "url": "https://krytac.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-03-13",
+    "ageDays": 4997,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); manufacturer",
+   "reputation": "Established US airsoft manufacturer",
+   "why": "No return or shipping policy found for direct online orders (only a warranty page that routes RMAs to Evike).",
+   "host": "krytac.com",
+   "allow": [
+    "krytac.com"
+   ],
+   "failed": [
+    "excluded after review: No return or shipping policy found for direct online orders (only a warranty page that routes RMAs to Evike)."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "umarex",
+   "name": "Umarex USA (Elite Force)",
+   "kind": "store",
+   "url": "https://www.umarexusa.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2006-01-11",
+    "ageDays": 7615,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); parent of the Elite Force airsoft brand",
+   "reputation": "Trustpilot 4.2 (4,284)",
+   "host": "www.umarexusa.com",
+   "allow": [
+    "umarexusa.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "evike",
+   "name": "Evike.com",
+   "kind": "link",
+   "url": "https://www.evike.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2003-09-13",
+    "ageDays": 8466,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Address/phone in Trustpilot & search listings (pages blocked to our checker)",
+    "policies": "manual: Return/shipping/privacy pages listed in search results",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.4 (8,324)",
+   "why": "Cloudflare bot check on every page",
+   "host": "www.evike.com",
+   "allow": [
+    "evike.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "mirtactical",
+   "name": "MiR Tactical",
+   "kind": "link",
+   "url": "https://mirtactical.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-06-17",
+    "ageDays": 5632,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Birdeye 4.5; one 2026 Reddit \"sketchy\" post, otherwise buyers report no issues",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "mirtactical.com",
+   "allow": [
+    "mirtactical.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airsoftjunkiez",
+   "name": "Airsoft Junkiez",
+   "kind": "link",
+   "url": "https://www.airsoftjunkiez.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-09-23",
+    "ageDays": 5534,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "r/airsoft: generally legit, some delays",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "www.airsoftjunkiez.com",
+   "allow": [
+    "airsoftjunkiez.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "usairsoft",
+   "name": "US Airsoft",
+   "kind": "excluded",
+   "url": "https://www.usairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2006-03-26",
+    "ageDays": 7541,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": [
+     "ssairsoft.com"
+    ],
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Long-running California store; no scam reports found",
+   "why": "Site is a JavaScript app; return/shipping/privacy policies could not be confirmed.",
+   "host": "www.usairsoft.com",
+   "allow": [
+    "usairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: Site is a JavaScript app; return/shipping/privacy policies could not be confirmed.",
+    "no address/phone",
+    "lookalike of ssairsoft.com"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "novritsch",
+   "name": "Novritsch (US)",
+   "kind": "link",
+   "url": "https://us.novritsch.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2014-12-23",
+    "ageDays": 4347,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Contact details on novritsch.com (pages blocked to our checker)",
+    "policies": "manual: Policies listed in search results",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.5 (1,412)",
+   "why": "bot-verification page; robots.txt disallows its API and search",
+   "host": "us.novritsch.com",
+   "allow": [
+    "novritsch.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "taiwangun",
+   "name": "Taiwangun",
+   "kind": "link",
+   "url": "https://www.taiwangun.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2005-08-22",
+    "ageDays": 7757,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": true,
+    "contact": true,
+    "policies": "manual: taiwangun.com/terms-of-use.html (30-day returns), /privacy-policy.html, /cost-of-delivery.html",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 4.1 (724)",
+   "why": "captcha on search pages; prices in EUR/PLN",
+   "host": "www.taiwangun.com",
+   "allow": [
+    "taiwangun.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "jkarmy",
+   "name": "JK Army",
+   "kind": "link",
+   "url": "https://www.jkarmy.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2009-10-28",
+    "ageDays": 6229,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: HK address in search listings (pages blocked)",
+    "policies": "manual: Not verifiable through the bot check",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Trustpilot 3.1 (5 reviews); HK retailer since 2009",
+   "why": "Cloudflare bot check on every page",
+   "host": "www.jkarmy.com",
+   "allow": [
+    "jkarmy.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "eastcoastairsoft",
+   "name": "East Coast Airsoft",
+   "kind": "link",
+   "url": "https://eastcoastairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2007-11-08",
+    "ageDays": 6949,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "manual: eastcoastairsoft.com/products/pages/returns and /products/pages/privacy-policy",
+    "policyPages": {
+     "refund": true,
+     "privacy": false,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "r/airsoft: positive local reports",
+   "why": "products load by JavaScript from a disallowed /api",
+   "host": "eastcoastairsoft.com",
+   "allow": [
+    "eastcoastairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "nashvilleairsoft",
+   "name": "Nashville Airsoft",
+   "kind": "link",
+   "url": "https://nashvilleairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2002-12-13",
+    "ageDays": 8740,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "manual: nashvilleairsoft.com/shipping and /tos (returns, shipping, privacy)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "4.3 (588 reviews)",
+   "why": "JavaScript store widget, no product feed",
+   "host": "nashvilleairsoft.com",
+   "allow": [
+    "nashvilleairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "sniperas",
+   "name": "Sniper Airsoft (DE)",
+   "kind": "link",
+   "url": "https://www.sniper-as.de",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": null,
+    "ageDays": null,
+    "age": "manual: .de registry publishes no creation date; Sniper-Airsoft Supply GmbH has 1,086 Google reviews (long-running)",
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Impressum page (sniper-as.de/informationen/impressum/), showroom in Pirmasens",
+    "policies": "manual: Widerrufsrecht/Rückgabe, Versand and Datenschutz pages linked in the footer",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Google 4.6 (1,086); Trustpilot 3.0 (150)",
+   "why": "EU store priced in EUR",
+   "host": "www.sniper-as.de",
+   "allow": [
+    "sniper-as.de"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "survivalmode",
+   "name": "Survival Mode Tactical",
+   "kind": "link",
+   "url": "https://thesurvivalmode.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2022-10-27",
+    "ageDays": 1482,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); 16931 Chamber Springs Rd, Siloam Springs AR",
+   "reputation": "Runs SMT Airsoft field (4.9 Google, 100+ reviews)",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "thesurvivalmode.com",
+   "allow": [
+    "thesurvivalmode.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "stampede",
+   "name": "Stampede Tactical (Holy Cowz Airsoft)",
+   "kind": "link",
+   "url": "https://stampedetactical.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2015-07-23",
+    "ageDays": 4135,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Holy Cowz Airsoft field listing links here, New Port Richey FL",
+   "reputation": "Holy Cowz field 4.8 (206 reviews)",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "stampedetactical.com",
+   "allow": [
+    "stampedetactical.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airsoftmaster",
+   "name": "Airsoft Master",
+   "kind": "excluded",
+   "url": "https://www.airsoftmaster.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-06-01",
+    "ageDays": 5648,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); Yelp: 14750 Nelson Ave E, City of Industry CA",
+   "reputation": "Yelp 101 reviews",
+   "why": "No privacy policy page found (terms cover shipping/returns only).",
+   "host": "www.airsoftmaster.com",
+   "allow": [
+    "airsoftmaster.com"
+   ],
+   "failed": [
+    "excluded after review: No privacy policy page found (terms cover shipping/returns only)."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "strikeforce",
+   "name": "StrikeForce Sports",
+   "kind": "field",
+   "url": "https://www.strikeforcesports.net",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-08-13",
+    "ageDays": 6305,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": {
+     "sample": 12,
+     "deep60offPct": 0,
+     "ok": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); 125 Route 110, Farmingdale NY",
+   "reputation": "Long Island indoor arena & pro shop",
+   "note": "Farmingdale, NY (indoor arena & pro shop)",
+   "host": "www.strikeforcesports.net",
+   "allow": [
+    "strikeforcesports.net"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ricochet",
+   "name": "Ricochet Tactical",
+   "kind": "field",
+   "url": "https://ricochettactical.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-12-30",
+    "ageDays": 5436,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "No complaints found",
+   "note": "Levittown, NY (arena & shop)",
+   "host": "ricochettactical.com",
+   "allow": [
+    "ricochettactical.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "kwa",
+   "name": "KWA USA",
+   "kind": "link",
+   "url": "https://store.kwausa.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2003-09-23",
+    "ageDays": 8456,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Address/phone on kwausa.com (store pages blocked to our checker)",
+    "policies": "manual: Store policies listed in search results",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026); manufacturer",
+   "reputation": "Established US manufacturer since 2003",
+   "why": "Cloudflare bot check",
+   "host": "store.kwausa.com",
+   "allow": [
+    "kwausa.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "gg",
+   "name": "G&G Armament (101 Tech USA)",
+   "kind": "link",
+   "url": "https://101techusa.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2016-12-02",
+    "ageDays": 3637,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026): 101 Tech USA is G&G's sole direct US distributor (guay2.com is behind a bot check)",
+   "reputation": "Official distributor",
+   "why": "robots.txt disallows its search",
+   "host": "101techusa.com",
+   "allow": [
+    "101techusa.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "eliteforce",
+   "name": "Elite Force Airsoft",
+   "kind": "link",
+   "url": "https://www.eliteforceairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-03-31",
+    "ageDays": 6440,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Umarex USA brand",
+   "why": "no search results page; its items are price-checked through Umarex USA (same company)",
+   "host": "www.eliteforceairsoft.com",
+   "allow": [
+    "eliteforceairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "lancer",
+   "name": "Lancer Tactical",
+   "kind": "excluded",
+   "url": "https://www.lancertactical.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2012-02-10",
+    "ageDays": 5394,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Established US brand",
+   "why": "No privacy policy page found on its Wix store (returns are only described in its FAQ).",
+   "host": "www.lancertactical.com",
+   "allow": [
+    "lancertactical.com"
+   ],
+   "failed": [
+    "excluded after review: No privacy policy page found on its Wix store (returns are only described in its FAQ)."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "pts",
+   "name": "PTS Syndicate",
+   "kind": "link",
+   "url": "https://www.ptssyndicate.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-02-14",
+    "ageDays": 5024,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "manual: n/a (brand site, does not sell direct)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Established brand (Hong Kong)",
+   "why": "brand site with no product feed",
+   "host": "www.ptssyndicate.com",
+   "allow": [
+    "ptssyndicate.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "asg",
+   "name": "ActionSportGames (ASG)",
+   "kind": "excluded",
+   "url": "https://actionsportgames.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2003-03-26",
+    "ageDays": 8637,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Large licensed-replica distributor (Denmark)",
+   "why": "Brand distributor site with no address/phone we could confirm and no direct sales.",
+   "host": "actionsportgames.com",
+   "allow": [
+    "actionsportgames.com"
+   ],
+   "failed": [
+    "excluded after review: Brand distributor site with no address/phone we could confirm and no direct sales."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "ansgear",
+   "name": "ANSgear",
+   "kind": "link",
+   "url": "https://ansgear.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2005-11-15",
+    "ageDays": 7672,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Long-running paintball/airsoft retailer (domain 2005)",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "ansgear.com",
+   "allow": [
+    "ansgear.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "pyramydair",
+   "name": "Pyramyd AIR",
+   "kind": "link",
+   "url": "https://www.pyramydair.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "1998-08-29",
+    "ageDays": 10307,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Major US airgun retailer since 1998",
+   "why": "no plain search page or public feed; mostly pellet airguns",
+   "host": "www.pyramydair.com",
+   "allow": [
+    "pyramydair.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "airgundepot",
+   "name": "Airgun Depot",
+   "kind": "link",
+   "url": "https://www.airgundepot.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2002-06-19",
+    "ageDays": 8917,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Major US airgun retailer since 2002",
+   "why": "robots.txt disallows its search",
+   "host": "www.airgundepot.com",
+   "allow": [
+    "airgundepot.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "skd",
+   "name": "SKD Tactical",
+   "kind": "link",
+   "url": "https://skdtac.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "1999-05-15",
+    "ageDays": 10048,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": true,
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Long-running tactical retailer (domain 1999)",
+   "why": "robots.txt disallows its search (search.php)",
+   "host": "skdtac.com",
+   "allow": [
+    "skdtac.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "opticsplanet",
+   "name": "OpticsPlanet",
+   "kind": "link",
+   "url": "https://www.opticsplanet.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2000-07-18",
+    "ageDays": 9618,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Address/phone in search listings (pages blocked to our checker)",
+    "policies": "manual: Policies listed in search results",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Major US optics retailer since 2000",
+   "why": "bot check (\"Before we continue\")",
+   "host": "www.opticsplanet.com",
+   "allow": [
+    "opticsplanet.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "battalion",
+   "name": "Battalion Airsoft Arena",
+   "kind": "field",
+   "url": "https://www.battalionairsoftarena.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-09-02",
+    "ageDays": 5555,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Jacksonville, FL",
+   "host": "www.battalionairsoftarena.com",
+   "allow": [
+    "battalionairsoftarena.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "gamepod",
+   "name": "Gamepod Combat Zone",
+   "kind": "field",
+   "url": "https://combatzonecqc.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2012-12-25",
+    "ageDays": 5075,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Antioch, CA",
+   "host": "combatzonecqc.com",
+   "allow": [
+    "combatzonecqc.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "wcap",
+   "name": "West Coast Adventure Park",
+   "kind": "field",
+   "url": "https://westcoastadventurepark.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-12-22",
+    "ageDays": 5444,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "California",
+   "host": "westcoastadventurepark.com",
+   "allow": [
+    "westcoastadventurepark.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "miamiairsoft",
+   "name": "Miami Airsoft",
+   "kind": "field",
+   "url": "https://miamiairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-03-05",
+    "ageDays": 5736,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Miami, FL (indoor arena)",
+   "host": "miamiairsoft.com",
+   "allow": [
+    "miamiairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "raptor",
+   "name": "Raptor Airsoft",
+   "kind": "field",
+   "url": "https://raptorairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2017-11-26",
+    "ageDays": 3278,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Field",
+   "host": "raptorairsoft.com",
+   "allow": [
+    "raptorairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "highground",
+   "name": "High Ground Airsoft",
+   "kind": "field",
+   "url": "https://highgroundairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2012-02-18",
+    "ageDays": 5386,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Spring, TX",
+   "host": "highgroundairsoft.com",
+   "allow": [
+    "highgroundairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "motorcity",
+   "name": "Motor City Airsoft",
+   "kind": "field",
+   "url": "https://www.motorcityairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2016-07-29",
+    "ageDays": 3763,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: phone 586-307-5190 on the home page",
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Michigan",
+   "host": "www.motorcityairsoft.com",
+   "allow": [
+    "motorcityairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "gunnys",
+   "name": "Gunny's Warfare Center",
+   "kind": "field",
+   "url": "https://www.gunnyswarfarecenter.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-02-06",
+    "ageDays": 5032,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Marshville, NC",
+   "host": "www.gunnyswarfarecenter.com",
+   "allow": [
+    "gunnyswarfarecenter.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "futureball",
+   "name": "Futureball",
+   "kind": "field",
+   "url": "https://www.futureball.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2002-12-22",
+    "ageDays": 8731,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Whitmore Lake, MI",
+   "host": "www.futureball.com",
+   "allow": [
+    "futureball.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "thunderkiss",
+   "name": "Thunder Kiss NW",
+   "kind": "excluded",
+   "url": "https://www.thunderkissnw.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-02-21",
+    "ageDays": 6478,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "why": "Contact page and home page show no address or phone we could confirm.",
+   "note": "Vancouver, WA",
+   "host": "www.thunderkissnw.com",
+   "allow": [
+    "thunderkissnw.com"
+   ],
+   "failed": [
+    "excluded after review: Contact page and home page show no address or phone we could confirm.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "xtremekombat",
+   "name": "Xtreme Kombat (Xtreme Adventure Park)",
+   "kind": "field",
+   "url": "https://xtremeparkadventures.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-12-11",
+    "ageDays": 4724,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Raleigh-Durham, NC (xtremekombat.com redirects here)",
+   "host": "xtremeparkadventures.com",
+   "allow": [
+    "xtremeparkadventures.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "878airsoft",
+   "name": "878 Airsoft",
+   "kind": "field",
+   "url": "https://878airsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2015-03-24",
+    "ageDays": 4256,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Field & shop",
+   "host": "878airsoft.com",
+   "allow": [
+    "878airsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "forestfire",
+   "name": "ForestFire Airsoft",
+   "kind": "field",
+   "url": "https://forestfireairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2016-12-04",
+    "ageDays": 3635,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Field",
+   "host": "forestfireairsoft.com",
+   "allow": [
+    "forestfireairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "powerops",
+   "name": "Power Ops Airsoft",
+   "kind": "field",
+   "url": "https://www.poweropsairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2016-06-14",
+    "ageDays": 3808,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Madison, GA",
+   "host": "www.poweropsairsoft.com",
+   "allow": [
+    "poweropsairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "d14",
+   "name": "D14 Airsoft",
+   "kind": "field",
+   "url": "https://d14airsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-02-12",
+    "ageDays": 5026,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Sanger, TX",
+   "host": "d14airsoft.com",
+   "allow": [
+    "d14airsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ubg",
+   "name": "UBG Airsoft",
+   "kind": "field",
+   "url": "https://ubgllc.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2018-03-07",
+    "ageDays": 3177,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": false,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Bridgewater, MA (field & pro shop)",
+   "host": "ubgllc.com",
+   "allow": [
+    "ubgllc.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "txpb",
+   "name": "Texas Paintball & Airsoft",
+   "kind": "field",
+   "url": "https://www.txpb.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "1999-10-18",
+    "ageDays": 9892,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": "manual: 18300 Medina Vista Lane, Jonestown TX 78645, 512-257-8728 on txpb.com/contact",
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Jonestown, TX",
+   "host": "www.txpb.com",
+   "allow": [
+    "txpb.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "replay",
+   "name": "Replay Airsoft",
+   "kind": "field",
+   "url": "https://www.replayairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2013-01-04",
+    "ageDays": 5065,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Glen Burnie, MD (arena & retail)",
+   "host": "www.replayairsoft.com",
+   "allow": [
+    "replayairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "blackopswi",
+   "name": "Black Ops Airsoft",
+   "kind": "field",
+   "url": "https://www.blackops-airsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2011-05-17",
+    "ageDays": 5663,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": false,
+    "contact": "manual: Site title/contact pages show Bristol, Wisconsin 53104; airsoftc3 listing confirms",
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Bristol, WI",
+   "host": "www.blackops-airsoft.com",
+   "allow": [
+    "blackops-airsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "paintballstation",
+   "name": "Paintball & Airsoft Station (WA)",
+   "kind": "field",
+   "url": "https://www.paintballstation.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2003-05-02",
+    "ageDays": 8600,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Mount Vernon, WA (Airsoft Acres)",
+   "host": "www.paintballstation.com",
+   "allow": [
+    "paintballstation.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "tas801",
+   "name": "Tactical Airsoft Supply / Airsoft Arena",
+   "kind": "field",
+   "url": "https://801airsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-07-15",
+    "ageDays": 6334,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Salt Lake City, UT (tacticalairsoftsupply.com redirects here)",
+   "host": "801airsoft.com",
+   "allow": [
+    "801airsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "modernairsoft",
+   "name": "Modern Airsoft",
+   "kind": "field",
+   "url": "https://modernairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2012-09-24",
+    "ageDays": 5167,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": null,
+   "note": "Oceanside & Alpine, CA",
+   "host": "modernairsoft.com",
+   "allow": [
+    "modernairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "hopup",
+   "name": "HopUp",
+   "kind": "marketplace",
+   "url": "https://www.hopupairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2018-10-27",
+    "ageDays": 2943,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Largest US airsoft buy/sell app",
+   "host": "www.hopupairsoft.com",
+   "allow": [
+    "hopupairsoft.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "ebay",
+   "name": "eBay",
+   "kind": "marketplace",
+   "url": "https://www.ebay.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "1995-08-04",
+    "ageDays": 11428,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Corporate (San Jose CA)",
+    "policies": "manual: Money Back Guarantee, privacy",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "well-known",
+   "reputation": "Major marketplace",
+   "host": "www.ebay.com",
+   "allow": [
+    "ebay.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "gunbroker",
+   "name": "GunBroker",
+   "kind": "marketplace",
+   "url": "https://www.gunbroker.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "1999-02-19",
+    "ageDays": 10133,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Corporate contact on site (blocked to our checker)",
+    "policies": "manual: User agreement & privacy (blocked to our checker)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "well-known",
+   "reputation": "Major US auction site since 1999",
+   "host": "www.gunbroker.com",
+   "allow": [
+    "gunbroker.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "reddit",
+   "name": "r/airsoftmarket (Reddit)",
+   "kind": "marketplace",
+   "url": "https://www.reddit.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2005-04-29",
+    "ageDays": 7872,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": "manual: Reddit Inc.",
+    "policies": "manual: User agreement & privacy",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "well-known",
+   "reputation": "Community marketplace; check seller feedback",
+   "host": "www.reddit.com",
+   "allow": [
+    "reddit.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "facebook",
+   "name": "Facebook Marketplace / groups",
+   "kind": "marketplace",
+   "url": "https://www.facebook.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "1997-03-29",
+    "ageDays": 10825,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": "manual: Meta Platforms",
+    "policies": "manual: Commerce policies & privacy",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "well-known",
+   "reputation": "Local listings; meet safely",
+   "host": "www.facebook.com",
+   "allow": [
+    "facebook.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "replicaairguns",
+   "name": "ReplicaAirguns",
+   "kind": "review",
+   "url": "https://www.replicaairguns.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2010-07-05",
+    "ageDays": 5979,
+    "age": true,
+    "phone": true,
+    "address": true,
+    "contactPage": false,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "pricing": "n/a (no public catalog)",
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": "web search cross-check (Nov 2026)",
+   "reputation": "Long-running review blog (2010)",
+   "host": "www.replicaairguns.com",
+   "allow": [
+    "replicaairguns.com"
+   ],
+   "failed": [],
+   "status": "pass"
+  },
+  {
+   "id": "opsgear",
+   "name": "OPSGEAR",
+   "kind": "excluded",
+   "url": "https://opsgear.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2022-08-27",
+    "ageDays": 1543,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "Reputation: Trustpilot 2.9 (1,076) with shipping/no-tracking complaints, Yelp lists it closed (1.3), a forum \"scam\" thread; no address/phone on the site.",
+   "host": "opsgear.com",
+   "allow": [
+    "opsgear.com"
+   ],
+   "failed": [
+    "excluded after review: Reputation: Trustpilot 2.9 (1,076) with shipping/no-tracking complaints, Yelp lists it closed (1.3), a forum \"scam\" thread; no address/phone on the site.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "monkcustoms",
+   "name": "Monk Customs (US)",
+   "kind": "excluded",
+   "url": "https://monkcustoms-usa.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2021-05-18",
+    "ageDays": 2009,
+    "age": true,
+    "phone": false,
+    "address": true,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "Reputation: Reddit reports of wrong/undelivered orders and unresponsive support; no address or phone on the site.",
+   "host": "monkcustoms-usa.com",
+   "allow": [
+    "monkcustoms-usa.com"
+   ],
+   "failed": [
+    "excluded after review: Reputation: Reddit reports of wrong/undelivered orders and unresponsive support; no address or phone on the site."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "tapp",
+   "name": "Tapp Airsoft",
+   "kind": "excluded",
+   "url": "https://tappairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2015-01-08",
+    "ageDays": 4331,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "No business address or phone anywhere on the site or its policies (email only).",
+   "host": "tappairsoft.com",
+   "allow": [
+    "tappairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: No business address or phone anywhere on the site or its policies (email only).",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "realdeal",
+   "name": "The Real Deal Airsoft",
+   "kind": "excluded",
+   "url": "https://www.therealdealairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2020-10-23",
+    "ageDays": 2216,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": true,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "No refund, shipping or privacy policy pages.",
+   "host": "www.therealdealairsoft.com",
+   "allow": [
+    "therealdealairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: No refund, shipping or privacy policy pages.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "umbrella",
+   "name": "Umbrella Armory",
+   "kind": "excluded",
+   "url": "https://umbrellaarmory.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2015-05-12",
+    "ageDays": 4207,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": true,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "umbrellaarmory.com now redirects to an unrelated German .eu site; the official domain could not be confirmed.",
+   "host": "umbrellaarmory.com",
+   "allow": [
+    "umbrellaarmory.com"
+   ],
+   "failed": [
+    "excluded after review: umbrellaarmory.com now redirects to an unrelated German .eu site; the official domain could not be confirmed.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "valken",
+   "name": "Valken Sports",
+   "kind": "excluded",
+   "url": "https://www.valken.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": false,
+    "httpsError": "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR",
+    "created": "2000-02-24",
+    "ageDays": 9763,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "HTTPS handshake fails (from our box and an outside fetcher), so a valid certificate could not be confirmed.",
+   "host": "www.valken.com",
+   "allow": [
+    "valken.com"
+   ],
+   "failed": [
+    "excluded after review: HTTPS handshake fails (from our box and an outside fetcher), so a valid certificate could not be confirmed.",
+    "HTTPS",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "lacapa",
+   "name": "LA Capa Customs",
+   "kind": "excluded",
+   "url": "https://lacapacustoms.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": false,
+    "httpsError": "ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE",
+    "created": "2020-06-11",
+    "ageDays": 2350,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "HTTPS handshake fails (from our box and an outside fetcher).",
+   "host": "lacapacustoms.com",
+   "allow": [
+    "lacapacustoms.com"
+   ],
+   "failed": [
+    "excluded after review: HTTPS handshake fails (from our box and an outside fetcher).",
+    "HTTPS",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "codered",
+   "name": "Code Red Airsoft Park",
+   "kind": "excluded",
+   "url": "https://www.coderedairsoftpark.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": false,
+    "httpsError": "ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR",
+    "created": "2010-02-14",
+    "ageDays": 6120,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "No working HTTPS (site is served over plain http only).",
+   "host": "www.coderedairsoftpark.com",
+   "allow": [
+    "coderedairsoftpark.com"
+   ],
+   "failed": [
+    "excluded after review: No working HTTPS (site is served over plain http only).",
+    "HTTPS",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "ohiovalley",
+   "name": "Ohio Valley Airsoft",
+   "kind": "excluded",
+   "url": "https://ohiovalleyairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": false,
+    "httpsError": "ERR_TLS_CERT_ALTNAME_INVALID",
+    "created": "2016-10-16",
+    "ageDays": 3684,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "TLS certificate does not match the domain.",
+   "host": "ohiovalleyairsoft.com",
+   "allow": [
+    "ohiovalleyairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: TLS certificate does not match the domain.",
+    "HTTPS",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "cartcon1",
+   "name": "CartCon1 Airsoft",
+   "kind": "excluded",
+   "url": "https://battleridgeairsoft.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "botCheck": true,
+    "created": "2024-11-17",
+    "ageDays": 730,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "cartcon1 domains redirect to a different name (Battle Ridge) behind a bot check; could not confirm it is the same business.",
+   "host": "battleridgeairsoft.com",
+   "allow": [
+    "battleridgeairsoft.com"
+   ],
+   "failed": [
+    "excluded after review: cartcon1 domains redirect to a different name (Battle Ridge) behind a bot check; could not confirm it is the same business.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "frontierfortress",
+   "name": "Frontier Fortress",
+   "kind": "excluded",
+   "url": "https://frontierfortress.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2020-06-18",
+    "ageDays": 2343,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "Domain shows a blank page and is not the site listed for the field (only directory/Facebook listings); official site not confirmed.",
+   "host": "frontierfortress.com",
+   "allow": [
+    "frontierfortress.com"
+   ],
+   "failed": [
+    "excluded after review: Domain shows a blank page and is not the site listed for the field (only directory/Facebook listings); official site not confirmed.",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "camprr",
+   "name": "Camp R&R",
+   "kind": "excluded",
+   "url": "https://www.camprandr.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "httpStatus": 500,
+    "created": "2008-10-17",
+    "ageDays": 6605,
+    "age": true,
+    "phone": false,
+    "address": false,
+    "contactPage": false,
+    "contact": false,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": false,
+     "privacy": false,
+     "shipping": false
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "Site returns a server error (HTTP 500) to every request; could not be checked.",
+   "host": "www.camprandr.com",
+   "allow": [
+    "camprandr.com"
+   ],
+   "failed": [
+    "excluded after review: Site returns a server error (HTTP 500) to every request; could not be checked.",
+    "HTTP 500",
+    "no address/phone"
+   ],
+   "status": "fail"
+  },
+  {
+   "id": "uspatriot",
+   "name": "US Patriot Tactical",
+   "kind": "excluded",
+   "url": "https://www.uspatriottactical.com",
+   "checkedAt": "2026-11-17",
+   "checks": {
+    "dns": true,
+    "https": true,
+    "created": "2009-08-19",
+    "ageDays": 6299,
+    "age": true,
+    "phone": true,
+    "address": false,
+    "contactPage": true,
+    "contact": true,
+    "policies": "n/a (no online sales through this link)",
+    "policyPages": {
+     "refund": true,
+     "privacy": true,
+     "shipping": true
+    },
+    "punycode": false,
+    "lookalike": false,
+    "scamLists": "clean"
+   },
+   "official": null,
+   "reputation": null,
+   "why": "Not an airsoft store (military uniforms and boots); its product JSON is closed.",
+   "host": "www.uspatriottactical.com",
+   "allow": [
+    "uspatriottactical.com"
+   ],
+   "failed": [
+    "excluded after review: Not an airsoft store (military uniforms and boots); its product JSON is closed."
+   ],
+   "status": "fail"
+  },
+  {
+   "id": null,
+   "name": "Full Auto Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "faairsoft.com shows \"This store is unavailable\" (Shopify store closed)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Airsoft Gateway",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "airsoftgateway.com Shopify store is \"Unavailable Shop\"",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Sector 7 Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "sector7airsoft.com is a parked domain; no other site found",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Stampede Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "stampedeairsoft.com is parked; the business is Stampede Tactical (linked)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "UBG Airsoft (ubgairsoft.com)",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "ubgairsoft.com is parked; the business uses ubgllc.com (linked)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Dreadnought Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "permanently closed",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Stryker Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "permanently closed June 2024 (site is now StrikeForce NJ)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Cincinnati Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no website found (only a 2009 LLC registration)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Palmetto Edge Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no website found",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Wild West Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no website found (Reddit mentions only)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Allstar Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no website found (directory listings only)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Ambush Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no US website found (ambushairsoft.com does not exist; a UK field uses .co.uk)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Zulu 24 Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "Facebook/Instagram only",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Poco Loco Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "Facebook only",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Holy Cowz Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "Facebook only; its shop is Stampede Tactical (linked)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Bloomies Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no own website (sells through HopUp)",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Sherlock Tech",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no airsoft business found under this name",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "AEX Portland",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no such store; AEX (Airsoft Extreme) is California-only and already live",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "American Airsoft",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "no matching business; americanairsoftfactory.com does not resolve",
+   "status": "skipped"
+  },
+  {
+   "id": null,
+   "name": "Survival Mode Airsoft (survivalmodeairsoft.com)",
+   "kind": "skipped",
+   "url": null,
+   "checkedAt": "2026-11-17",
+   "checks": {},
+   "official": null,
+   "reputation": null,
+   "why": "domain does not exist; the business is thesurvivalmode.com (linked)",
+   "status": "skipped"
+  }
+ ]
+}

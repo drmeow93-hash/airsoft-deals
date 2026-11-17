@@ -20,8 +20,9 @@ const STORE_INFO = {
   foxairsoft: ['Fox Airsoft', 'USA'], ballahack: ['Ballahack Airsoft', 'Virginia'], airsoftstation: ['Airsoft Station', 'Kentucky'],
   megastore: ['Airsoft Megastore', 'California'], wolverine: ['Wolverine Airsoft', 'HPA direct'], ehobbyasia: ['eHobbyAsia', 'Hong Kong'],
   airsoftextreme: ['Airsoft Extreme', 'Bay Area'], amped: ['Amped Airsoft', 'Pennsylvania'], airsoftgi: ['Airsoft GI', 'SoCal'],
-  brill: ['Brill Armory', 'Parts'], echo1: ['Echo1 USA', 'California'], wgc: ['WGC Shop', 'Hong Kong'], redwolf: ['RedWolf', 'Hong Kong'], clandestine: ['Clandestine', 'R-hop parts'],
-  mirtactical: ['MiR Tactical', 'Midwest'], airsoftjunkiez: ['Airsoft Junkiez', 'Custom HPA'], usairsoft: ['US Airsoft', 'California'], novritsch: ['Novritsch', 'US store'], taiwangun: ['Taiwangun', 'Poland'], jkarmy: ['JK Army', 'Hong Kong'], eastcoastairsoft: ['East Coast Airsoft', 'Maryland'], nashvilleairsoft: ['Nashville Airsoft', 'Tennessee'], opsgear: ['OPSGEAR', 'Gear'],
+  brill: ['Brill Armory', 'Parts'], echo1: ['Echo1 USA', 'California'], wgc: ['WGC Shop', 'Hong Kong'], redwolf: ['RedWolf', 'Hong Kong'],
+  ssairsoft: ['SS Airsoft', 'Atlanta'], extremeri: ['Extreme Airsoft', 'Rhode Island'], vipairsoft: ['VIP Airsoft', 'Arizona'], blackopsnc: ['Black Ops', 'N. Carolina'], polarstar: ['PolarStar', 'HPA direct'], primary: ['Primary Airsoft', 'HPA adapters'], taccity: ['Tac City', 'Fullerton CA'], umarex: ['Umarex USA', 'Elite Force'],
+  mirtactical: ['MiR Tactical', 'Midwest'], airsoftjunkiez: ['Airsoft Junkiez', 'Custom HPA'], usairsoft: ['US Airsoft', 'California'], novritsch: ['Novritsch', 'US store'], taiwangun: ['Taiwangun', 'Poland'], jkarmy: ['JK Army', 'Hong Kong'], eastcoastairsoft: ['East Coast Airsoft', 'Maryland'], nashvilleairsoft: ['Nashville Airsoft', 'Tennessee'],
   evike: ['Evike.com', 'California'], sniperas: ['Sniper Airsoft', 'Germany'], replicaairguns: ['ReplicaAirguns', 'Reviews'],
   hopup: ['HopUp', 'Buy/sell app'], ebay: ['eBay Airsoft', 'Auctions & BIN'], gunbroker: ['GunBroker', 'Auctions'], reddit: ['r/airsoftmarket', 'Reddit'], fbmarket: ['FB Marketplace', 'Local'], fbgroups: ['FB Groups', 'Buy/sell/trade'],
 };
@@ -394,7 +395,7 @@ function productPage(id) {
   window.scrollTo(0, 0);
 }
 
-const STORE_N = 17;
+const STORE_N = 24;
 const POPULAR = ['Tokyo Marui', 'Glock', 'Hi-Capa', 'M4 AEG', 'Gas blowback', 'HPA', 'Sniper rifle', 'Plate carrier', '0.28g BBs'];
 async function homePage() {
   setQ();
@@ -470,12 +471,16 @@ async function storesPage() {
   view(crumbs([['Home', '#/'], ['Stores']]) + `<div class="stores">${'<div class="sk" style="height:110px"></div>'.repeat(6)}</div>`);
   try {
     const d = await api('/api/stores');
-    const ext = (s, extra = '') => `<a class="scard ${extra}" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"><div class="scard-top">${wordmark(s.id, s.name)}${ic('i-ext')}</div><p>${esc(s.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</p></a>`;
+    const host = (u) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    const ext = (s, extra = '') => `<a class="scard ${extra}" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"><div class="scard-top">${wordmark(s.id, s.name)}${ic('i-ext')}</div><p>${esc(s.note || host(s.url))}</p>${s.reason ? `<p class="why">${esc(s.reason)}</p>` : ''}</a>`;
+    const v = d.vetting;
     view(crumbs([['Home', '#/'], ['Stores']]) + `
       <div class="sec-h" style="margin-top:0"><h2>Price-checked stores <span class="live-pill">${d.stores.length} LIVE</span></h2></div>
+      ${v ? `<p class="vetnote">${ic('i-check')}Every store, field and marketplace here passed a legitimacy check (official domain, valid HTTPS, domain age, contact details, policies, pricing, reputation, scam lists). <a href="/api/vetting" target="_blank" rel="noopener">See the record</a>.</p>` : ''}
       <div class="stores">${d.stores.map((s) => `<a class="scard" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer"><div class="scard-top">${wordmark(s.id, s.name)}${ic('i-ext')}</div>
-        ${s.shipping ? `<p class="ship">${esc(s.shipping.note)}</p>` : ''}${s.index ? `<p>${s.index.products ? `${s.index.products.toLocaleString()} products indexed` : 'Indexing…'}</p>` : ''}</a>`).join('')}</div>
-      <div class="sec-h"><h2>More stores</h2></div><div class="stores">${d.skipped.map((s) => ext(s)).join('')}</div>
+        ${s.shipping ? `<p class="ship">${esc(s.shipping.note)}</p>` : `<p>${esc(s.location || host(s.url))}</p>`}${s.index ? `<p>${s.index.products ? `${s.index.products.toLocaleString()} products indexed` : 'Indexing…'}</p>` : ''}</a>`).join('')}</div>
+      <div class="sec-h"><h2>More stores <small class="muted">${d.skipped.length} · links only</small></h2></div><div class="stores">${d.skipped.map((s) => ext(s)).join('')}</div>
+      ${d.fields?.length ? `<div class="sec-h"><h2>Fields &amp; pro shops <small class="muted">${d.fields.length}</small></h2></div><div class="stores fields">${d.fields.map((s) => ext(s, 'sm')).join('')}</div>` : ''}
       ${d.reviews?.length ? `<div class="sec-h"><h2>Reviews</h2></div><div class="stores">${d.reviews.map((s) => ext(s)).join('')}</div>` : ''}`);
   } catch (e) { errorView(e); }
 }

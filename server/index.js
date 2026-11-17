@@ -2,7 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { stores, skipped, reviews } = require('./stores');
+const { stores, skipped, fields, reviews } = require('./stores');
+const vetting = require('./vetting');
 const zlib = require('zlib');
 const { enrich, prep, judgeCached, groupProducts, filterStats, brandList, noteBrand, brands } = require('./deals');
 const marketplaces = require('./marketplaces');
@@ -107,8 +108,13 @@ app.get('/api/stores', (req, res) => res.json({
   history: history.meta(),
   airsoftFilter: (({ dropped, kept, byReason, byStore }) => ({ dropped, kept, byReason, byStore }))(filterStats()),
   skipped,
+  fields,
   reviews,
+  vetting: vetting.meta(),
 }));
+
+// The full legitimacy-vetting record (every domain, every check, pass/fail, date), for auditing.
+app.get('/api/vetting', (req, res) => res.json(vetting.doc));
 
 app.get('/api/marketplaces', (req, res) => res.json({ marketplaces: marketplaces.list() }));
 app.get('/api/marketplace-search', async (req, res) => {

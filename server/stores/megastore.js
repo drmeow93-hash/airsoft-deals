@@ -21,7 +21,7 @@ function parse(html, { storeDeal = false } = {}) {
       originalPrice: old && price && old > price ? old : null,
       inStock: /sold out|out of stock/i.test(text) ? false : null,
       image: box.find('img').first().attr('src') || null,
-      url: (a.attr('href') || '').replace(/&(search|limit|iid)=[^&]*/g, ''),
+      url: new URL((a.attr('href') || '').replace(/&(search|limit|iid)=[^&]*/g, ''), base + '/').toString(), // page uses <base href>, links are relative
       storeDeal,
     });
   });

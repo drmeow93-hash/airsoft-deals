@@ -11,8 +11,16 @@ const stores = [
   makeShopifyStore({ id: 'echo1', name: 'Echo1 USA', base: 'https://echo1usa.com', location: 'California, USA', blurb: 'Echo1 / JAG Arms brand store, Shopify storefront' }),
   // WGC Shop prices only in Hong Kong dollars (HKD is pegged at ~7.8 per USD); shown converted to USD.
   makeShopifyStore({ id: 'wgc', name: 'WGC Shop', base: 'https://wgcshop.com', location: 'Hong Kong (HKD, shown in USD)', blurb: 'Hong Kong retailer, Shopify storefront; prices converted from HKD', fx: { cur: 'HKD', rate: 7.8 } }),
+  // Added Nov 2026 after legitimacy vetting (data/vetting.json): public Shopify JSON, allowed by robots.txt.
+  makeShopifyStore({ id: 'ssairsoft', name: 'SS Airsoft', base: 'https://store.ssairsoft.com', location: 'Atlanta, Georgia, USA', blurb: 'Atlanta airsoft shop, Shopify storefront' }),
+  makeShopifyStore({ id: 'extremeri', name: 'Extreme Airsoft RI', base: 'https://extremeairsoftri.com', location: 'South Kingstown, Rhode Island, USA', blurb: 'Rhode Island pro shop & indoor field, Shopify storefront' }),
+  makeShopifyStore({ id: 'vipairsoft', name: 'VIP Airsoft', base: 'https://vipairsoft.myshopify.com', location: 'Gilbert, Arizona, USA', blurb: 'Arizona arena pro shop, Shopify storefront' }),
+  makeShopifyStore({ id: 'blackopsnc', name: 'Black Ops Paintball & Airsoft', base: 'https://blackopswebstore.com', location: 'Fayetteville, North Carolina, USA', blurb: 'Paintball & airsoft super store (airsoft items only shown), Shopify storefront' }),
+  makeShopifyStore({ id: 'polarstar', name: 'PolarStar Airsoft', base: 'https://polarstarairsoft.com', location: 'USA', blurb: 'HPA engine manufacturer, direct store (Shopify)', airsoftOnly: true }),
+  makeShopifyStore({ id: 'primary', name: 'Primary Airsoft', base: 'https://primaryairsoft.us', location: 'Hamden, Connecticut, USA', blurb: 'HPA adapters, direct from the maker (Shopify)', airsoftOnly: true }),
+  makeShopifyStore({ id: 'taccity', name: 'Tac City Airsoft', base: 'https://taccityairsoft.com', location: 'Fullerton, California, USA', blurb: 'LA/OC indoor arena pro shop, Shopify storefront' }),
+  require('./umarex'),
   require('./redwolf'),
-  require('./clandestine'),
   require('./airsoftstation'),
   require('./megastore'),
   require('./wolverine'),
@@ -38,26 +46,19 @@ const SHIPPING = {
 };
 for (const s of stores) if (SHIPPING[s.id]) s.shipping = SHIPPING[s.id];
 
-// Stores we can't price-check. They're shown on the "More Stores" tab as plain links.
-const skipped = [
-  { id: 'evike', name: 'Evike.com', url: 'https://www.evike.com', note: 'Large US retailer (California)', reason: 'Every page, including robots.txt, sits behind a Cloudflare bot check (HTTP 403, re-checked Nov 2026). We don\'t bypass bot checks.' },
-  { id: 'mirtactical', name: 'MiR Tactical', url: 'https://mirtactical.com', note: 'Midwest airsoft & tactical retailer', reason: 'BigCommerce store behind a Cloudflare challenge; its search can\'t be read without passing a bot check.' },
-  { id: 'airsoftjunkiez', name: 'Airsoft Junkiez', url: 'https://www.airsoftjunkiez.com', note: 'Custom PolarStar & Wolverine builds', reason: 'BigCommerce store behind a Cloudflare challenge with captcha.' },
-  { id: 'usairsoft', name: 'US Airsoft', url: 'https://www.usairsoft.com', note: 'Anderson, California', reason: 'robots.txt disallows its search (/s/search) and there is no public product JSON.' },
-  { id: 'novritsch', name: 'Novritsch (US)', url: 'https://us.novritsch.com', note: 'Sniper rifles & gear, direct from the maker', reason: 'robots.txt disallows both the WooCommerce API (/wp-json/) and the site search (?s=).' },
-  { id: 'taiwangun', name: 'Taiwangun', url: 'https://www.taiwangun.com', note: 'Large EU retailer (Poland)', reason: 'Cloudflare challenge with captcha on search pages.' },
-  { id: 'jkarmy', name: 'JK Army', url: 'https://www.jkarmy.com', note: 'Hong Kong retailer', reason: 'Every page returns a Cloudflare "Just a moment" bot check.' },
-  { id: 'eastcoastairsoft', name: 'East Coast Airsoft', url: 'https://eastcoastairsoft.com', note: 'Maryland\'s largest airsoft store', reason: 'Products are drawn by JavaScript from an /api endpoint that robots.txt disallows; the HTML has no product list.' },
-  { id: 'nashvilleairsoft', name: 'Nashville Airsoft', url: 'https://nashvilleairsoft.com', note: 'Tennessee shop', reason: 'Products load through a JavaScript store widget; there is no public product JSON or plain HTML results page.' },
-  { id: 'opsgear', name: 'OPSGEAR', url: 'https://opsgear.com', note: 'Airsoft gear retailer', reason: 'JavaScript app whose product data comes from /api/, which robots.txt disallows.' },
-  { id: 'sniperas', name: 'Sniper Airsoft', url: 'https://www.sniper-as.de', note: 'German retailer (prices in EUR)', reason: 'EU store with euro pricing, so it isn\'t compared against US prices. The old sniperairsoft.com domain is now a parked domain for sale.' },
-];
-// Reviewed and dropped (Nov 2026): Just Airsoft Guns (justairsoftguns.com redirects to a parked
-// lander page), Xtreme Airsoft Superstore, Liberty Tactical, GI Tactical and Airsoft Tactical (domains
-// don't resolve or are parked). Elite Tactical Supply (elitetacticalsupply.com is a parked domain for sale, and the
-// business is an Ohio firearms gunsmith, not an airsoft store).
-const reviews = [
-  { id: 'replicaairguns', name: 'ReplicaAirguns', url: 'https://www.replicaairguns.com', note: 'Airsoft & BB gun reviews blog. Not a store.' },
-];
+// Link-only stores, fields/pro shops and review sites all come from the vetting file: only entries
+// that passed the legitimacy checks (scripts/vet.js → data/vetting.json) are listed or linked.
+const { ofKind, isVetted } = require('../vetting');
+const asLink = (e) => ({ id: e.id, name: e.name, url: e.url, note: e.note || '', reason: e.why || '' });
+const skipped = ofKind('link').map(asLink);
+const fields = ofKind('field').map(asLink);
+const reviews = ofKind('review').map(asLink);
 
-module.exports = { stores, skipped, reviews };
+// A store whose domain isn't vetted is never queried.
+const vettedStores = stores.filter((s) => {
+  if (s.feed || isVetted(s.base)) return true;
+  console.warn(`[vetting] ${s.name} (${s.base}) is not on the vetted allowlist; skipped`);
+  return false;
+});
+
+module.exports = { stores: vettedStores, skipped, fields, reviews };

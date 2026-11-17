@@ -25,7 +25,7 @@ function fromProduct(base, p, fx = null) {
 }
 
 // fx: { cur: 'HKD', rate: 7.8 } for stores that only price in another currency (shown converted to USD).
-function makeShopifyStore({ id, name, base, location, blurb, fx = null }) {
+function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftOnly = false }) {
   const cv = (v) => (v && fx ? Math.round((v / fx.rate) * 100) / 100 : v);
   const norm = (p) => {
     const raw = money(p.price_min ?? p.price);
@@ -74,7 +74,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null }) {
     return out;
   }
 
-  return { id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, search, deals, catalog };
+  return { id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, airsoftOnly, search, deals, catalog };
 }
 
 module.exports = { makeShopifyStore, fromProduct };
