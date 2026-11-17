@@ -13,12 +13,15 @@ function priceHtml(n) {
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (d) => { const [, m, day] = String(d).split('-').map(Number); return `${MON[m - 1]} ${day}`; };
 const todayStr = () => new Date().toLocaleDateString('en-CA');
-const CATS = { rifles: 'Rifles / AEG', pistols: 'Pistols / GBB', snipers: 'Snipers', gear: 'Gear', optics: 'Optics', parts: 'Parts', bbs: 'BBs / Gas', other: 'Other' };
+const CATS = { rifles: 'Rifles / AEG', pistols: 'Pistols / GBB', snipers: 'Snipers', mags: 'Magazines', holsters: 'Holsters', gear: 'Gear', optics: 'Optics', parts: 'Parts', batteries: 'Batteries', bbs: 'BBs', gas: 'Gas & CO2', other: 'Other' };
+const CAT_ORDER = ['rifles', 'pistols', 'snipers', 'mags', 'holsters', 'gear', 'optics', 'parts', 'batteries', 'bbs', 'gas'];
 const STORE_INFO = {
   airsoftatlanta: ['Airsoft Atlanta', 'Georgia'], airsoftnmore: ['Airsoft N More', 'Los Angeles'], speedqb: ['SpeedQB', 'Utah'],
   foxairsoft: ['Fox Airsoft', 'USA'], ballahack: ['Ballahack Airsoft', 'Virginia'], airsoftstation: ['Airsoft Station', 'Kentucky'],
   megastore: ['Airsoft Megastore', 'California'], wolverine: ['Wolverine Airsoft', 'HPA direct'], ehobbyasia: ['eHobbyAsia', 'Hong Kong'],
   airsoftextreme: ['Airsoft Extreme', 'Bay Area'], amped: ['Amped Airsoft', 'Pennsylvania'], airsoftgi: ['Airsoft GI', 'SoCal'],
+  brill: ['Brill Armory', 'Parts'], echo1: ['Echo1 USA', 'California'], wgc: ['WGC Shop', 'Hong Kong'], redwolf: ['RedWolf', 'Hong Kong'], clandestine: ['Clandestine', 'R-hop parts'],
+  mirtactical: ['MiR Tactical', 'Midwest'], airsoftjunkiez: ['Airsoft Junkiez', 'Custom HPA'], usairsoft: ['US Airsoft', 'California'], novritsch: ['Novritsch', 'US store'], taiwangun: ['Taiwangun', 'Poland'], jkarmy: ['JK Army', 'Hong Kong'], eastcoastairsoft: ['East Coast Airsoft', 'Maryland'], nashvilleairsoft: ['Nashville Airsoft', 'Tennessee'], opsgear: ['OPSGEAR', 'Gear'],
   evike: ['Evike.com', 'California'], sniperas: ['Sniper Airsoft', 'Germany'], replicaairguns: ['ReplicaAirguns', 'Reviews'],
   hopup: ['HopUp', 'Buy/sell app'], ebay: ['eBay Airsoft', 'Auctions & BIN'], gunbroker: ['GunBroker', 'Auctions'], reddit: ['r/airsoftmarket', 'Reddit'], fbmarket: ['FB Marketplace', 'Local'], fbgroups: ['FB Groups', 'Buy/sell/trade'],
 };
@@ -334,7 +337,7 @@ function productPage(id) {
   if (!g) { location.hash = '#/'; return; }
   setQ();
   const L = S.lastList;
-  const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') ? ['Watchlist', L] : null;
+  const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') ? ['Watchlist', L] : L.startsWith('#/b/') ? ['Brand', L] : null;
   const best = g.offers[0], multi = g.offers.length > 1, h = g.h;
   const spec = [CATS[g.cat] && g.cat !== 'other' ? CATS[g.cat] : null, g.platform, `${g.storeCount} store${g.storeCount > 1 ? 's' : ''}`, g.inStock === true ? 'In stock' : g.inStock === false ? 'Out of stock' : null].filter(Boolean);
   const spread = multi ? g.offers[g.offers.length - 1].price - g.offers[0].price : 0;
@@ -346,7 +349,7 @@ function productPage(id) {
     const ship = o.ship ? `<span>${o.ship.free ? '<span class="instock">Free shipping</span>' : esc(o.ship.note)}</span>` : '';
     return `<a class="offer ${i === 0 ? 'best' : ''}" href="${esc(o.url)}" target="_blank" rel="noopener" aria-label="${esc(o.store)} ${money(o.price)}, opens store site">
       ${wordmark(o.storeId, o.store)}
-      <div class="o-mid">${stock}${ship}${o.originalPrice ? `<span>was ${money(o.originalPrice)}</span>` : ''}</div>
+      <div class="o-mid">${stock}${ship}${o.originalPrice ? `<span>was ${money(o.originalPrice)}</span>` : ''}${o.fx ? `<span class="fx">≈ USD from ${esc(o.fx.cur)} ${Number(o.fx.price).toLocaleString('en-US')}</span>` : ''}</div>
       <div class="o-right"><div class="o-price">${badge}${money(o.price)}</div><div class="o-sub">${o.h?.chg ? trendHtml(o.h) : `View ${ic('i-ext', 'ic')}`.replace('class="ic"', 'class="ic" style="width:13px;height:13px"')}</div></div></a>`;
   };
   const histPanel = h ? `<section class="panel hist" aria-label="Price history">
@@ -362,7 +365,7 @@ function productPage(id) {
       ${g.images.length > 1 ? `<div class="thumbs">${g.images.map((src, i) => `<button class="thumb ${i ? '' : 'on'}" data-src="${esc(src)}" aria-label="Image ${i + 1}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
     </div>
     <div class="info">
-      ${g.brand ? `<a class="p-brand" href="#/search?q=${encodeURIComponent(g.brand)}">${esc(g.brand)}</a>` : ''}
+      ${g.brand ? `<a class="p-brand" href="${g.brandId ? '#/b/' + esc(g.brandId) : '#/search?q=' + encodeURIComponent(g.brand)}">${esc(g.brand)}</a>` : ''}
       <h1 class="p-title">${esc(g.title)}</h1>
       <div class="p-spec">${spec.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
       <div class="p-hl">
@@ -391,13 +394,15 @@ function productPage(id) {
   window.scrollTo(0, 0);
 }
 
+const STORE_N = 17;
 const POPULAR = ['Tokyo Marui', 'Glock', 'Hi-Capa', 'M4 AEG', 'Gas blowback', 'HPA', 'Sniper rifle', 'Plate carrier', '0.28g BBs'];
 async function homePage() {
   setQ();
   view(`<section class="hero"><h1>The <em>best price</em> on airsoft gear, every time.</h1>
-      <p>Live prices from 12 trusted stores, matched side by side, with price history.</p>
-      <div class="stats" id="stats"><span class="stat"><span class="dot"></span><b>12</b> stores live</span></div></section>
-    <nav class="tiles" aria-label="Categories">${['rifles', 'pistols', 'snipers', 'gear', 'optics', 'parts', 'bbs'].map((c) => `<a class="tile" href="#/c/${c}">${ic('c-' + c)}<span>${CATS[c]}</span></a>`).join('')}</nav>
+      <p>Live airsoft prices from ${STORE_N} trusted stores, matched side by side, with price history.</p>
+      <div class="stats" id="stats"><span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span></div></section>
+    <nav class="tiles" aria-label="Categories">${CAT_ORDER.map((c) => `<a class="tile" href="#/c/${c}">${ic('c-' + c)}<span>${CATS[c]}</span></a>`).join('')}</nav>
+    <div class="sec-h"><h2>Shop by brand</h2><a href="#/brands">All brands ${ic('i-right')}</a></div><div class="chips brandchips" id="homeBrands">${'<span class="chip sk" style="width:96px"></span>'.repeat(8)}</div>
     <div class="sec-h"><h2>Today's deals</h2><a href="#/deals">See all ${ic('i-right')}</a></div><div id="homeDeals"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <div class="sec-h"><h2>Price drops</h2><a href="#/drops">See all ${ic('i-right')}</a></div><div id="homeDrops"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <div class="sec-h"><h2>Popular searches</h2></div><div class="chips">${POPULAR.map((c) => `<a class="chip" href="#/search?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>`);
@@ -414,7 +419,7 @@ async function homePage() {
     if (tok !== navToken || !$('#homeDrops')) return;
     remember(d.groups, d.fetchedAt);
     const hm = d.history || {};
-    if (hm.tracked) $('#stats').innerHTML = `<span class="stat"><span class="dot"></span><b>12</b> stores live</span><span class="stat"><b>${hm.tracked.toLocaleString()}</b> prices tracked</span>${hm.updated ? `<span class="stat opt">History updated ${ago(hm.updated)}</span>` : ''}`;
+    if (hm.tracked) $('#stats').innerHTML = `<span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span><span class="stat"><b>${hm.tracked.toLocaleString()}</b> prices tracked</span>${hm.updated ? `<span class="stat opt">History updated ${ago(hm.updated)}</span>` : ''}`;
     $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 10) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
     bindCarousel($('#dropsCar'), '#/drops');
   };
@@ -422,6 +427,32 @@ async function homePage() {
   if (c1) deals(c1); if (c2) drops(c2);
   api('/api/deals').then((d) => { deals(d); if (!d.partial) cache.set('/api/deals', d); }).catch((e) => { if (!c1 && $('#homeDeals')) $('#homeDeals').innerHTML = `<div class="empty sm"><p>${esc(e.message)}</p></div>`; });
   api('/api/drops').then((d) => { drops(d); cache.set('/api/drops', d); }).catch(() => {});
+  const brandsHome = (d) => { if (tok !== navToken || !$('#homeBrands')) return; $('#homeBrands').innerHTML = d.brands.slice(0, 18).map((b) => `<a class="chip" href="#/b/${esc(b.id)}">${esc(b.name)}</a>`).join('') || '<span class="fresh">Brands appear as stores load.</span>'; };
+  const c3 = cache.get('/api/brands'); if (c3) brandsHome(c3);
+  api('/api/brands').then((d) => { brandsHome(d); cache.set('/api/brands', d); }).catch(() => {});
+}
+
+// ---- brands ----
+async function brandsPage() {
+  setQ();
+  view(crumbs([['Home', '#/'], ['Brands']]) + `<div class="brandgrid">${'<div class="sk" style="height:56px"></div>'.repeat(18)}</div>`);
+  try {
+    const d = await api('/api/brands');
+    cache.set('/api/brands', d);
+    const groups = {};
+    for (const b of [...d.brands].sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))) (groups[/[a-z]/i.test(b.name[0]) ? b.name[0].toUpperCase() : '#'] ||= []).push(b);
+    view(crumbs([['Home', '#/'], ['Brands']]) + `<div class="rhead"><div class="rcount"><b>${d.brands.length}</b> brands with live airsoft listings</div></div>
+      ${Object.entries(groups).map(([k, l]) => `<section class="bsec"><h2 class="bletter">${esc(k)}</h2><div class="brandgrid">${l.map((b) => `<a class="bcard" href="#/b/${esc(b.id)}"><b>${esc(b.name)}</b><small>${b.count.toLocaleString()} listing${b.count === 1 ? '' : 's'}</small></a>`).join('')}</div></section>`).join('')}`);
+  } catch (e) { errorView(e); }
+}
+async function brandPage(id) {
+  setQ();
+  const known = (cache.get('/api/brands')?.brands || []).find((b) => b.id === id);
+  const label = known?.name || 'Brand';
+  view(`${crumbs([['Home', '#/'], ['Brands', '#/brands'], [label]])}${skCards()}`);
+  try {
+    await loadLive('/api/brand?id=' + encodeURIComponent(id), (d) => listView(d, { crumb: [['Home', '#/'], ['Brands', '#/brands'], [d.brand.name]], title: (n) => `<b>${n}</b> from <b>${esc(d.brand.name)}</b> ${freshness(d)}` }));
+  } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
 function watchlistPage() {
@@ -544,6 +575,8 @@ function route() {
   if (h === '#/watchlist') { setTabs('watch'); return watchlistPage(); }
   if (h === '#/stores' || h === '#/more') { setTabs('stores'); return storesPage(); }
   if (h === '#/marketplaces') { setTabs('markets'); return marketplacesPage(); }
+  if (h === '#/brands') { setTabs('home', 'brands'); return brandsPage(); }
+  if (h.startsWith('#/b/')) { setTabs('home', 'brands'); return brandPage(decodeURIComponent(h.slice(4).split('?')[0])); }
   setTabs('home'); return homePage();
 }
 window.route = route;

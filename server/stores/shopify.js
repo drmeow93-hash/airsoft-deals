@@ -4,31 +4,41 @@ const { get, money } = require('../http');
 
 // One price per product everywhere (search, deals, history): the cheapest variant, so price
 // history never flips between variants.
-function fromProduct(base, p) {
+function fromProduct(base, p, fx = null) {
   const vs = p.variants || [];
   let min = null;
   for (const v of vs) { const price = money(v.price); if (price && (!min || price < min.price)) min = { price, cmp: money(v.compare_at_price) }; }
   if (!min) return null;
+  const cv = (v) => (v && fx ? Math.round((v / fx.rate) * 100) / 100 : v);
   return {
     title: p.title,
     brand: p.vendor || null,
-    price: min.price,
-    originalPrice: min.cmp && min.cmp > min.price ? min.cmp : null,
+    ptype: p.product_type || undefined,
+    tags: Array.isArray(p.tags) ? p.tags.slice(0, 30) : typeof p.tags === 'string' ? p.tags.split(/,\s*/).slice(0, 30) : undefined,
+    price: cv(min.price),
+    originalPrice: min.cmp && min.cmp > min.price ? cv(min.cmp) : null,
+    fx: fx ? { cur: fx.cur, price: min.price } : undefined,
     inStock: vs.some((v) => v.available),
     image: p.images?.[0]?.src || null,
     url: `${base}/products/${p.handle}`,
   };
 }
 
-function makeShopifyStore({ id, name, base, location, blurb }) {
+// fx: { cur: 'HKD', rate: 7.8 } for stores that only price in another currency (shown converted to USD).
+function makeShopifyStore({ id, name, base, location, blurb, fx = null }) {
+  const cv = (v) => (v && fx ? Math.round((v / fx.rate) * 100) / 100 : v);
   const norm = (p) => {
-    const price = money(p.price_min ?? p.price);
-    const cmp = money(p.compare_at_price_min ?? p.compare_at_price_max);
+    const raw = money(p.price_min ?? p.price);
+    const price = cv(raw);
+    const cmp = cv(money(p.compare_at_price_min ?? p.compare_at_price_max));
     return {
       title: p.title,
       brand: p.vendor || null,
+      ptype: p.type || undefined,
+      tags: Array.isArray(p.tags) ? p.tags.slice(0, 30) : undefined,
       price,
       originalPrice: cmp && price && cmp > price ? cmp : null,
+      fx: fx ? { cur: fx.cur, price: raw } : undefined,
       inStock: typeof p.available === 'boolean' ? p.available : null,
       image: p.image || p.featured_image?.url || null,
       url: base + (p.url ? p.url.split('?')[0] : `/products/${p.handle}`),
@@ -47,7 +57,7 @@ function makeShopifyStore({ id, name, base, location, blurb }) {
     for (let page = 1; page <= 4; page++) {
       const data = await get(`${base}/products.json?limit=250&page=${page}`, { json: true, ttlMs: 30 * 60 * 1000 });
       const prods = data?.products || [];
-      for (const p of prods) { const x = fromProduct(base, p); if (x && x.originalPrice) out.push(x); }
+      for (const p of prods) { const x = fromProduct(base, p, fx); if (x && x.originalPrice) out.push(x); }
       if (prods.length < 250) break;
     }
     return out;
@@ -58,13 +68,13 @@ function makeShopifyStore({ id, name, base, location, blurb }) {
     const out = [];
     for (let page = 1; page <= maxPages; page++) {
       const prods = (await fetchJson(`${base}/products.json?limit=250&page=${page}`))?.products || [];
-      for (const p of prods) { const x = fromProduct(base, p); if (x) out.push(x); }
+      for (const p of prods) { const x = fromProduct(base, p, fx); if (x) out.push(x); }
       if (prods.length < 250) break;
     }
     return out;
   }
 
-  return { id, name, base, location, blurb, platform: 'Shopify', search, deals, catalog };
+  return { id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, search, deals, catalog };
 }
 
 module.exports = { makeShopifyStore, fromProduct };

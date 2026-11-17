@@ -1,6 +1,8 @@
 // Deal detection, categories, and cross-store grouping ("the same product at different stores").
 const { thumb } = require('./http');
 const history = require('./history');
+const { classify, isAirsoft } = require('./classify');
+const brands = require('./brands');
 
 const STOP = new Set(['airsoft', 'the', 'and', 'for', 'with', 'w', 'by', 'a', 'of', 'new', 'version', 'ver', 'edition', 'in', 'gun', 'replica', 'full', 'metal', 'licensed', 'official', 'officially', 'trademarked', 'series', 'model', 'style', 'type', 'package', 'pistol', 'rifle', 'airgun', 'bb', 'electric', 'gas', 'blowback', 'blow', 'back', 'gbb', 'gbbr', 'aeg', 'co2', 'powered', 'semi', 'auto', 'automatic', 'only', 'sale', 'deal', 'clearance', 'free', 'shipping', 'us', 'usa', 'kit', 'set', 'w/', 'x1', 'from', 'on', 'to']);
 const COLORS = new Set(['black', 'blk', 'bk', 'tan', 'fde', 'de', 'od', 'green', 'grey', 'gray', 'coyote', 'brown', 'ranger', 'multicam', 'silver', 'white', 'red', 'blue', 'pink', 'sand', 'desert', 'foliage', 'olive', 'bronze', 'cerakote', 'tone', 'two', 'dark', 'earth', 'flat', 'wolf']);
@@ -28,21 +30,58 @@ function platformOf(title) {
   return null;
 }
 
-// Category used by the category nav and filters. Order matters: a "Glock magazine" is a part,
-// a "Glock holster" is gear, a "Glock" is a pistol.
-const CATS = [
-  ['bbs', /\b(bbs?|bio ?bbs?|biodegradable|green ?gas|propane|co2 (cartridges?|12g|capsules?)|12g co2|top ?gas|red ?gas|\d?\.\d+ ?g (bbs?|tracer)|0\.\d+g)\b/],
-  ['parts', /\b(magazines?|mags?|midcap|hicap|hop[\s-]?ups?|barrels?|gearbox|motors?|pistons?|springs?|bucking|nozzle|gear ?set|mosfet|etu|batter(y|ies)|chargers?|lipo|nimh|grips?|stocks?|handguards?|rails?|tracer units?|silencers?|suppressors?|flash ?hider|engine|regulator|hpa (line|tank)|tanks?|triggers?|slides?|frames?|o-?rings?|tappet|cylinder|selector|parts?|upgrade|bolt carrier|outer barrel|inner barrel)\b/],
-  ['optics', /\b(scopes?|red ?dots?|holo(graphic|sight)?|sights?|magnifiers?|optics?|lasers?|flash ?lights?|weapon ?lights?|lpvo|reflex|acog|eotech|riser|mount)\b/],
-  ['gear', /\b(vests?|plate ?carriers?|chest ?rigs?|pouch(es)?|helmets?|masks?|goggles?|gloves?|belts?|holsters?|slings?|bags?|cases?|backpacks?|patch(es)?|uniforms?|pants|shirts?|jackets?|boots|eye ?pro|face ?protection|headsets?|knee ?pads?|elbow ?pads?|hats?|caps?|shemagh|balaclava|radio|dump ?pouch)\b/],
-  ['snipers', /\b(snipers?|bolt[\s-]?action|vsr|l96|m24|srs|m40|m700|awm|mb\d{2}|tac-?41|ssg|kar98)\b/],
-  ['pistols', /\b(pistols?|glock|g17|g19|g18|g34|g45|hicapa|hi[\s-]?capa|1911|m9|m92|p226|p320|m17|m18|usp|deagle|desert eagle|revolver|m&p|cz|beretta|sig ?p|aap-?01|tm22|walther|ppq|px4|fn ?509|five-?seven|mk23|smg-?9)\b/],
-  ['rifles', /\b(aegs?|rifles?|carbines?|m4|m4a1|ar-?15|ak|ak47|ak74|akm|smgs?|mp5|mp7|ump|p90|kriss|vector|gbbr|shotguns?|lmg|m249|hk416|416|scar|g36|aug|mk18|mk12|sr-?25|dmr|m14|famas|tavor|mcx|mpx|arp|cm16|ssr|vfc|krytac|trident|lancer)\b/],
-];
-function categoryOf(title) {
-  const t = ' ' + String(title).toLowerCase().replace(/[^a-z0-9.&\- ]+/g, ' ') + ' ';
-  for (const [id, re] of CATS) if (re.test(t)) return id;
-  return 'other';
+// Category for the category nav and filters (see classify.js). Accepts a title or a listing.
+function categoryOf(p) { return classify(typeof p === 'string' ? { title: p } : p).cat; }
+
+// ---- airsoft-only filter + live brand registry ----
+// Every listing from every store passes through prep(): non-airsoft items are dropped (and
+// counted per store and reason), the rest get a category and a brand.
+const filtered = new Map(); // url -> { storeId, reason, title }
+const keptUrls = new Map(); // url -> storeId
+const liveBrands = new Map(); // brandId -> { id, name, urls: Map(url -> cat) }
+function noteBrand(b, url, cat) {
+  let e = liveBrands.get(b.id);
+  if (!e) liveBrands.set(b.id, (e = { id: b.id, name: b.name, urls: new Map() }));
+  e.urls.set(url, cat);
+  if (e.urls.size > 3000) e.urls.delete(e.urls.keys().next().value);
+}
+function judge(p, store) {
+  if (p._cat !== undefined) return p._cat ? { ok: true, cat: p._cat } : { ok: false, reason: p._why };
+  const c = classify(p);
+  const a = isAirsoft(p, c, store);
+  return a.ok ? { ok: true, cat: c.cat } : { ok: false, reason: a.reason };
+}
+function prep(p, store) {
+  const j = judge(p, store);
+  const url = p.url || p.title;
+  if (!j.ok) {
+    if (filtered.size > 30000) filtered.delete(filtered.keys().next().value);
+    filtered.set(url, { storeId: store.id, reason: j.reason, title: p.title });
+    return null;
+  }
+  let b = brands.detect(p);
+  // A licensed firearm name (Glock, SIG, H&K…) is a brand only for the airsoft guns/mags made under
+  // that licence; a "Glock holster" from another maker doesn't belong on the Glock page.
+  if (b && b.licensed && !['rifles', 'pistols', 'snipers', 'mags'].includes(j.cat)) b = null;
+  if (keptUrls.size > 60000) keptUrls.delete(keptUrls.keys().next().value);
+  keptUrls.set(url, store.id);
+  if (b) noteBrand(b, url, j.cat);
+  const { ptype, tags, cats, _cat, _why, ...rest } = p;
+  return enrich({ ...rest, cat: j.cat, brand: b ? b.name : null, brandId: b ? b.id : null, licensed: b?.licensed || undefined }, store);
+}
+// Memoize the verdict on long-lived catalog items (index stores) so they're classified once.
+function judgeCached(p) { if (p._cat === undefined) { const j = judge(p); p._cat = j.ok ? j.cat : null; p._why = j.reason; } return p._cat; }
+function filterStats() {
+  const byStore = {}, byReason = {};
+  for (const { storeId, reason } of filtered.values()) {
+    (byStore[storeId] ||= { dropped: 0, kept: 0 }).dropped++;
+    byReason[reason] = (byReason[reason] || 0) + 1;
+  }
+  for (const id of keptUrls.values()) (byStore[id] ||= { dropped: 0, kept: 0 }).kept++;
+  return { dropped: filtered.size, kept: keptUrls.size, byReason, byStore, examples: [...filtered.values()].slice(-12).map((f) => ({ store: f.storeId, reason: f.reason, title: f.title })) };
+}
+function brandList() {
+  return [...liveBrands.values()].map((e) => ({ id: e.id, name: e.name, count: e.urls.size })).filter((b) => b.count > 0).sort((a, b) => b.count - a.count);
 }
 
 function features(p) {
@@ -65,6 +104,8 @@ const subset = (a, b) => [...a].every((x) => b.has(x));
 // prices are within 1.6x, and the remaining title words overlap strongly.
 function isMatch(a, fa, b, fb) {
   if (a.storeId === b.storeId) return false;
+  if (a.cat && b.cat && a.cat !== b.cat) return false;
+  if (a.brandId && b.brandId && a.brandId !== b.brandId && !a.licensed && !b.licensed) return false;
   if (!sameSet(fa.types, fb.types)) return false;
   if (!sameSet(fa.gens, fb.gens)) return false;
   if (fa.platform && fb.platform && fa.platform !== fb.platform) return false;
@@ -126,9 +167,10 @@ function groupProducts(items) {
     const g = {
       id: 'g' + (++gid).toString(36),
       title: best.title,
-      brand: offers.find((o) => o.brand)?.brand || null,
+      brand: offers.find((o) => o.brand && !o.licensed)?.brand || offers.find((o) => o.brand)?.brand || null,
+      brandId: offers.find((o) => o.brand && !o.licensed)?.brandId || offers.find((o) => o.brandId)?.brandId || null,
       platform: platformOf(best.title),
-      cat: categoryOf(best.title),
+      cat: best.cat || categoryOf(best),
       images: [...new Set(offers.map((o) => o.image).filter(Boolean))],
       offers,
       storeCount: offers.length,
@@ -157,4 +199,4 @@ function groupProducts(items) {
   return groups;
 }
 
-module.exports = { enrich, groupProducts, categoryOf, platformOf, isMatch, features };
+module.exports = { enrich, prep, judgeCached, groupProducts, categoryOf, platformOf, isMatch, features, filterStats, brandList, noteBrand, brands };

@@ -12,6 +12,7 @@ function norm(p, storeDeal = false) {
   return {
     title: p.name.replace(/&#8211;/g, '–').replace(/&amp;/g, '&').replace(/&#8217;/g, '’'),
     brand: 'Wolverine Airsoft',
+    cats: (p.categories || []).map((c) => c.name).slice(0, 8),
     price,
     originalPrice: reg && price && reg > price ? reg : null,
     inStock: typeof p.is_in_stock === 'boolean' ? p.is_in_stock : null,
@@ -24,7 +25,7 @@ function norm(p, storeDeal = false) {
 module.exports = {
   id: 'wolverine', name: 'Wolverine Airsoft', base, location: 'Pennsylvania, USA',
   blurb: 'HPA engine manufacturer, direct store (WooCommerce Store API)',
-  platform: 'WooCommerce', mode: 'live',
+  platform: 'WooCommerce', mode: 'live', airsoftOnly: true, // HPA airsoft maker: everything it sells is airsoft
   search: async (q) => (await get(`${base}/wp-json/wc/store/v1/products?search=${encodeURIComponent(q)}&per_page=20`, { json: true })).map((p) => norm(p)).filter((p) => p.price),
   // Whole catalog for the price-history collector.
   catalog: async ({ fetchJson }) => {

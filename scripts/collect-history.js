@@ -10,6 +10,7 @@ const path = require('path');
 const { stores } = require('../server/stores');
 const { get } = require('../server/http');
 const { keyOf, pairs, summarize } = require('../server/history');
+const { classify, isAirsoft } = require('../server/classify');
 
 const DIR = path.join(__dirname, '..', 'data', 'history');
 const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
@@ -64,7 +65,8 @@ function writeStore(file) {
   try { oldDrops = JSON.parse(fs.readFileSync(path.join(DIR, 'drops.json'), 'utf8')).items || []; } catch {}
   const okStores = new Set();
   const drops = [];
-  let changed = 0, added = 0;
+  let changed = 0, added = 0, pruned = 0;
+  const dropReasons = {};
   // Different stores run in parallel; requests to the same store are sequential and spaced out.
   await Promise.all(targets.map(async (s) => {
     let items;
@@ -72,6 +74,15 @@ function writeStore(file) {
     if (!items.length) return;
     okStores.add(s.id);
     const file = readStore(s.id);
+    // Airsoft only: non-airsoft listings are not tracked, and any history they had is removed.
+    items = items.filter((p) => {
+      const a = isAirsoft(p, classify(p), s);
+      if (a.ok) return true;
+      dropReasons[a.reason] = (dropReasons[a.reason] || 0) + 1;
+      const k = keyOf(p.url);
+      if (file.items[k]) { delete file.items[k]; pruned++; }
+      return false;
+    });
     for (const p of items) {
       const k = keyOf(p.url);
       const v = file.items[k];
@@ -87,7 +98,7 @@ function writeStore(file) {
     }
     for (const p of items) {
       const h = summarize(pairs(file.items[keyOf(p.url)] || []));
-      if (h && h.chg < 0 && h.pct <= -1) drops.push({ ...p, storeId: s.id, prev: h.prev, prevAt: h.prevAt, at: h.at });
+      if (h && h.chg < 0 && h.pct <= -1) { const { tags, cats, ...d } = p; drops.push({ ...d, storeId: s.id, prev: h.prev, prevAt: h.prevAt, at: h.at }); }
     }
     file.updated = NOW;
     writeStore(file);
@@ -101,5 +112,6 @@ function writeStore(file) {
   const tracked = files.filter((f) => f !== 'drops.json').reduce((n, f) => n + Object.keys(JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')).items).length, 0);
   fs.writeFileSync(path.join(DIR, 'index.json'), JSON.stringify({ updated: NOW, tracked, files }, null, 1) + '\n');
   console.log(`done: ${okStores.size}/${targets.length} stores, ${tracked} tracked, ${added} new, ${changed} price changes, ${allDrops.length} recent drops`);
+  console.log(`airsoft filter: ${Object.values(dropReasons).reduce((a, b) => a + b, 0)} non-airsoft listings skipped, ${pruned} removed from history`, dropReasons);
   process.exit(0);
 })();

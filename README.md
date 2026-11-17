@@ -13,6 +13,11 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 | Fox Airsoft | Same as above |
 | Ballahack Airsoft (VA) | Same as above |
 | SpeedQB (UT) | Same as above |
+| Brill Armory | Same as above |
+| Echo1 USA (CA) | Same as above |
+| WGC Shop (HK) | Same as above. Prices exist only in HKD, so they're converted to USD at 7.8 HKD/USD and the original HKD price is shown next to the offer. |
+| RedWolf Airsoft (HK) | Magento `/catalogsearch/result/` HTML (allowed; storefront currency is USD) |
+| Clandestine Airsoft | Zen Cart `main_page=search_result` HTML (no robots.txt restrictions) |
 | Airsoft Station (KY) | BigCommerce `/search.php`; deals from `/deals/` |
 | Airsoft Megastore (CA) | OpenCart `route=product/search`; deals from `/Mega-Deals` |
 | Wolverine Airsoft (PA) | WooCommerce Store API `/wp-json/wc/store/v1/products` (public, not disallowed). Its HTML pages show a Cloudflare check to scripts, so we don't touch those. |
@@ -30,11 +35,17 @@ On Render's free plan the instance sleeps after about 15 minutes idle. Indexes r
 
 Requests use an honest User-Agent (`AirsoftDealsFinder/1.0`), never a browser disguise, and responses are cached.
 
-**Not price-checked.** These are listed as direct links on the in-app **More Stores** tab.
+**Not price-checked.** These are listed as direct links on the in-app **Stores** tab (re-checked Nov 2026).
 - **Evike.com:** a Cloudflare bot check (HTTP 403) blocks every URL, including robots.txt. We don't bypass bot checks. The way in is their affiliate program (below).
-- **Sniper Airsoft:** the real store is the German shop sniper-as.de, priced in EUR, so it isn't compared against US prices. sniperairsoft.com is a parked domain.
+- **MiR Tactical, Airsoft Junkiez:** BigCommerce stores behind a Cloudflare challenge (captcha).
+- **Taiwangun, JK Army:** Cloudflare challenge pages.
+- **US Airsoft:** robots.txt disallows its search (`/s/search`) and there's no public product JSON.
+- **Novritsch (US):** robots.txt disallows the WooCommerce API (`/wp-json/`) and the site search (`?s=`).
+- **East Coast Airsoft, OPSGEAR:** products are drawn by JavaScript from an `/api` path that robots.txt disallows.
+- **Nashville Airsoft:** products load through a JavaScript store widget; no public JSON or plain results page.
+- **Sniper Airsoft:** the real store is the German shop sniper-as.de, priced in EUR, so it isn't compared against US prices.
 - **ReplicaAirguns:** a review blog, not a store. It's listed under "Reviews".
-- **Elite Tactical Supply:** dropped. elitetacticalsupply.com is a parked domain for sale, and the business is an Ohio firearms gunsmith, not an airsoft store.
+- **Dropped:** Just Airsoft Guns (parked domain), Xtreme Airsoft Superstore, Liberty Tactical, GI Tactical, Airsoft Tactical (domains don't resolve or are parked), Elite Tactical Supply (parked; a firearms gunsmith).
 
 ### Affiliate / product feeds
 `server/stores/feed.js` can add any store from an official product feed (CSV, TSV, or JSON, optionally gzipped). Set these environment variables on Render:
@@ -139,6 +150,11 @@ Render's free plan has no disk, so price history lives in the repo:
 - **Server.** Loads the bundled copy at boot, then pulls the latest from `raw.githubusercontent.com` 45 s after boot and every 3 hours (`HISTORY_RAW_BASE` overrides the URL). A live price that differs from the last recorded one counts as a new point.
 - **Honesty.** Nothing is back-filled. With one recorded price the app says "Tracking since <date>"; arrows (▼ green = cheaper, ▲ red = pricier, vs. the previous recorded price) appear only after a real change.
 - Run it by hand: `node scripts/collect-history.js [storeId ...]`. `scripts/history-loop.sh` runs the collector twice a day on any always-on machine and pushes the data (used on the build box until the Actions workflow is enabled).
+
+## Categories, brands and airsoft-only (`server/classify.js`, `server/brands.js`)
+- **Categories:** Rifles/AEG, Pistols/GBB, Snipers, Magazines, Holsters, Gear, Optics, Parts, Batteries, BBs, Gas & CO2, Other. The classifier uses the store's own product type/categories, title keywords with negative rules (a magazine "for M4" is a magazine; M4/AK/AEG/rifle/carbine/SMG/shotgun is never a pistol; accessory words after the gun word win, "w/ 2 mags" bundles stay guns), known model names (Glock, Hi-Capa, 1911, M9, USP, P226, MK23 → pistols; VSR-10, SSG, L96, SRS, TAC-41 → snipers) and price sanity. Low confidence goes to "Other". `npm test` runs 184 labelled titles (99.5%) plus 115 titles labelled blind before tuning (first-pass accuracy 86.6% and then 93.8%; 100% now) and 176 airsoft keep/drop cases.
+- **Brands:** the user's 226-brand list (`data/brand-list-from-user.txt`) with slash-names as aliases ("Elite Force / Umarex", "UTG / Leapers"…). Title first, then the store's vendor field; text after "for/fits/compatible" is ignored; ordinary-word brands (BOLT, MAG, STAR, WELL, Matrix…) match only at the start of a title. Licensed firearm names (Glock, SIG, H&K, FN, Colt…) count only on airsoft guns/mags and lose to the airsoft maker ("Glock 17 by Umarex" is Elite Force/Umarex). A brand chip/page appears only once a live listing matches it.
+- **Airsoft only:** every listing from every store (search, deals, categories, brands, price drops, history collector) passes `isAirsoft()`. It drops fishing, real-firearm items, knives/tools, food/drink, toys/collectibles, paintball/gel/foam blasters, .177/.22 pellet and steel-BB airguns, general apparel, gift cards, events/rentals/insurance/mystery boxes, and anything uncategorised without an airsoft signal. Drop counts per store and reason are in `/api/stores` → `airsoftFilter`.
 
 ## Matching
 Listings are grouped as one product only when accessory type words agree, generation/mark/version tokens match exactly (Gen 4 ≠ Gen 5), model numbers agree, platform agrees (CO2 ≠ gas), explicit colors don't conflict, distinct-variant words (Match, Custom, CRB, SPR, MOS, …) don't differ, prices are within 1.6×, and titles overlap strongly. Brand spellings are normalized (TM = Tokyo Marui, Umarex = Elite Force, G&G).

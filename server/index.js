@@ -4,7 +4,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { stores, skipped, reviews } = require('./stores');
 const zlib = require('zlib');
-const { enrich, groupProducts, categoryOf } = require('./deals');
+const { enrich, prep, judgeCached, groupProducts, filterStats, brandList, noteBrand, brands } = require('./deals');
 const marketplaces = require('./marketplaces');
 const history = require('./history');
 const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
@@ -31,7 +31,7 @@ async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
   let slow = 0;
   const status = settled.map((r, i) => {
     const s = stores[i];
-    if (r.value) { r.value.forEach((p) => items.push(enrich(p, s))); return { store: s.name, id: s.id, ok: true, count: r.value.length }; }
+    if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined }; }
     if (r.slow) { slow++; return { store: s.name, id: s.id, ok: false, slow: true, error: 'Still loading' }; }
     const error = String(r.error?.message || r.error);
     return { store: s.name, id: s.id, ok: false, indexing: /^Building catalog index/.test(error), error };
@@ -103,8 +103,9 @@ async function computeDeals() {
 }
 
 app.get('/api/stores', (req, res) => res.json({
-  stores: stores.map(({ id, name, base, location, blurb, platform, mode, index, shipping }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', shipping, index: index ? index.info() : undefined })),
+  stores: stores.map(({ id, name, base, location, blurb, platform, mode, index, shipping, currency }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', shipping, currency, index: index ? index.info() : undefined })),
   history: history.meta(),
+  airsoftFilter: (({ dropped, kept, byReason, byStore }) => ({ dropped, kept, byReason, byStore }))(filterStats()),
   skipped,
   reviews,
 }));
@@ -137,14 +138,14 @@ app.get('/api/deals', async (req, res) => sendJson(res, await cached('deals', 10
 
 // Category browse: catalog-indexed stores contribute their whole category (cheap, in memory);
 // live stores answer one category search each.
-const CAT_TERMS = { rifles: 'aeg', pistols: 'pistol', snipers: 'sniper', gear: 'plate carrier', optics: 'red dot', parts: 'hop up', bbs: 'bbs' };
+const CAT_TERMS = { rifles: 'aeg', pistols: 'pistol', snipers: 'sniper', mags: 'magazine', holsters: 'holster', gear: 'plate carrier', optics: 'red dot', parts: 'hop up', batteries: 'lipo battery', bbs: 'bbs', gas: 'green gas', other: 'airsoft' };
 async function computeBrowse(cat) {
   const out = await fanOut(async (s) => {
     if (s.index) {
-      const list = s.index.idx.items.filter((p) => (p._c ||= categoryOf(p.title)) === cat);
-      return list.sort((a, b) => (b.originalPrice ? 1 : 0) - (a.originalPrice ? 1 : 0)).slice(0, 36).map(({ _n, _w, _c, ...p }) => p);
+      const list = s.index.idx.items.filter((p) => judgeCached(p) === cat);
+      return list.sort((a, b) => (b.originalPrice ? 1 : 0) - (a.originalPrice ? 1 : 0)).slice(0, 36).map(({ _n, _w, ...p }) => p);
     }
-    return (await s.search(CAT_TERMS[cat])).filter((p) => categoryOf(p.title) === cat);
+    return s.search(CAT_TERMS[cat]);
   });
   const groups = groupProducts(out.items).filter((g) => g.cat === cat).sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
   return { partial: out.slow > 0, body: JSON.stringify({ cat, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
@@ -158,13 +159,41 @@ app.get('/api/browse', async (req, res) => {
 // Price drops: products whose latest recorded price is lower than the one before (last 21 days),
 // from the committed history plus drops this server has seen live since it woke up.
 async function computeDrops() {
-  const items = history.dropItems().filter((d) => storeById[d.storeId]).map((d) => enrich(d, storeById[d.storeId]));
+  const items = history.dropItems().filter((d) => storeById[d.storeId]).map((d) => prep(d, storeById[d.storeId])).filter(Boolean);
   const groups = groupProducts(items).filter((g) => g.h && g.h.chg < 0)
     .sort((a, b) => a.h.pct - b.h.pct);
   const m = history.meta();
   return { partial: false, body: JSON.stringify({ groups, history: { since: m.since, updated: m.updated, tracked: m.tracked }, fetchedAt: new Date().toISOString(), status: [] }) };
 }
 app.get('/api/drops', async (req, res) => sendJson(res, await cached('drops', 10 * 60 * 1000, 60 * 60 * 1000, computeDrops)));
+
+// Brands: the user's brand directory, shown only for brands with at least one live airsoft listing
+// (seen in a catalog index, the deals feed, a search or a category page since the server woke up).
+let brandSeeded = 0;
+function seedBrands() {
+  if (Date.now() - brandSeeded < 10 * 60 * 1000) return;
+  brandSeeded = Date.now();
+  for (const s of stores) {
+    if (!s.index) continue;
+    for (const p of s.index.idx.items) { const cat = judgeCached(p); if (!cat) continue; const b = brands.detect(p); if (b) noteBrand(b, p.url, cat); }
+  }
+}
+app.get('/api/brands', (req, res) => { seedBrands(); res.set('Cache-Control', 'public, max-age=300'); res.json({ brands: brandList() }); });
+async function computeBrand(id) {
+  const b = brands.byId(id);
+  const out = await fanOut(async (s) => {
+    if (s.index) return s.index.idx.items.filter((p) => judgeCached(p) && brands.detect(p)?.id === id).slice(0, 48).map(({ _n, _w, ...p }) => p);
+    return s.search(b.name);
+  });
+  const groups = groupProducts(out.items).filter((g) => g.brandId === id || g.offers.some((o) => o.brandId === id))
+    .sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
+  return { partial: out.slow > 0, body: JSON.stringify({ brand: { id: b.id, name: b.name, aliases: b.aliases, licensed: b.licensed || undefined }, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+}
+app.get('/api/brand', async (req, res) => {
+  const id = String(req.query.id || '');
+  if (!brands.byId(id)) return res.status(404).json({ error: 'Unknown brand' });
+  sendJson(res, await cached('b:' + id, 10 * 60 * 1000, 6 * 60 * 60 * 1000, () => computeBrand(id)));
+});
 
 // Autocomplete: product names from the in-memory catalogs, recent searches and popular terms.
 const POPULAR = ['Glock', 'Hi-Capa', 'M4 AEG', 'AK', 'MP5', 'Tokyo Marui', 'Elite Force', 'Krytac Trident', 'VFC', 'KWA', 'Novritsch', 'Sniper rifle', 'VSR-10', 'HPA', 'Gas blowback', 'Plate carrier', 'Red dot', 'Green gas', '0.28g BBs', '0.25g BBs', 'Hop up', 'Magazine', 'Mask', 'Battery'];
@@ -176,11 +205,13 @@ app.get('/api/suggest', (req, res) => {
   const out = new Map();
   const add = (s) => { const k = s.toLowerCase(); if (!out.has(k) && out.size < 8) out.set(k, s); };
   POPULAR.filter((p) => p.toLowerCase().startsWith(q)).forEach(add);
+  seedBrands();
+  brandList().filter((b) => b.name.toLowerCase().startsWith(q)).slice(0, 3).forEach((b) => add(b.name));
   for (const k of results.keys()) if (k.startsWith('s:' + q) && k.length < 40) add(k.slice(2).replace(/\b\w/g, (c) => c.toUpperCase()));
   for (const s of stores) {
     if (out.size >= 8 || !s.index) continue;
     for (const p of s.index.idx.items) {
-      if (!terms.every((t) => p._n.includes(t))) continue;
+      if (!terms.every((t) => p._n.includes(t)) || !judgeCached(p)) continue;
       const short = p.title.replace(/\s*[-–|(].*$/, '').split(/\s+/).slice(0, 7).join(' ');
       if (terms.every((t) => short.toLowerCase().includes(t))) add(short);
       if (out.size >= 8) break;

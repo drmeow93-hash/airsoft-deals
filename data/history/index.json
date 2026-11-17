@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-17T03:44:01.850Z",
- "tracked": 16329,
+ "updated": "2026-11-17T04:44:15.957Z",
+ "tracked": 29826,
  "files": [
   "airsoftatlanta.json",
   "airsoftextreme.json",
@@ -9,11 +9,16 @@
   "airsoftstation.json",
   "amped.json",
   "ballahack.json",
+  "brill.json",
+  "clandestine.json",
   "drops.json",
+  "echo1.json",
   "ehobbyasia.json",
   "foxairsoft.json",
   "megastore.json",
+  "redwolf.json",
   "speedqb.json",
+  "wgc.json",
   "wolverine.json"
  ]
 }

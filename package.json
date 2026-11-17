@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
+    "test": "node test/run.js",
     "screenshots": "node scripts/screenshots.js",
     "icons": "node scripts/make-icons.js",
     "ios:build": "node scripts/build-www.js && npx cap sync ios",
