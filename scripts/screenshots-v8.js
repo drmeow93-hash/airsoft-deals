@@ -37,6 +37,7 @@ const pre = process.argv[3] || 'v8';
       await p.click('#impGo'); await p.waitForSelector('#impR .drow', { timeout: 30000 }); await p.waitForTimeout(2500);
       if (name === 'iphone') await p.evaluate(() => { document.getElementById('impR').scrollIntoView({ block: 'start' }); scrollBy(0, -140); });
       await p.waitForTimeout(800); await snap('import');
+      await p.evaluate(() => acct.post('delete', {}).catch(() => {})); // don't leave a test account on the server
     });
   }
   await b.close();
