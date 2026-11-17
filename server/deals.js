@@ -5,10 +5,10 @@ const PLATFORMS = { aeg: 'aeg', gbb: 'gbb', gbbr: 'gbb', blowback: 'gbb', hpa: '
 
 const words = (s) => String(s).toLowerCase().replace(/["'’]/g, '').replace(/[^a-z0-9.]+/g, ' ').trim().split(/\s+/).filter(Boolean);
 function features(p) {
-  const w = words(`${p.brand || ''} ${p.title}`);
+  const w = words(`${p.brand || ''} ${p.title}`.replace(/\b(gen|mk|mod|ver|v)\s+(\d+)/gi, '$1$2'));
   const toks = new Set(w.filter((t) => t.length > 1 && !STOP.has(t)));
   const types = new Set(w.map((t) => TYPE_WORDS[t]).filter(Boolean));
-  const nums = new Set(w.filter((t) => /\d/.test(t)));
+  const nums = new Set(w.filter((t) => /\d/.test(t) && t !== 'co2'));
   return { toks, types, nums };
 }
 const jaccard = (a, b) => { let i = 0; for (const t of a) if (b.has(t)) i++; return i / (a.size + b.size - i || 1); };

@@ -13,13 +13,14 @@ async function fanOut(fn) {
   const status = settled.map((r, i) => {
     const s = stores[i];
     if (r.status === 'fulfilled') { r.value.forEach((p) => items.push(enrich(p, s))); return { store: s.name, id: s.id, ok: true, count: r.value.length }; }
-    return { store: s.name, id: s.id, ok: false, error: String(r.reason?.message || r.reason) };
+    const error = String(r.reason?.message || r.reason);
+    return { store: s.name, id: s.id, ok: false, indexing: /^Building catalog index/.test(error), error };
   });
   return { items, status, ms: Date.now() - t0, fetchedAt: new Date().toISOString() };
 }
 
 app.get('/api/stores', (req, res) => res.json({
-  stores: stores.map(({ id, name, base, location, blurb, platform }) => ({ id, name, url: base, location, blurb, platform })),
+  stores: stores.map(({ id, name, base, location, blurb, platform, mode, index }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', index: index ? index.info() : undefined })),
   skipped,
 }));
 
@@ -52,6 +53,9 @@ app.get('/api/deals', async (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
+
+// Start background indexes for stores that can't be searched live (staggered so they don't overlap at boot).
+stores.filter((s) => s.index).forEach((s, i) => s.index.start(3000 + i * 4000));
 
 const port = process.env.PORT || 8787;
 app.listen(port, () => console.log(`Felony's Airsoft Emporium running on http://localhost:${port}`));

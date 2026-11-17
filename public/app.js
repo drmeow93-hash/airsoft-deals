@@ -10,6 +10,11 @@ const STORE_INFO = {
   speedqb: { name: 'SpeedQB', sub: 'Gear & HPA' },
   airsoftstation: { name: 'Airsoft Station', sub: 'Kentucky' },
   megastore: { name: 'Airsoft Megastore', sub: 'California' },
+  wolverine: { name: 'Wolverine Airsoft', sub: 'HPA direct' },
+  ehobbyasia: { name: 'eHobbyAsia', sub: 'Hong Kong · ships US' },
+  airsoftextreme: { name: 'Airsoft Extreme', sub: 'Bay Area' },
+  amped: { name: 'Amped Airsoft', sub: 'Pennsylvania' },
+  airsoftgi: { name: 'Airsoft GI', sub: 'SoCal' },
 };
 const wordmark = (id, name) => `<div class="wm wm-${esc(id)}">${esc(STORE_INFO[id]?.name || name)}<small>${esc(STORE_INFO[id]?.sub || '')}</small></div>`;
 
@@ -60,7 +65,7 @@ function bindCards(root) {
     el.addEventListener('keydown', (e) => e.key === 'Enter' && go());
   });
 }
-function statusPills(st) { return `<div class="status">${st.map((s) => `<span class="pill ${s.ok ? '' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.ok ? s.count : 'unavailable'}</span>`).join('')}</div>`; }
+function statusPills(st) { return `<div class="status">${st.map((s) => `<span class="pill ${s.ok ? '' : s.indexing ? 'wait' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.ok ? s.count : s.indexing ? 'indexing…' : 'unavailable'}</span>`).join('')}</div>`; }
 
 // ---- list view (search + deals share it) ----
 function listView(data, { title, crumb, defaultSort }) {
@@ -173,7 +178,7 @@ async function homePage() {
   $('#q').value = '';
   const chips = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
   app.innerHTML = `<section class="hero"><h1>Find the <em>best price</em> on airsoft gear.</h1>
-    <p>Felony&#39;s Airsoft Emporium checks trusted US retailers live, matches the same product across stores, and flags real sales so you never overpay.</p>
+    <p>Felony&#39;s Airsoft Emporium checks 10 trusted airsoft retailers, matches the same product across stores, and flags real sales so you never overpay.</p>
     <div class="chips">${chips.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
     <div class="section-h"><h2>Top deals right now</h2><a href="#/deals">See all deals →</a></div><div id="homeDeals">${skeletons(8)}</div>`;
   app.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => (location.hash = '#/search?q=' + encodeURIComponent(c.dataset.q))));
@@ -205,7 +210,7 @@ async function storesPage() {
   try {
     const d = await api('/api/stores');
     app.innerHTML = crumbs([['Home', '#/'], ['Stores']]) +
-      `<div class="section-h" style="margin-top:0"><h2>Checked live</h2></div><div class="stores">${d.stores.map((s) => `<div class="scard">${wordmark(s.id, s.name)}<p>${esc(s.location)} · ${esc(s.platform)}</p><p>${esc(s.blurb)}</p><p><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))} →</a></p></div>`).join('')}</div>
+      `<div class="section-h" style="margin-top:0"><h2>Checked live</h2></div><div class="stores">${d.stores.map((s) => `<div class="scard">${wordmark(s.id, s.name)}<p>${esc(s.location)} · ${esc(s.platform)}</p><p>${esc(s.blurb)}</p>${s.index ? `<p class="idx">${s.index.products ? `${s.index.products.toLocaleString()} products indexed${s.index.builtAt ? ` · updated ${new Date(s.index.builtAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ' so far'}` : `Building index (${s.index.pages} pages read)…`}</p>` : ''}<p><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))} →</a></p></div>`).join('')}</div>
        <div class="section-h"><h2>Reviewed, not scanned</h2></div><div class="stores">${d.skipped.map((s) => `<div class="scard skip"><h3>${esc(s.name)}</h3><p>${esc(s.reason)}</p></div>`).join('')}</div>`;
   } catch (e) { errorView(e); }
 }

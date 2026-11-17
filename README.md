@@ -4,26 +4,44 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 
 ## Stores
 
-| Store | How it's read | Search | Deals feed |
-|---|---|---|---|
-| Airsoft Atlanta (GA) | Shopify public JSON | `/search/suggest.json` | `/products.json` items with compare-at > price |
-| Airsoft N More (Los Angeles) | Shopify public JSON | `/search/suggest.json` | `/products.json` items with compare-at > price |
-| SpeedQB (gear and HPA) | Shopify public JSON | `/search/suggest.json` | `/products.json` items with compare-at > price |
-| Airsoft Station (KY) | BigCommerce HTML | `/search.php` | `/deals/` page |
-| Airsoft Megastore (CA) | OpenCart HTML | `route=product/search` | `/Mega-Deals` page |
+**Searched live on every query**
 
-Every path above is allowed by that store's robots.txt. Requests use an honest User-Agent (`AirsoftDealsFinder/1.0`) and are cached in memory (10 min for searches, 30 min for deal feeds), so the stores see very little traffic.
+| Store | Route (all allowed by the store's robots.txt) |
+|---|---|
+| Airsoft Atlanta (GA) | Shopify `/search/suggest.json`; deals from `/products.json` items priced below compare-at |
+| Airsoft N More (LA) | Same as above |
+| SpeedQB (UT) | Same as above |
+| Airsoft Station (KY) | BigCommerce `/search.php`; deals from `/deals/` |
+| Airsoft Megastore (CA) | OpenCart `route=product/search`; deals from `/Mega-Deals` |
+| Wolverine Airsoft (PA) | WooCommerce Store API `/wp-json/wc/store/v1/products` (public, not disallowed). Its HTML pages show a Cloudflare check to scripts, so we don't touch those. |
+| eHobbyAsia (HK, ships US) | HTML `/search` page only. robots.txt disallows `/products.json` and `/search.json`, so we use no JSON endpoint. |
 
-**Reviewed and skipped on purpose:** we don't evade blocks.
-- Evike.com: HTTP 403 bot wall, even on robots.txt
-- Airsoft GI: robots.txt disallows search and sets a 5 s crawl delay
-- Amped Airsoft: robots.txt disallows `/search.php`
-- ReplicaAirguns: robots.txt disallows `/search` and JSON
-- Airsoft Extreme: robots.txt disallows `/search/` and `/collections/`
-- eHobbyAsia: robots.txt disallows `/products.json` and `/search.json`
-- Wolverine, Elite Tactical Supply, Sniper Airsoft: Cloudflare challenge or 403
+**Background catalog index** (for stores whose search is disallowed). These are crawled slowly in the background at or above each store's Crawl-delay, kept in memory, and searched locally. Nothing is fetched per user search.
 
-To add a Shopify store, add one line in `server/stores/index.js` with `makeShopifyStore({...})`, after checking its robots.txt.
+| Store | What's indexed | Pace / refresh |
+|---|---|---|
+| Airsoft Extreme (CA) | 4 main categories + Clearance Deals, using Lightspeed's `?format=json` on category pages (`/search/` and `/collections/` are disallowed) | 2.5 s per request (Crawl-delay 2) / every 6 h |
+| Amped Airsoft (PA) | 7 main BigCommerce categories at 100 per page (`/search.php` is disallowed) | 2.5 s per request / every 6 h |
+| Airsoft GI (CA) | `/specials.php` + `/Airsoft-Guns/` listing pages (its search pages are disallowed) | 5.5 s per request (Crawl-delay 5) / every 12 h |
+
+On Render's free plan the instance sleeps after about 15 minutes idle. Indexes rebuild when it wakes: Airsoft Extreme and Amped take about 1–3 minutes, Airsoft GI about 6–8 minutes. While a store is indexing, the app labels it "indexing…" instead of hiding it.
+
+Requests use an honest User-Agent (`AirsoftDealsFinder/1.0`), never a browser disguise, and responses are cached.
+
+**Still excluded**
+- **Evike.com:** Cloudflare challenge (HTTP 403) on every URL, including robots.txt. We don't bypass bot checks. The way in is their affiliate program (below).
+- **Elite Tactical Supply:** Cloudflare challenge (HTTP 403) on every page, and there's no open product API or feed.
+- **Sniper Airsoft:** Cloudflare challenge (HTTP 403) on every page, and there's no open product API or feed.
+- **ReplicaAirguns:** it's a review blog, not a store, so there are no prices to compare.
+
+### Affiliate / product feeds
+`server/stores/feed.js` can add any store from an official product feed (CSV, TSV, or JSON, optionally gzipped). Set these environment variables on Render:
+```
+FEED_STORES=evike:Evike.com
+FEED_EVIKE_URL=https://<feed url with your affiliate key>
+FEED_EVIKE_MAP={"title":"Product Name","price":"Sale Price","originalPrice":"Retail Price","url":"Buy Link","image":"Image URL"}   # optional, common column names are auto-detected
+FEED_REFRESH_HOURS=6
+```
 
 ## Deal detection (`server/deals.js`)
 - **% OFF**: the store's own regular, compare-at, or "was" price is higher than the current price. **HOT DEAL** means 30% or more off. A "was" price more than 80% above the current price is treated as a placeholder and ignored.
