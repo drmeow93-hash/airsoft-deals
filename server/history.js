@@ -20,7 +20,11 @@ const RAW = (process.env.HISTORY_RAW_BASE || 'https://raw.githubusercontent.com/
 const MAX_PTS = 40; // points sent to the browser per offer
 
 // Dates are calendar days in US Central time (the owner's time zone).
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+// toLocaleDateString with a time zone costs ~10 µs a call and this runs once per offer (hundreds of
+// thousands of times per refresh cycle on a 0.1-CPU box), so the answer is memoized for a minute.
+const DAY_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago' });
+let todayMemo = { at: 0, v: '' };
+const today = () => { const n = Date.now(); if (n - todayMemo.at > 60000) todayMemo = { at: n, v: DAY_FMT.format(n) }; return todayMemo.v; };
 
 // Normalize a product URL so the same page always gets the same key (protocol, www, query, slash).
 function normUrl(u) {

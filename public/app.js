@@ -33,7 +33,7 @@ function priceHtml(n) {
 }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fmtDate = (d) => { const [, m, day] = String(d).split('-').map(Number); return `${MON[m - 1]} ${day}`; };
-const todayStr = () => new Date().toLocaleDateString('en-CA');
+const todayStr = (() => { let at = 0, v = ''; return () => { const n = Date.now(); if (n - at > 60000) { at = n; v = new Date(n).toLocaleDateString('en-CA'); } return v; }; })(); // memoized: called per card
 const CATS = { rifles: 'Rifles / AEG', pistols: 'Pistols / GBB', snipers: 'Snipers', mags: 'Magazines', holsters: 'Holsters', gear: 'Gear', optics: 'Optics', parts: 'Parts', batteries: 'Batteries', bbs: 'BBs', gas: 'Gas & CO2', other: 'Other' };
 const CAT_ORDER = ['rifles', 'pistols', 'snipers', 'mags', 'holsters', 'gear', 'optics', 'parts', 'batteries', 'bbs', 'gas'];
 const STORE_INFO = {
