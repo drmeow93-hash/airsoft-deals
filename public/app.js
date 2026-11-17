@@ -436,7 +436,7 @@ function liveBar() {
   if (!st) { el.innerHTML = `<span class="lb-dot"></span>Showing saved prices`; return; }
   const c = st.counts, lives = st.stores.filter((x) => x.kind === 'live');
   const rl = lives.filter((x) => x.state === 'rate-limited');
-  const rlTxt = rl.length ? ` · <span class="lb-warn">${rl.length} rate-limited${(() => { const t = rl.map((x) => x.checkedAt || x.snapshotAt).filter(Boolean).sort().pop(); return t ? `, last ${clock(t)}` : ''; })()}</span>` : '';
+  const rlTxt = rl.length ? ` · <span class="lb-warn">${rl.length} limited${(() => { const t = rl.map((x) => x.checkedAt || x.snapshotAt).filter(Boolean).sort().pop(); return t ? ` (${clock(t)})` : ''; })()}</span>` : '';
   if (st.running) {
     const upd = lives.filter((x) => x.checkedAt && st.startedAt && x.checkedAt >= st.startedAt).length;
     el.innerHTML = `<span class="spin"></span>Checking ${c.live + c.catalog} stores… <b>${upd}</b> updated${st.newest ? ` · ${agoS(st.newest)}` : ''}${rlTxt}`;
@@ -540,7 +540,7 @@ async function liveProduct(g) {
   }
   g.checkedAt = new Date().toISOString();
   const rlT = rl.map((x) => x.checkedAt).filter(Boolean).sort().pop();
-  live.custom = `<span class="lb-dot ok"></span>${ok ? `Re-checked <b>${ok}</b> offer${ok === 1 ? '' : 's'} just now` : 'Showing saved prices'}${changedUrls.size ? ` · <b>${changedUrls.size}</b> changed` : ok ? ' · no changes' : ''}${rl.length ? ` · <span class="lb-warn">${rl.length} rate-limited${rlT ? `, last checked ${clock(rlT)}` : g.checkedAt ? '' : ''}</span>` : ''}${cat ? ` · ${cat} from catalog` : ''}`;
+  live.custom = `<span class="lb-dot ok"></span>${ok ? `Re-checked <b>${ok}</b> offer${ok === 1 ? '' : 's'} just now` : 'Showing saved prices'}${changedUrls.size ? ` · <b>${changedUrls.size}</b> changed` : ok ? ' · no changes' : ''}${rl.length ? ` · <span class="lb-warn">${rl.length} limited${rlT ? ` (${clock(rlT)})` : ''}</span>` : ''}${cat ? ` · ${cat} from catalog` : ''}`;
   liveBar();
 }
 setInterval(() => { if (!document.hidden && !live.custom) liveBar(); }, 5000);
