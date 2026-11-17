@@ -28,7 +28,9 @@ async function canFetch(url) {
   if (!e || Date.now() - e.at > 12 * 3600e3) {
     try {
       const r = await fetch(u.origin + '/robots.txt', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
-      e = { at: Date.now(), txt: r.ok ? await r.text() : r.status === 404 ? '' : null };
+      const txt = r.ok ? await r.text() : r.status === 404 ? '' : null;
+      // A 429/5xx isn't an answer: don't fetch the product, and ask again in 30 min rather than 12 h.
+      e = { at: txt === null ? Date.now() - 11.5 * 3600e3 : Date.now(), txt };
     } catch { e = { at: Date.now() - 11.5 * 3600e3, txt: null }; } // retry in 30 min
     cache.set(u.origin, e);
   }
