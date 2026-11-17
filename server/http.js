@@ -8,6 +8,8 @@ const inflight = new Map(); // identical concurrent requests share one fetch
 // (default 60 s, doubling up to 15 min if it keeps happening). Meanwhile the last good copy is served
 // if we have one. Requests in a pool (all Shopify storefronts share one) run a few at a time, not in bursts.
 const backoff = new Map(); // host -> { until, ms }
+const lastOk = new Map(); // host -> time of the last successful network fetch (not a cache hit)
+const lastOkAt = (url) => { try { return lastOk.get(new URL(url).host) || null; } catch { return null; } };
 const pools = { shopify: { max: 4, active: 0, q: [] } };
 const acquire = (name) => { const p = pools[name]; if (!p) return Promise.resolve(); if (p.active < p.max) { p.active++; return Promise.resolve(); } return new Promise((r) => p.q.push(r)); };
 const release = (name) => { const p = pools[name]; if (!p) return; const next = p.q.shift(); if (next) next(); else p.active--; };
@@ -15,6 +17,8 @@ const release = (name) => { const p = pools[name]; if (!p) return; const next = 
 // Memory budget for cached responses (the free instance has a ~256 MB JS heap): sized by response length,
 // oldest entries evicted first. Big catalog pages can opt out with { store: false }.
 const BUDGET = 40 * 1024 * 1024;
+// A store page is re-fetched at most once per refresh interval (REFRESH_MIN_MS, default 15 min).
+const DEFAULT_TTL = +process.env.REFRESH_MIN_MS || 15 * 60 * 1000;
 let cacheBytes = 0;
 function remember(key, val, size, ttlMs) {
   const old = cache.get(key); if (old) { cacheBytes -= old.size; cache.delete(key); }
@@ -23,7 +27,7 @@ function remember(key, val, size, ttlMs) {
   for (const [k, e] of cache) { if (cacheBytes <= BUDGET && cache.size <= 600) break; cache.delete(k); cacheBytes -= e.size; }
 }
 
-async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000, pool = null, store = true } = {}) {
+async function get(url, { ttlMs = DEFAULT_TTL, json = false, timeoutMs = 15000, pool = null, store = true } = {}) {
   // Allowlist: only domains that passed the legitimacy vetting (data/vetting.json) are ever fetched.
   if (!isVetted(url)) throw new Error(`Blocked: ${(() => { try { return new URL(url).hostname; } catch { return url; } })()} is not a vetted domain`);
   const key = (json ? 'j:' : 'h:') + url;
@@ -62,6 +66,7 @@ async function fetchOnce(url, key, { ttlMs, json, timeoutMs, store }) {
     }
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${host}`);
     backoff.delete(host);
+    lastOk.set(host, Date.now());
     const text = await res.text();
     const val = json ? JSON.parse(text) : text;
     if (store) remember(key, val, text.length * (json ? 2 : 1) + 200, ttlMs); // parsed JSON costs about twice its text
@@ -103,4 +108,4 @@ function sliceHtml(html, { marker, startTag, endTag, tail = 0 }) {
 
 const backoffStatus = () => Object.fromEntries([...backoff].filter(([, b]) => b.until > Date.now()).map(([h, b]) => [h, Math.ceil((b.until - Date.now()) / 1000)]));
 
-module.exports = { get, backoffStatus, money, thumb, sliceHtml, UA };
+module.exports = { get, backoffStatus, lastOkAt, money, thumb, sliceHtml, UA };

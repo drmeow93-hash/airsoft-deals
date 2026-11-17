@@ -115,7 +115,18 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
     return out;
   }
 
+  // One product's current price from /products/<handle>.js (prices in cents; cheapest variant, like everywhere else).
+  async function product(url) {
+    const path = new URL(url).pathname.replace(/\/$/, '');
+    const p = await get(`${base}${path}.js`, { json: true, pool: 'shopify', ttlMs: 4 * 60 * 1000 });
+    let min = null;
+    for (const v of p.variants || []) { const price = v.price / 100; if (price > 0 && (!min || price < min.price)) min = { price, cmp: v.compare_at_price ? v.compare_at_price / 100 : null }; }
+    if (!min) return null;
+    return { title: p.title, price: cv(min.price), originalPrice: min.cmp && min.cmp > min.price ? cv(min.cmp) : null, inStock: !!p.available, url };
+  }
+
   return {
+    product,
     id, name, base, location, blurb, platform: 'Shopify', currency: fx?.cur, airsoftOnly, catalog,
     search: withFallback(search, (sn, q) => searchSnapshot(sn, q)),
     deals: withFallback(deals, (sn) => sn.items.filter((p) => p.originalPrice).map(({ _n, ...p }) => p)),

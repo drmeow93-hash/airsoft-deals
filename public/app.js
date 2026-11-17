@@ -324,6 +324,7 @@ async function searchPage(q, cat) {
       listView(d, { crumb: cr, preset: cat ? { cats: new Set([cat]) } : null, title: (n) => `<b>${n}</b> result${n === 1 ? '' : 's'} for <b>“${esc(q)}”</b> ${freshness(d)}` });
       const after = $('#after'); if (after && !after.dataset.q) { after.dataset.q = q; loadMarketplaceSection(q, after); }
     }, { fast: true });
+    liveStart('q=' + encodeURIComponent(q), '/api/search?q=' + encodeURIComponent(q));
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
@@ -332,6 +333,7 @@ async function browsePage(cat) {
   view(`${crumbs([['Home', '#/'], [CATS[cat] || cat]])}${skCards()}`);
   try {
     await loadLive('/api/browse?cat=' + encodeURIComponent(cat), (d) => listView(d, { crumb: [['Home', '#/'], [CATS[cat] || cat]], title: (n) => `<b>${n}</b> in <b>${esc(CATS[cat] || cat)}</b> ${freshness(d)}` }));
+    liveStart('cat=' + encodeURIComponent(cat), '/api/browse?cat=' + encodeURIComponent(cat));
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
@@ -340,6 +342,7 @@ async function dealsPage() {
   view(`${crumbs([['Home', '#/'], ['Deals']])}${skCards()}`);
   try {
     await loadLive('/api/deals', (d) => { S.deals = d; listView(d, { crumb: [['Home', '#/'], ["Today's deals"]], sortDefault: 'featured', title: (n) => `<b>${n}</b> deals from ${d.status.filter((s) => s.ok).length} stores ${freshness(d)}` }); });
+    liveStart('', '/api/deals');
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
@@ -352,7 +355,7 @@ async function dropsPage() {
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
-function productPage(id) {
+function productPage(id, { keepScroll = false } = {}) {
   const g = S.groups.get(id) || watch.all().map((w) => w.group).find((x) => x.id === id);
   if (!g) { location.hash = '#/'; return; }
   setQ();
@@ -412,8 +415,135 @@ function productPage(id) {
   ${histPanel ? `<div><div class="sec-h"><h2>Price history</h2>${h.atl ? '<span class="atl">★ ALL-TIME LOW</span>' : ''}</div>${histPanel}</div>` : ''}</div>`);
   $$('.thumb').forEach((t) => t.addEventListener('click', () => { $('#mainImg').src = t.dataset.src; $$('.thumb').forEach((x) => x.classList.toggle('on', x === t)); }));
   $('#watchBtn').addEventListener('click', (e) => { watch.toggle(g); const on = watch.has(g), b = e.currentTarget; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = on ? 'Watching' : 'Add to watchlist'; });
-  window.scrollTo(0, 0);
+  if (!keepScroll) { window.scrollTo(0, 0); liveProduct(g); }
 }
+
+
+// ---- live price check on every visit ----
+// The page renders saved prices first. Then /api/refresh asks the server to re-check any store not
+// checked in ~15 min (one shared background cycle for everyone). While it runs we poll its status;
+// when this page's results are recomputed we fetch them and update changed cards in place.
+const agoS = (iso) => { if (!iso) return 'never'; const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return s < 10 ? 'just now' : s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
+const clock = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+const live = { st: null, ver: 0, key: null, path: null, tok: 0, timer: null, polls: 0, changed: 0, custom: null };
+const quiet = async (path, opts) => { const r = await fetch(API + path, opts); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
+const gKey = (g) => (String(g.brand || '') + '|' + g.title).toLowerCase().replace(/[^a-z0-9|]+/g, ' ').trim();
+
+function liveBar() {
+  const el = $('#livebar'); if (!el) return;
+  if (live.custom) { el.innerHTML = live.custom; return; }
+  const st = live.st;
+  if (!st) { el.innerHTML = `<span class="lb-dot"></span>Showing saved prices`; return; }
+  const c = st.counts, lives = st.stores.filter((x) => x.kind === 'live');
+  const rl = lives.filter((x) => x.state === 'rate-limited');
+  const rlTxt = rl.length ? ` · <span class="lb-warn">${rl.length} rate-limited${(() => { const t = rl.map((x) => x.checkedAt || x.snapshotAt).filter(Boolean).sort().pop(); return t ? `, last ${clock(t)}` : ''; })()}</span>` : '';
+  if (st.running) {
+    const upd = lives.filter((x) => x.checkedAt && st.startedAt && x.checkedAt >= st.startedAt).length;
+    el.innerHTML = `<span class="spin"></span>Checking ${c.live + c.catalog} stores… <b>${upd}</b> updated${st.newest ? ` · ${agoS(st.newest)}` : ''}${rlTxt}`;
+  } else {
+    el.innerHTML = `<span class="lb-dot ok"></span>Checked <b>${agoS(st.newest)}</b> · ${c.fresh}/${c.live} stores${live.changed ? ` · <b>${live.changed}</b> changed` : ''}${rlTxt}`;
+  }
+}
+function liveDetails() {
+  const st = live.st; if (!st) return;
+  let d = $('#lbDetails');
+  if (d) { d.remove(); return; }
+  const name = { ok: 'Checked', checking: 'Checking…', 'rate-limited': 'Rate-limited', error: 'No answer', pending: 'Waiting', catalog: 'Catalog' };
+  $('#livebar').insertAdjacentHTML('afterend', `<div class="lb-details" id="lbDetails"><ul>${st.stores.map((x) => `<li><span>${esc(x.name)}</span><span class="lb-s ${x.state}">${name[x.state] || esc(x.state)}</span><span class="lb-t">${x.checkedAt ? agoS(x.checkedAt) : x.snapshotAt ? 'saved ' + clock(x.snapshotAt) : '—'}</span></li>`).join('')}</ul><p>Stores are re-checked when you visit, at most every ${st.minIntervalMin} min each. Catalog stores (search not allowed) follow their own slower crawl schedule.</p></div>`);
+}
+
+function applyLive(d) {
+  const byK = new Map(d.groups.map((g) => [gKey(g), g]));
+  let changed = 0;
+  $$('.pcard[data-id]').forEach((el) => {
+    const old = S.groups.get(el.dataset.id); if (!old) return;
+    const n = byK.get(gKey(old)); if (!n) return;
+    const dir = n.bestPrice < old.bestPrice - 0.004 ? 'dn' : n.bestPrice > old.bestPrice + 0.004 ? 'up' : '';
+    const same = !dir && n.inStock === old.inStock && (n.h?.chg || 0) === (old.h?.chg || 0) && n.storeCount === old.storeCount;
+    old.checkedAt = d.fetchedAt;
+    if (same) return;
+    const id = old.id; Object.assign(old, n, { id, checkedAt: d.fetchedAt });
+    const tmp = document.createElement('div'); tmp.innerHTML = card(old, 99);
+    bindCards(tmp);
+    const nc = tmp.firstElementChild; nc.classList.add('flash'); if (dir) nc.classList.add('flash-' + dir);
+    el.replaceWith(nc);
+    if (dir) changed++;
+  });
+  return changed;
+}
+
+async function livePoll(tok) {
+  clearTimeout(live.timer);
+  if (tok !== live.tok) return;
+  try {
+    const st = await quiet('/api/refresh/status?key=' + encodeURIComponent(live.key || ''));
+    if (tok !== live.tok) return;
+    live.st = st;
+    if (st.version > live.ver && live.path) {
+      live.ver = st.version;
+      const d = await quiet(live.path);
+      if (tok !== live.tok) return;
+      live.changed += applyLive(d);
+      if (!d.partial) cache.set(live.path, d);
+    }
+    liveBar();
+    if (st.running && ++live.polls < 60) live.timer = setTimeout(() => livePoll(tok), document.hidden ? 8000 : 2500);
+  } catch { if (++live.polls < 60) live.timer = setTimeout(() => livePoll(tok), 5000); }
+}
+// params: 'q=…' | 'cat=…' | 'brand=…' | '' (deals). path: the endpoint whose results are on screen.
+async function liveStart(params, path) {
+  const tok = ++live.tok; clearTimeout(live.timer);
+  Object.assign(live, { path, polls: 0, changed: 0, custom: null });
+  $('#lbDetails')?.remove();
+  try {
+    const st = await quiet('/api/refresh' + (params ? '?' + params : ''));
+    if (tok !== live.tok) return;
+    Object.assign(live, { st, key: st.key, ver: st.version });
+    liveBar();
+    if (st.running) live.timer = setTimeout(() => livePoll(tok), 2000);
+  } catch { liveBar(); }
+}
+
+// Product page: re-check this product's offers directly when they're older than ~5 minutes.
+async function liveProduct(g) {
+  const tok = ++live.tok; clearTimeout(live.timer);
+  live.path = null; $('#lbDetails')?.remove();
+  const age = g.checkedAt ? Date.now() - Date.parse(g.checkedAt) : Infinity;
+  if (age < 5 * 60 * 1000) { live.custom = `<span class="lb-dot ok"></span>Checked <b>${agoS(g.checkedAt)}</b> · ${g.offers.length} offer${g.offers.length === 1 ? '' : 's'}`; liveBar(); return; }
+  live.custom = `<span class="spin"></span>Re-checking ${g.offers.length} offer${g.offers.length === 1 ? '' : 's'} at the stores…`; liveBar();
+  let r;
+  try { r = await quiet('/api/recheck', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: g.title, offers: g.offers.map((o) => ({ storeId: o.storeId, url: o.url, price: o.price })) }) }); } catch { live.custom = null; liveBar(); return; }
+  if (tok !== live.tok) return;
+  const changedUrls = new Set();
+  let ok = 0, rl = [], cat = 0;
+  for (const x of r.offers) {
+    const o = g.offers.find((y) => y.url === x.url); if (!o) continue;
+    if (x.state === 'ok') {
+      ok++;
+      if (Math.abs(x.price - o.price) >= 0.01) {
+        const t = todayStr(), prev = o.price;
+        o.h = { ...(o.h || { since: t, pts: [] }), prev, prevAt: o.h?.at || t, at: t, chg: +(x.price - prev).toFixed(2), pct: +(((x.price - prev) / prev) * 100).toFixed(1) };
+        o.price = x.price; changedUrls.add(o.url);
+      }
+      o.originalPrice = x.originalPrice; if (x.inStock != null) o.inStock = x.inStock; o.checkedAt = x.checkedAt;
+    } else if (x.state === 'rate-limited') rl.push(x); else if (x.state === 'catalog') cat++;
+  }
+  if (changedUrls.size) {
+    const oldBest = g.bestPrice;
+    g.offers.sort((a, b) => a.price - b.price);
+    const avg = g.offers.reduce((a, o) => a + o.price, 0) / g.offers.length;
+    g.offers.forEach((o) => { o.vsAvg = +(o.price - avg).toFixed(2); o.vsAvgPct = Math.round(((o.price - avg) / avg) * 100); o.discountPct = o.originalPrice > o.price ? Math.round(((o.originalPrice - o.price) / o.originalPrice) * 100) : 0; o.savings = o.originalPrice > o.price ? +(o.originalPrice - o.price).toFixed(2) : 0; });
+    Object.assign(g, { bestPrice: g.offers[0].price, bestStore: g.offers[0].store, avgPrice: +avg.toFixed(2), belowAvgPct: Math.max(0, Math.round((1 - g.offers[0].price / avg) * 100)), inStock: g.offers.some((o) => o.inStock === true) ? true : g.offers.every((o) => o.inStock === false) ? false : null });
+    if (Math.abs(g.bestPrice - oldBest) >= 0.01) { const t = todayStr(); g.h = { ...(g.h || { since: t, pts: [] }), prev: oldBest, prevAt: g.h?.at || t, at: t, chg: +(g.bestPrice - oldBest).toFixed(2), pct: +(((g.bestPrice - oldBest) / oldBest) * 100).toFixed(1) }; }
+    const y = window.scrollY; productPage(g.id, { keepScroll: true }); window.scrollTo(0, y);
+    changedUrls.forEach((u) => $$('a.offer').forEach((a) => a.getAttribute('href') === u && a.classList.add('flash')));
+  }
+  g.checkedAt = new Date().toISOString();
+  const rlT = rl.map((x) => x.checkedAt).filter(Boolean).sort().pop();
+  live.custom = `<span class="lb-dot ok"></span>${ok ? `Re-checked <b>${ok}</b> offer${ok === 1 ? '' : 's'} just now` : 'Showing saved prices'}${changedUrls.size ? ` · <b>${changedUrls.size}</b> changed` : ok ? ' · no changes' : ''}${rl.length ? ` · <span class="lb-warn">${rl.length} rate-limited${rlT ? `, last checked ${clock(rlT)}` : g.checkedAt ? '' : ''}</span>` : ''}${cat ? ` · ${cat} from catalog` : ''}`;
+  liveBar();
+}
+setInterval(() => { if (!document.hidden && !live.custom) liveBar(); }, 5000);
 
 // ---- Ask Grok sheet ----
 const verdictCache = new Map();
@@ -491,6 +621,7 @@ async function homePage() {
   };
   const c1 = cache.get('/api/deals?top=1'), c2 = cache.get('/api/drops');
   if (c1) deals(c1); if (c2) drops(c2);
+  liveStart('', '/api/deals?top=1');
   api('/api/deals?top=1').then((d) => { deals(d); if (!d.partial) cache.set('/api/deals?top=1', d); }).catch((e) => { if (!c1 && $('#homeDeals')) $('#homeDeals').innerHTML = `<div class="empty sm"><p>${esc(e.message)}</p></div>`; });
   api('/api/drops').then((d) => { drops(d); cache.set('/api/drops', d); }).catch(() => {});
   const brandsHome = (d) => { if (tok !== navToken || !$('#homeBrands')) return; $('#homeBrands').innerHTML = d.brands.slice(0, 18).map((b) => `<a class="chip" href="#/b/${esc(b.id)}">${esc(b.name)}</a>`).join('') || '<span class="fresh">Brands appear as stores load.</span>'; };
@@ -518,6 +649,7 @@ async function brandPage(id) {
   view(`${crumbs([['Home', '#/'], ['Brands', '#/brands'], [label]])}${skCards()}`);
   try {
     await loadLive('/api/brand?id=' + encodeURIComponent(id), (d) => listView(d, { crumb: [['Home', '#/'], ['Brands', '#/brands'], [d.brand.name]], title: (n) => `<b>${n}</b> from <b>${esc(d.brand.name)}</b> ${freshness(d)}` }));
+    liveStart('brand=' + encodeURIComponent(id), '/api/brand?id=' + encodeURIComponent(id));
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
@@ -641,6 +773,7 @@ function route() {
   if (h.startsWith('#/c/')) { const c = h.slice(4).split('?')[0]; setTabs('home', c); return browsePage(c); }
   if (h.startsWith('#/p/')) { setTabs(lastTab === 'deals' ? 'deals' : lastTab === 'drops' ? 'drops' : 'home'); return productPage(h.slice(4)); }
   if (h === '#/deals') { setTabs('deals'); return dealsPage(); }
+  if (/^#\/(drops|watchlist|stores|more|marketplaces|brands)$/.test(h)) liveStart('', null);
   if (h === '#/drops') { setTabs('drops'); return dropsPage(); }
   if (h === '#/watchlist') { setTabs('watch'); return watchlistPage(); }
   if (h === '#/stores' || h === '#/more') { setTabs('stores'); return storesPage(); }
@@ -655,6 +788,7 @@ window.addEventListener('hashchange', () => { route(); if (!location.hash.starts
 const hdr = $('#hdr');
 const setH = () => document.documentElement.style.setProperty('--hdr-h', hdr.offsetHeight + 'px');
 if ('ResizeObserver' in window) new ResizeObserver(setH).observe(hdr); else setH();
+$('#livebar')?.addEventListener('click', liveDetails);
 badgeCount(); route();
 document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.hidden));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

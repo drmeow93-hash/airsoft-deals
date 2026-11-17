@@ -67,3 +67,16 @@ console.log(`Held-out sample: ${hok}/${held.length} = ${(100 * hok / held.length
     if (fails.length) process.exitCode = 1;
   });
 }
+
+// ---- Live refresh: robots matcher for per-product re-checks ----
+{
+  const { allowed } = require('../server/robots');
+  const R = 'User-agent: *\nDisallow: /products/*?pr_prod_strat=*\nDisallow: /cart\nAllow: /products/account\n\nUser-agent: airsoftdealsfinder\nDisallow: /private';
+  const cases = [['/products/glock.js', true], ['/products/glock?pr_prod_strat=x', true], ['/cart', true], ['/private/x', false], ['/products/x.js', true]];
+  // our UA has its own group, so only "/private" applies to us
+  const bad = cases.filter(([p, want]) => allowed(R, p) !== want);
+  const bad2 = [['/cart', false], ['/products/glock.js', true], ['/products/a?pr_prod_strat=1', false]].filter(([p, want]) => allowed(R.split('\n\n')[0], p) !== want);
+  console.log(`Robots matcher: ${8 - bad.length - bad2.length}/8 checks pass`);
+  [...bad, ...bad2].forEach((c) => console.log('  wrong:', c));
+  if (bad.length || bad2.length) process.exitCode = 1;
+}

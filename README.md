@@ -256,3 +256,14 @@ Every product card and product page has an **Ask Grok** button. It opens a sheet
 ## Shopify rate limits (HTTP 429)
 
 Shopify sometimes rate-limits the server's IP across all Shopify storefronts at once. `server/http.js` honors 429s: it backs off each host for its `Retry-After` (60 s by default, doubling up to 15 min), serves the last good copy it has, and runs Shopify requests four at a time. While a Shopify store's live search is unavailable, its results come from a bundled catalog snapshot (`server/snapshot/shopify-<id>.json.gz`). The price-history collector writes that snapshot from the same public `/products.json` route, and the search status says which date the prices are from.
+
+## Live price check on every visit
+
+Every page view shows saved prices first. It then calls `GET /api/refresh`, and the server re-checks every store that hasn't been checked in the last `REFRESH_MIN_MS` (default 15 minutes) in one shared background cycle (`server/refresh.js`). Visitors who arrive during a cycle join it instead of starting another one, and cycles are at least `REFRESH_GAP_MS` apart (default 60 s).
+
+- **What a cycle re-checks:** the deals feed, plus the searches, categories and brand pages people viewed in the last 30 minutes. It uses the normal polite routes: robots.txt-allowed endpoints, an honest User-Agent, the Shopify 4-at-a-time pool and Retry-After/429 backoff. A rate-limited store keeps its last-checked time and is retried when its backoff ends. A store counts as "checked" only when its site actually answered, not when a cached copy was reused.
+- **Catalog stores** (Airsoft Extreme, Amped, Airsoft GI) follow their own crawl schedule, with their Crawl-delay, and are never re-crawled per visit.
+- **The page** polls `GET /api/refresh/status` every 2.5 s while a cycle runs. When its own results are recomputed, changed cards update in place with a short green (price down) or red (price up) flash. The status line under the header reads, for example, "Checking 24 stores… 18 updated · 12s ago" or "Checked 2 min ago · 21/21 stores · 15 rate-limited, last 12:16 AM". Tap it for each store's state.
+- **Product pages** re-check that product's offers directly when they're older than `PRODUCT_RECHECK_MS` (default 5 minutes) via `POST /api/recheck`. Shopify stores use `/products/<handle>.js`, after a robots.txt check that is cached for 12 h; other live stores are re-searched by title.
+- **History:** prices seen live are added to the in-memory price history right away, so arrows reflect them. The collector still commits history to the repo twice a day.
+- **Cold start:** when Render wakes the server, a full cycle starts within a second.

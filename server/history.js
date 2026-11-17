@@ -126,8 +126,19 @@ function seriesFor(o) {
   return pts;
 }
 
+// Live prices seen by this server are kept in memory as history points, so a change found by a
+// visit-triggered refresh shows up in every arrow until the collector commits it (twice a day).
+function remember(o, pts) {
+  const k = keyOf(o.url), rec = H.get(k);
+  const last = pts[pts.length - 1];
+  if (!last || (rec && rec.length >= 2 && rec[rec.length - 2] === last[0] && Math.abs(rec[rec.length - 1] - last[1]) < 0.01)) return;
+  if (!rec && H.size > 90000) return; // memory guard
+  H.set(k, pts.flat());
+}
+
 function attachOffer(o) {
   const pts = seriesFor(o);
+  if (o.price) remember(o, pts);
   o.h = summarize(pts);
   if (o.h && o.h.chg < 0 && o.h.at === today()) {
     liveDrops.set(keyOf(o.url), { ...o, h: undefined, prev: o.h.prev, prevAt: o.h.prevAt, at: o.h.at });

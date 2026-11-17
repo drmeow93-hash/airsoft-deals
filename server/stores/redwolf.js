@@ -34,7 +34,7 @@ module.exports = {
   // Sale feed: what their search shows as discounted for a few broad terms.
   deals: async () => {
     const out = [];
-    for (const q of ['airsoft gbb pistol', 'airsoft aeg']) out.push(...parse(await get(`${base}/catalogsearch/result/?q=${encodeURIComponent(q)}`, { ttlMs: 30 * 60 * 1000 })).filter((p) => p.originalPrice));
+    for (const q of ['airsoft gbb pistol', 'airsoft aeg']) out.push(...parse(await get(`${base}/catalogsearch/result/?q=${encodeURIComponent(q)}`)).filter((p) => p.originalPrice));
     return out;
   },
 };

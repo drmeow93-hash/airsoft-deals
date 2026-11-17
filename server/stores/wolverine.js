@@ -37,5 +37,5 @@ module.exports = {
     }
     return out;
   },
-  deals: async () => (await get(`${base}/wp-json/wc/store/v1/products?on_sale=true&per_page=100`, { json: true, ttlMs: 30 * 60 * 1000 })).map((p) => norm(p, true)).filter((p) => p.price),
+  deals: async () => (await get(`${base}/wp-json/wc/store/v1/products?on_sale=true&per_page=100`, { json: true })).map((p) => norm(p, true)).filter((p) => p.price),
 };

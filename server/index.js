@@ -9,6 +9,7 @@ const { enrich, prep, judgeCached, groupProducts, filterStats, brandList, noteBr
 const marketplaces = require('./marketplaces');
 const history = require('./history');
 const verdicts = require('./verdict');
+const refresh = require('./refresh');
 const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
 
 const app = express();
@@ -37,14 +38,15 @@ async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
   }));
   const items = [];
   let slow = 0;
-  const status = settled.map((r, i) => {
+  const status = settled.map((r, i) => { const st = statusOf(r, i); refresh.noteStore(stores[i], st); return st; });
+  return { items, status, slow, ms: Date.now() - t0, fetchedAt: new Date().toISOString() };
+  function statusOf(r, i) {
     const s = stores[i];
     if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined, snapshotAt: r.value.snapshotAt, note: r.value.snapshotAt ? `live search unavailable (${r.value.liveError}); showing prices from ${r.value.snapshotAt.slice(0, 10)}` : undefined }; }
     if (r.slow) { slow++; return { store: s.name, id: s.id, ok: false, slow: true, error: 'Still loading' }; }
     const error = String(r.error?.message || r.error);
     return { store: s.name, id: s.id, ok: false, indexing: /^Building catalog index/.test(error), error };
-  });
-  return { items, status, slow, ms: Date.now() - t0, fetchedAt: new Date().toISOString() };
+  }
 }
 
 // Response cache: finished JSON is kept per query. Fresh hits are served instantly; stale hits are
@@ -125,6 +127,19 @@ app.get('/api/stores', (req, res) => res.json({
 app.post('/api/verdict', express.json({ limit: '16kb' }), async (req, res) => {
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   try { const r = await verdicts.verdict(req.body, ip); res.status(r.status).set('Cache-Control', 'no-store').json(r.body); } catch (e) { res.status(500).json({ error: 'verdict failed' }); }
+});
+// Visit-triggered refresh: every page view calls this; stale stores are re-checked in one shared
+// background cycle (see server/refresh.js). The page never waits for it.
+app.get('/api/refresh', (req, res) => {
+  const q = req.query;
+  const key = q.q ? refresh.scopeKey('search', q.q) : q.cat ? refresh.scopeKey('cat', String(q.cat)) : q.brand ? refresh.scopeKey('brand', String(q.brand)) : 'deals';
+  refresh.touch(key);
+  refresh.run('visit');
+  res.set('Cache-Control', 'no-store').json({ key, ...refresh.status(key) });
+});
+app.get('/api/refresh/status', (req, res) => res.set('Cache-Control', 'no-store').json(refresh.status(String(req.query.key || '')) ));
+app.post('/api/recheck', express.json({ limit: '16kb' }), async (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json({ offers: await refresh.recheck(req.body && req.body.offers, String((req.body && req.body.title) || '').slice(0, 120)), minutes: refresh.PRODUCT_MS / 60000 }); } catch (e) { res.status(500).json({ error: 'recheck failed' }); }
 });
 app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), backoff: require('./http').backoffStatus() }); });
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
@@ -300,10 +315,10 @@ app.use(express.static(PUB, {
 // Compress API JSON too (search/deals payloads compress ~8x).
 // Background work: catalog indexes load their bundled snapshot instantly, then refresh one at a
 // time in a worker thread. The deals feed and the home-page search chips are kept warm.
+refresh.init({ stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history });
 const BG = !process.env.NO_BACKGROUND; // NO_BACKGROUND=1 for a UI-only dev server (no crawls, no warming)
 stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(20000 + i * 1000) : s.index.start(1e9)));
 const WARM = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
-const warmDeals = () => cached('deals', 10 * 60 * 1000, 0, computeDeals, { force: true }).catch(() => {});
 async function warmChips() {
   for (const q of WARM) { await cached('s:' + q.toLowerCase(), 10 * 60 * 1000, 0, () => computeSearch(q), { force: true }).catch(() => {}); await sleep(6000); }
   for (const c of Object.keys(CAT_TERMS)) { await cached('c:' + c, 10 * 60 * 1000, 0, () => computeBrowse(c), { force: true }).catch(() => {}); await sleep(6000); }
@@ -320,8 +335,8 @@ if (BG) {
 // during a Shopify rate limit doesn't pay for decompressing them all at once.
 if (BG) stores.filter((s) => s.snapshotInfo).forEach((s, i) => setTimeout(() => s.snapshotInfo(), 8000 + i * 700));
 if (BG) {
-  setTimeout(async () => { await warmDeals(); await sleep(5000); warmChips(); }, 300);
-  setInterval(warmDeals, 9 * 60 * 1000);
+  // Cold start: Render just woke us (a visitor is waiting), so check every store right away.
+  setTimeout(async () => { await refresh.run('boot'); await sleep(5000); warmChips(); }, 300);
   setInterval(warmChips, 30 * 60 * 1000);
 }
 

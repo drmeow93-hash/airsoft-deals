@@ -36,5 +36,5 @@ module.exports = {
   blurb: 'Long-running US retailer, OpenCart storefront',
   platform: 'OpenCart',
   search: async (q) => parse(await get(`${base}/index.php?route=product/search&search=${encodeURIComponent(q)}&limit=40`)).slice(0, 24),
-  deals: async () => parse(await get(`${base}/Mega-Deals`, { ttlMs: 30 * 60 * 1000 }), { storeDeal: true }),
+  deals: async () => parse(await get(`${base}/Mega-Deals`), { storeDeal: true }),
 };

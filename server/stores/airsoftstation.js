@@ -13,5 +13,5 @@ module.exports = {
   blurb: 'Large US retailer, BigCommerce storefront',
   platform: 'BigCommerce',
   search: async (q) => parse(await get(`${base}/search.php?search_query=${encodeURIComponent(q)}`)).slice(0, 24),
-  deals: async () => parse(await get(`${base}/deals/`, { ttlMs: 30 * 60 * 1000 }), { storeDeal: true }),
+  deals: async () => parse(await get(`${base}/deals/`), { storeDeal: true }),
 };
