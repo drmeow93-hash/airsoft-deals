@@ -489,9 +489,9 @@ async function homePage() {
     $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 10) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
     bindCarousel($('#dropsCar'), '#/drops');
   };
-  const c1 = cache.get('/api/deals'), c2 = cache.get('/api/drops');
+  const c1 = cache.get('/api/deals?top=1'), c2 = cache.get('/api/drops');
   if (c1) deals(c1); if (c2) drops(c2);
-  api('/api/deals').then((d) => { deals(d); if (!d.partial) cache.set('/api/deals', d); }).catch((e) => { if (!c1 && $('#homeDeals')) $('#homeDeals').innerHTML = `<div class="empty sm"><p>${esc(e.message)}</p></div>`; });
+  api('/api/deals?top=1').then((d) => { deals(d); if (!d.partial) cache.set('/api/deals?top=1', d); }).catch((e) => { if (!c1 && $('#homeDeals')) $('#homeDeals').innerHTML = `<div class="empty sm"><p>${esc(e.message)}</p></div>`; });
   api('/api/drops').then((d) => { drops(d); cache.set('/api/drops', d); }).catch(() => {});
   const brandsHome = (d) => { if (tok !== navToken || !$('#homeBrands')) return; $('#homeBrands').innerHTML = d.brands.slice(0, 18).map((b) => `<a class="chip" href="#/b/${esc(b.id)}">${esc(b.name)}</a>`).join('') || '<span class="fresh">Brands appear as stores load.</span>'; };
   const c3 = cache.get('/api/brands'); if (c3) brandsHome(c3);

@@ -93,14 +93,14 @@ async function computeSearch(q, timeoutMs) {
 }
 
 async function computeDeals() {
-  // Keep each store's top 60 by discount so one big catalog doesn't drown out the rest.
+  // Keep each store's top 40 by discount so one big catalog doesn't drown out the rest.
   const out = await fanOut(async (s) => (await s.deals())
     .map((p) => ({ ...p, _d: p.originalPrice ? (p.originalPrice - p.price) / p.originalPrice : 0 }))
     .filter((p) => p._d <= 0.8 || p.storeDeal)
     .sort((a, b) => b._d - a._d)
     // Collapse color/size variants ("Pouch - Black", "Pouch - Tan") so one product doesn't fill the feed.
     .filter(((seen) => (p) => { const k = p.title.split(/\s[-–|]\s/)[0].toLowerCase(); return seen.has(k) ? false : seen.add(k); })(new Set()))
-    .slice(0, 60).map(({ _d, ...p }) => p), 15000);
+    .slice(0, 40).map(({ _d, ...p }) => p), 15000);
   // Interleave stores (each in its own discount order) so the default feed is a fair mix.
   const byStore = {};
   for (const g of groupProducts(out.items)) (byStore[g.offers[0].storeId] ||= []).push(g);
@@ -126,6 +126,7 @@ app.post('/api/verdict', express.json({ limit: '16kb' }), async (req, res) => {
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   try { const r = await verdicts.verdict(req.body, ip); res.status(r.status).set('Cache-Control', 'no-store').json(r.body); } catch (e) { res.status(500).json({ error: 'verdict failed' }); }
 });
+app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), backoff: require('./http').backoffStatus() }); });
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
 app.get('/api/vetting', (req, res) => res.json(vetting.doc));
 
@@ -153,7 +154,15 @@ app.get('/api/search', async (req, res) => {
   sendJson(res, await cached(key, 10 * 60 * 1000, 6 * 60 * 60 * 1000, () => computeSearch(q)));
 });
 
-app.get('/api/deals', async (req, res) => sendJson(res, await cached('deals', 10 * 60 * 1000, 24 * 60 * 60 * 1000, computeDeals)));
+// ?top=1: just the first 60 groups of the store-interleaved feed, for the home page (about 10x smaller).
+let dealsTop = { src: null, body: null };
+app.get('/api/deals', async (req, res) => {
+  const full = await cached('deals', 10 * 60 * 1000, 24 * 60 * 60 * 1000, computeDeals);
+  if (!req.query.top) return sendJson(res, full);
+  const raw = full.body.replace(/^\{"refreshing":true,/, '{');
+  if (dealsTop.src !== raw) { const d = JSON.parse(raw); d.total = d.groups.length; d.groups = d.groups.slice(0, 60); dealsTop = { src: raw, body: JSON.stringify(d) }; }
+  sendJson(res, { body: dealsTop.body, cache: full.cache });
+});
 
 // Category browse: catalog-indexed stores contribute their whole category (cheap, in memory);
 // live stores answer one category search each.
@@ -307,6 +316,9 @@ if (BG) {
   setTimeout(() => history.refreshRemote(), 45 * 1000);
   setInterval(() => history.refreshRemote(), 3 * 60 * 60 * 1000);
 }
+// Shopify fallback snapshots are parsed shortly after boot, one at a time, so the first search
+// during a Shopify rate limit doesn't pay for decompressing them all at once.
+if (BG) stores.filter((s) => s.snapshotInfo).forEach((s, i) => setTimeout(() => s.snapshotInfo(), 8000 + i * 700));
 if (BG) {
   setTimeout(async () => { await warmDeals(); await sleep(5000); warmChips(); }, 300);
   setInterval(warmDeals, 9 * 60 * 1000);

@@ -12,7 +12,8 @@ const snorm = (s) => String(s).toLowerCase().replace(/[^a-z0-9.]+/g, ' ').trim()
 function loadSnapshot(id) {
   try {
     const snap = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, '..', 'snapshot', `shopify-${id}.json.gz`))));
-    for (const p of snap.items) { p._n = snorm(`${p.brand || ''} ${p.title}`); }
+    // Tags are dropped in memory (titles are enough to match); ~3x less heap per snapshot.
+    for (const p of snap.items) { p._n = snorm(`${p.brand || ''} ${p.title}`); delete p.tags; }
     return snap;
   } catch { return null; }
 }
@@ -93,8 +94,9 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
   // Sale feed: the first catalog pages, products whose cheapest variant is below its compare-at price.
   async function deals() {
     const out = [];
-    for (let page = 1; page <= 4; page++) {
-      const data = await get(`${base}/products.json?limit=250&page=${page}`, { json: true, ttlMs: 30 * 60 * 1000, pool: 'shopify' });
+    // Two pages (500 products) keeps memory low on the free instance; the deals feed itself is cached.
+    for (let page = 1; page <= 2; page++) {
+      const data = await get(`${base}/products.json?limit=250&page=${page}`, { json: true, pool: 'shopify', store: false });
       const prods = data?.products || [];
       for (const p of prods) { const x = fromProduct(base, p, fx); if (x && x.originalPrice) out.push(x); }
       if (prods.length < 250) break;

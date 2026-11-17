@@ -12,7 +12,18 @@ const pools = { shopify: { max: 4, active: 0, q: [] } };
 const acquire = (name) => { const p = pools[name]; if (!p) return Promise.resolve(); if (p.active < p.max) { p.active++; return Promise.resolve(); } return new Promise((r) => p.q.push(r)); };
 const release = (name) => { const p = pools[name]; if (!p) return; const next = p.q.shift(); if (next) next(); else p.active--; };
 
-async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000, pool = null } = {}) {
+// Memory budget for cached responses (the free instance has a ~256 MB JS heap): sized by response length,
+// oldest entries evicted first. Big catalog pages can opt out with { store: false }.
+const BUDGET = 40 * 1024 * 1024;
+let cacheBytes = 0;
+function remember(key, val, size, ttlMs) {
+  const old = cache.get(key); if (old) { cacheBytes -= old.size; cache.delete(key); }
+  cache.set(key, { val, exp: Date.now() + ttlMs, size });
+  cacheBytes += size;
+  for (const [k, e] of cache) { if (cacheBytes <= BUDGET && cache.size <= 600) break; cache.delete(k); cacheBytes -= e.size; }
+}
+
+async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000, pool = null, store = true } = {}) {
   // Allowlist: only domains that passed the legitimacy vetting (data/vetting.json) are ever fetched.
   if (!isVetted(url)) throw new Error(`Blocked: ${(() => { try { return new URL(url).hostname; } catch { return url; } })()} is not a vetted domain`);
   const key = (json ? 'j:' : 'h:') + url;
@@ -27,13 +38,13 @@ async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 1500
   if (inflight.has(key)) return inflight.get(key);
   const p = (async () => {
     await acquire(pool);
-    try { return await fetchOnce(url, key, { ttlMs, json, timeoutMs }); } finally { release(pool); }
+    try { return await fetchOnce(url, key, { ttlMs, json, timeoutMs, store }); } finally { release(pool); }
   })();
   inflight.set(key, p);
   try { return await p; } catch (e) { if (hit && /HTTP (429|5\d\d)|abort/i.test(e.message)) return hit.val; throw e; } finally { inflight.delete(key); }
 }
 
-async function fetchOnce(url, key, { ttlMs, json, timeoutMs }) {
+async function fetchOnce(url, key, { ttlMs, json, timeoutMs, store }) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -51,9 +62,9 @@ async function fetchOnce(url, key, { ttlMs, json, timeoutMs }) {
     }
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${host}`);
     backoff.delete(host);
-    const val = json ? await res.json() : await res.text();
-    cache.set(key, { val, exp: Date.now() + ttlMs });
-    if (cache.size > 800) cache.delete(cache.keys().next().value);
+    const text = await res.text();
+    const val = json ? JSON.parse(text) : text;
+    if (store) remember(key, val, text.length * (json ? 2 : 1) + 200, ttlMs); // parsed JSON costs about twice its text
     return val;
   } finally {
     clearTimeout(t);

@@ -52,7 +52,7 @@ async function collect(s) {
 // only when the store's live search is unavailable, e.g. while Shopify asks our server to slow down (429).
 const zlib = require('zlib');
 function writeSnapshot(s, items) {
-  const slim = items.map(({ title, brand, ptype, tags, price, originalPrice, fx, inStock, image, url }) => ({ title, brand, ptype, tags: tags && tags.slice(0, 8), price, originalPrice, fx, inStock, image, url }));
+  const slim = items.map(({ title, brand, ptype, price, originalPrice, fx, inStock, image, url }) => ({ title, brand, ptype, price, originalPrice, fx, inStock, image: image && image.split('?')[0], url }));
   const dir = path.join(__dirname, '..', 'server', 'snapshot');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `shopify-${s.id}.json.gz`), zlib.gzipSync(JSON.stringify({ store: s.id, builtAt: NOW, items: slim }), { level: 9 }));
