@@ -1,7 +1,7 @@
 // Umarex USA (Elite Force's parent company; nopCommerce storefront). Its /search page is plain
 // HTML and allowed by robots.txt, with no bot challenge. Umarex also sells pellet and steel-BB
 // airguns; the airsoft-only filter drops those (only 6mm airsoft items are kept).
-const cheerio = require('cheerio');
+const cheerio = { load: (...a) => require('cheerio').load(...a) }; // loaded on first use (keeps cold start short)
 const { get, money, sliceHtml } = require('../http');
 const base = 'https://www.umarexusa.com';
 

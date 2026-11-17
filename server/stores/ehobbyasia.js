@@ -1,7 +1,7 @@
 // eHobbyAsia (Shopify, ships to the US from Hong Kong). robots.txt disallows /products.json and
 // /search.json, so we don't use any JSON endpoint. The HTML search page (/search) is allowed and
 // is server-rendered, so we read the product cards from it.
-const cheerio = require('cheerio');
+const cheerio = { load: (...a) => require('cheerio').load(...a) }; // loaded on first use (keeps cold start short)
 const { get, money, sliceHtml } = require('../http');
 const base = 'https://www.ehobbyasia.com';
 

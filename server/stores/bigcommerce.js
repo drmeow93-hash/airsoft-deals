@@ -1,5 +1,5 @@
 // Shared parser for BigCommerce Stencil product cards (category/search/deals listings).
-const cheerio = require('cheerio');
+const cheerio = { load: (...a) => require('cheerio').load(...a) }; // loaded on first use (keeps cold start short)
 const { money, sliceHtml } = require('../http');
 
 function parseBigCommerceCards(html, { storeDeal = false } = {}) {

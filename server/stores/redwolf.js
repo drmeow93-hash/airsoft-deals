@@ -1,7 +1,7 @@
 // RedWolf Airsoft (Hong Kong, Magento). /catalogsearch/result/ is allowed by robots.txt (only
 // account, checkout, wishlist and /sales are disallowed) and there's no bot challenge. The default
 // storefront currency is USD, so prices are already in dollars.
-const cheerio = require('cheerio');
+const cheerio = { load: (...a) => require('cheerio').load(...a) }; // loaded on first use (keeps cold start short)
 const { get, money, sliceHtml } = require('../http');
 const base = 'https://www.redwolfairsoft.com';
 

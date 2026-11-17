@@ -9,12 +9,15 @@ const ic = (id, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href
 // ---- images: each store's photo in turn, then our same-origin fallback (/img), then a branded placeholder ----
 const PH_CATS = new Set(['rifles', 'pistols', 'snipers', 'gear', 'optics', 'parts', 'bbs', 'mags', 'holsters', 'batteries', 'gas']);
 const phHtml = (cat, failed) => `<div class="ph${failed ? ' failed' : ''}" role="img" aria-label="No photo available">${ic(PH_CATS.has(cat) ? 'c-' + cat : 'i-spark', 'ph-ic')}<span>No photo</span></div>`;
-function imgHtml(srcs, cat, attrs = '') {
+function imgHtml(srcs, cat, attrs = '', sizes = '') {
   const list = (srcs || []).filter((u) => /^https:\/\//.test(u || '')).map((u) => u.replace(/ /g, '%20'));
   if (!list.length) return phHtml(cat);
-  return `<img ${attrs} src="${esc(list[0])}" data-srcs="${esc(list.join(' '))}" data-cat="${esc(cat || '')}" onerror="imgFail(this)">`;
+  // Shopify's CDN resizes for free: small screens / 1x displays get a 240px file instead of 400px.
+  const set = sizes && /^https:\/\/cdn\.shopify\.com\/.*[?&]width=400\b/.test(list[0]) ? ` srcset="${esc(list[0].replace(/([?&])width=400\b/, '$1width=240'))} 240w, ${esc(list[0])} 400w" sizes="${sizes}"` : '';
+  return `<img ${attrs} src="${esc(list[0])}"${set} data-srcs="${esc(list.join(' '))}" data-cat="${esc(cat || '')}" onerror="imgFail(this)">`;
 }
 window.imgFail = (el) => {
+  el.removeAttribute('srcset');
   const list = (el.dataset.srcs || '').split(' ').filter(Boolean);
   const i = +(el.dataset.i || 0) + 1;
   if (i < list.length) { el.dataset.i = i; el.src = list[i]; return; }
@@ -94,7 +97,8 @@ function wakeBanner(on) {
 }
 async function api(path) {
   let flagged = false;
-  const t = setTimeout(() => { flagged = true; wakeBanner(true); }, 3500);
+  // Only the page's first requests can mean Render is waking the server; later slow calls just show skeletons.
+  const t = setTimeout(() => { if (performance.now() < 20000) { flagged = true; wakeBanner(true); } }, 3500);
   try {
     const r = await fetch(API + path);
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Server error ${r.status}`);
@@ -310,7 +314,7 @@ function card(g, i = 99) {
   // The first few images are the page's largest paint, so they load eagerly; the rest lazily.
   const load = i < 4 ? `loading="eager"${i < 2 ? ' fetchpriority="high"' : ''}` : 'loading="lazy"';
   return `<div class="pcard" data-id="${g.id}" tabindex="0" role="link" aria-label="${esc(g.title)}, ${money(g.bestPrice)}">
-    <div class="pimg">${imgHtml(g.images, g.cat, `${load} decoding="async" width="300" height="300" alt=""`)}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
+    <div class="pimg">${imgHtml(g.images, g.cat, `${load} decoding="async" width="300" height="300" alt=""`, '(max-width: 760px) 46vw, 240px')}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
     <div class="pbody">
       ${g.brand || g.score ? `<div class="prow1">${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : '<span></span>'}${scoreBadge(g)}</div>` : ''}
       <div class="ptitle">${esc(g.title)}</div>
@@ -512,7 +516,7 @@ async function dealsPage() {
     const strip = () => {
       if (!drops?.groups?.length || !$('#grid') || $('#dealDrops')) return;
       const top = [...drops.groups].filter((g) => g.h?.chg < 0).sort(sorters.drop).slice(0, 14);
-      if (top.length) $('#grid').insertAdjacentHTML('beforebegin', `<div id="dealDrops"><div class="sec-h"><h2>Biggest recent drops</h2><a href="#/drops">All drops ${ic('i-right')}</a></div>${carousel('ddCar', top, 30)}</div>`);
+      if (top.length) $('#grid').insertAdjacentHTML('beforebegin', `<div id="dealDrops"><div class="sec-h"><h2>Biggest recent drops</h2><a href="#/drops">All drops ${ic('i-right')}</a></div>${carousel('ddCar', top, 0)}</div>`);
       remember(top, drops.fetchedAt); bindCarousel($('#ddCar'), '#/deals');
     };
     api('/api/drops').then((d) => { drops = d; cache.set('/api/drops', d); strip(); }).catch(() => {});
@@ -849,7 +853,7 @@ async function homePage() {
     S.deals = d; remember(d.groups, d.fetchedAt);
     const per = {}, pick = [];
     for (const g of d.groups) { const s = g.offers[0].storeId; if ((per[s] = (per[s] || 0) + 1) <= 2) pick.push(g); }
-    $('#homeDeals').innerHTML = carousel('dealsCar', pick.slice(0, 16));
+    $('#homeDeals').innerHTML = carousel('dealsCar', pick.slice(0, 16), 10);
     bindCarousel($('#dealsCar'), '#/deals');
   };
   const drops = (d) => {
@@ -857,7 +861,7 @@ async function homePage() {
     remember(d.groups, d.fetchedAt);
     const hm = d.history || {};
     if (hm.tracked) $('#stats').innerHTML = `<span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span><span class="stat"><b>${hm.tracked.toLocaleString()}</b> prices tracked</span>${hm.updated ? `<span class="stat opt">History updated ${ago(hm.updated)}</span>` : ''}`;
-    $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 10) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
+    $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 0) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
     bindCarousel($('#dropsCar'), '#/drops');
   };
   $('#heroForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#heroQ').value; qEl.value = q; go(q); });

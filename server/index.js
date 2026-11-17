@@ -10,6 +10,7 @@ const marketplaces = require('./marketplaces');
 const history = require('./history');
 const verdicts = require('./verdict');
 const refresh = require('./refresh');
+const keepWarm = require('./keepwarm');
 const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
 
 const app = express();
@@ -68,6 +69,7 @@ async function cached(key, freshMs, maxAgeMs, compute, { force = false } = {}) {
     return pending;
   };
   if (force) return { body: (await refresh()).body, cache: 'warm' };
+  if (e && e.body) { results.delete(key); results.set(key, e); } // LRU: hot keys (deals, drops) are never the ones evicted
   if (e && e.body && now - e.at < e.freshMs) return { body: e.body, cache: 'hit' };
   if (e && e.body && now - e.at < maxAgeMs) { refresh().catch(() => {}); return { body: e.body.replace(/^\{/, '{"refreshing":true,'), cache: 'stale' }; }
   const r = await refresh();
@@ -212,6 +214,7 @@ app.get('/api/refresh', (req, res) => {
   const q = req.query;
   const key = q.q ? refresh.scopeKey('search', q.q) : q.cat ? refresh.scopeKey('cat', String(q.cat)) : q.brand ? refresh.scopeKey('brand', String(q.brand)) : 'deals';
   refresh.touch(key);
+  keepWarm.visit();
   refresh.run('visit');
   res.set('Cache-Control', 'no-store').json({ key, ...refresh.status(key) });
 });
@@ -219,7 +222,8 @@ app.get('/api/refresh/status', (req, res) => res.set('Cache-Control', 'no-store'
 app.post('/api/recheck', express.json({ limit: '16kb' }), async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json({ offers: await refresh.recheck(req.body && req.body.offers, String((req.body && req.body.title) || '').slice(0, 120)), minutes: refresh.PRODUCT_MS / 60000 }); } catch (e) { res.status(500).json({ error: 'recheck failed' }); }
 });
-app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
+const lag = require('perf_hooks').monitorEventLoopDelay({ resolution: 10 }); lag.enable();
+app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), bootMs: BOOT_MS, shell: SHELL.from, loopLagMs: { p50: Math.round(lag.percentile(50) / 1e6), p99: Math.round(lag.percentile(99) / 1e6), max: Math.round(lag.max / 1e6) }, keepWarm: keepWarm.status(), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
 app.get('/img', require('./imgproxy').handler);
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
 app.get('/api/vetting', (req, res) => res.json(vetting.doc));
@@ -343,45 +347,13 @@ app.get('/api/suggest', (req, res) => {
 });
 
 // ---- static files ----
-// app.js and styles.css are minified with esbuild at boot; the CSS is inlined into the HTML (one
-// render-blocking request fewer). Text responses are pre-compressed (brotli + gzip) once.
+// app.js and styles.css are minified, the CSS is inlined into the HTML (one render-blocking request
+// fewer), and text responses are pre-compressed; see server/packer.js (done at install time).
 const PUB = path.join(__dirname, '..', 'public');
-let esbuild = null;
-try { esbuild = require('esbuild'); } catch { /* serve unminified */ }
-const read = (f) => fs.readFileSync(path.join(PUB, f), 'utf8');
-const minify = (code, loader) => { try { return esbuild ? esbuild.transformSync(code, { loader, minify: true, target: loader === 'js' ? 'es2020' : 'safari14' }).code : code; } catch (e) { console.log('minify failed', e.message); return code; } };
-const hash = (s) => crypto.createHash('sha1').update(s).digest('hex').slice(0, 10);
-const appJs = minify(read('app.js'), 'js');
-const css = minify(read('styles.css'), 'css').trim();
-const configJs = read('config.js');
-const version = { 'app.js': hash(appJs), 'config.js': hash(configJs), 'styles.css': hash(css) };
-const indexHtml = read('index.html')
-  .replace(/<link rel="stylesheet" href="\/styles\.css" \/>/, `<style>${css}</style>`)
-  .replace(/(src|href)="\/(app\.js|config\.js)"/g, (m, attr, f) => `${attr}="/${f}?v=${version[f]}"`)
-  .replace(/>\s+</g, '><').replace(/\n\s*/g, '');
-function packed(body, type, cacheControl) {
-  const buf = Buffer.from(body);
-  return { type, cacheControl, raw: buf, br: zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } }), gz: zlib.gzipSync(buf, { level: 9 }) };
-}
-function sendPacked(req, res, p) {
-  const ae = String(req.headers['accept-encoding'] || '');
-  const enc = /\bbr\b/.test(ae) ? 'br' : /\bgzip\b/.test(ae) ? 'gz' : null;
-  res.set({ 'Content-Type': p.type, 'Cache-Control': p.cacheControl, Vary: 'Accept-Encoding' });
-  if (enc) res.set('Content-Encoding', enc === 'br' ? 'br' : 'gzip');
-  res.send(enc ? p[enc] : p.raw);
-}
-const IMMUTABLE = 'public, max-age=31536000, immutable';
-const PACKS = {
-  '/': packed(indexHtml, 'text/html; charset=utf-8', 'no-cache'),
-  '/app.js': packed(appJs, 'text/javascript; charset=utf-8', IMMUTABLE),
-  '/config.js': packed(configJs, 'text/javascript; charset=utf-8', IMMUTABLE),
-  '/styles.css': packed(css, 'text/css; charset=utf-8', IMMUTABLE),
-  '/sw.js': packed(minify(read('sw.js').replace('__ASSET_VERSIONS__', JSON.stringify(version)), 'js'), 'text/javascript; charset=utf-8', 'no-cache'),
-  '/manifest.webmanifest': packed(read('manifest.webmanifest'), 'application/manifest+json', 'public, max-age=86400'),
-  '/icons/icon.svg': packed(read('icons/icon.svg'), 'image/svg+xml', 'public, max-age=2592000, immutable'),
-};
-PACKS['/index.html'] = PACKS['/'];
-app.get(Object.keys(PACKS), (req, res) => sendPacked(req, res, PACKS[req.path]));
+const packer = require('./packer');
+const SHELL = packer.get();
+const PACKS = SHELL.packs;
+app.get(Object.keys(PACKS), (req, res) => packer.send(req, res, PACKS[req.path]));
 app.use(express.static(PUB, {
   index: false,
   setHeaders: (res, file) => {
@@ -406,7 +378,9 @@ async function warmChips() {
 }
 // History: pull the newest copy committed by the GitHub Action shortly after boot and every 3 hours.
 // New history changes every arrow, so cached results are dropped when it arrives.
-history.onUpdate.push(() => results.clear());
+// Cached results are marked stale (not dropped): the next request gets the old copy instantly and the
+// recompute runs in the background, instead of a visitor waiting ~8 s on the 0.1-CPU instance.
+history.onUpdate.push(() => { const t = Date.now(); for (const e of results.values()) if (e.body) e.at = Math.min(e.at, t - e.freshMs - 1); });
 if (BG) {
   setTimeout(() => history.refreshRemote(), 45 * 1000);
   setInterval(() => history.refreshRemote(), 3 * 60 * 60 * 1000);
@@ -416,9 +390,12 @@ if (BG) {
 if (BG) stores.filter((s) => s.snapshotInfo).forEach((s, i) => setTimeout(() => s.snapshotInfo(), 8000 + i * 700));
 if (BG) {
   // Cold start: Render just woke us (a visitor is waiting), so check every store right away.
-  setTimeout(async () => { await refresh.run('boot'); await sleep(5000); warmChips(); }, 300);
-  setInterval(warmChips, 30 * 60 * 1000);
+  // (A short pause first, so the waking visitor's own page requests get the CPU before the crawl.)
+  setTimeout(async () => { await refresh.run('boot'); await sleep(5000); warmChips(); }, 2500);
+  setInterval(() => { if (keepWarm.visitedWithin(60 * 60 * 1000)) warmChips(); }, 30 * 60 * 1000);
+  keepWarm.start(() => accounts.checkAlerts().catch(() => {}));
 }
 
 const port = process.env.PORT || 8787;
-app.listen(port, () => console.log(`Felony's Airsoft Emporium running on http://localhost:${port}`));
+let BOOT_MS = null;
+app.listen(port, () => { BOOT_MS = Math.round(process.uptime() * 1000); console.log(`Felony's Airsoft Emporium running on http://localhost:${port} (boot ${BOOT_MS} ms, static shell ${SHELL.from})`); });

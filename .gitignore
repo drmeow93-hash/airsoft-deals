@@ -17,3 +17,4 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 *.dSYM.zip
 server/snapshot/verdicts.json
 server/snapshot/accounts.json
+server/.pack/

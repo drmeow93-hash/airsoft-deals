@@ -1,7 +1,7 @@
 // Airsoft GI. robots.txt disallows its search (advanced_search_result.php) and sets Crawl-delay: 5.
 // Category and specials pages are allowed, so we index Airsoft Guns + Specials slowly (one page
 // every 5+ seconds), refresh twice a day, and search that index in memory.
-const cheerio = require('cheerio');
+const cheerio = { load: (...a) => require('cheerio').load(...a) }; // loaded on first use (keeps cold start short)
 const { createIndex } = require('../indexer');
 const { money } = require('../http');
 const base = 'https://www.airsoftgi.com';
