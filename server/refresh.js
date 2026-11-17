@@ -76,6 +76,23 @@ async function cycle(reason) {
   const done = new Set(['deals']);
   // Step 1, the store check itself (awaited directly, so a page's shorter deals request can't stand in for it).
   try { const r = await ctx.computeDeals(STORE_HARD_MS); await ctx.cached('deals', 10 * 60 * 1000, 0, async () => r, { force: true }); S.version++; S.scopeVer.set('deals', S.version); } catch (e) { console.log(`[refresh] deals failed: ${e.message}`); }
+  // Step 2: stores the deals feed didn't actually reach (no sale feed, e.g. Umarex and eHobbyAsia, or an
+  // answer from an older cached copy) get one search through their normal search route instead.
+  const left = [...S.stores.values()].filter((e) => e.state === 'checking');
+  if (left.length) {
+    const recent = [...S.scopes.keys()].reverse().find((k) => k.startsWith('s:'));
+    const q = recent ? recent.slice(2) : 'glock 17';
+    await Promise.all(left.map(async (e) => {
+      const st = ctx.stores.find((x) => x.id === e.id); if (!st?.search) return;
+      let r;
+      try { r = await Promise.race([st.search(q).then(() => 'ok'), sleep(STORE_HARD_MS).then(() => 'slow')]); } catch (err) { noteStore(st, { ok: false, error: err.message }); return; }
+      if (r !== 'ok' || e.state !== 'checking') return;
+      // Answered from the polite page cache (fetched within the last refresh interval): that copy is the check.
+      const t = lastOkAt(st.base) || e.checkedAt || Date.now();
+      e.state = 'ok'; e.checkedAt = t; e.dueAt = Math.max(t + MIN_MS, Date.now() + GAP_MS); e.note = null; e.snapshotAt = null;
+    }));
+    S.version++;
+  }
   const next = () => ['deals', ...[...S.scopes.keys()].reverse()].find((k) => !done.has(k) && jobFor(k));
   for (let k = next(); k && done.size < 16; k = next()) {
     done.add(k);
