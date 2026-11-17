@@ -1,4 +1,4 @@
-/* AirsoftDeals front-end: hash router, search, product comparison, deals, watchlist. */
+/* Felony's Airsoft Emporium front-end: hash router, search, product comparison, deals, watchlist. */
 const API = (window.API_BASE || '').replace(/\/$/, '');
 const app = document.getElementById('app');
 const $ = (s, r = document) => r.querySelector(s);
@@ -173,7 +173,7 @@ async function homePage() {
   $('#q').value = '';
   const chips = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
   app.innerHTML = `<section class="hero"><h1>Find the <em>best price</em> on airsoft gear.</h1>
-    <p>AirsoftDeals checks trusted US retailers live, matches the same product across stores, and flags real sales so you never overpay.</p>
+    <p>Felony&#39;s Airsoft Emporium checks trusted US retailers live, matches the same product across stores, and flags real sales so you never overpay.</p>
     <div class="chips">${chips.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
     <div class="section-h"><h2>Top deals right now</h2><a href="#/deals">See all deals →</a></div><div id="homeDeals">${skeletons(8)}</div>`;
   app.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => (location.hash = '#/search?q=' + encodeURIComponent(c.dataset.q))));

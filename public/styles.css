@@ -1,3 +1,4 @@
+@font-face{font-family:"Dancing Script";src:url("/fonts/DancingScript-latin.woff2") format("woff2");font-weight:400 700;font-style:normal;font-display:swap}
 :root{
   --bg:#0f0b1a;--bg2:#141022;--card:#1c1630;--card2:#221b3a;--line:#2e2547;--line2:#3b3159;
   --text:#f3f0fa;--sub:#b9b2cc;--muted:#8a82a3;
@@ -16,9 +17,9 @@ svg{fill:currentColor}
 .header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:28px;padding:14px 24px}
 .brand{display:flex;align-items:center;gap:10px;color:var(--text);flex:none}
 .logo{width:38px;height:38px;border-radius:10px}
-.wordmark{font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.05;display:flex;flex-direction:column}
-.wordmark b{color:var(--accent2);font-weight:800;display:inline}
-.wordmark small{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.wordmark{display:flex;flex-direction:column;line-height:1;min-width:0}
+.wordmark .script{font-family:"Dancing Script","Snell Roundhand","Apple Chancery",cursive;font-weight:700;font-size:28px;letter-spacing:.005em;white-space:nowrap;background:linear-gradient(90deg,#f3f0fa 0%,#c4b5fd 70%,#a78bfa 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:2px 2px 4px 0}
+.wordmark small{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.04em;margin-top:1px}
 .search{flex:1;display:flex;max-width:640px;background:var(--card);border:1px solid var(--line2);border-radius:12px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .search input{flex:1;min-width:0;background:none;border:0;color:var(--text);font-size:16px;padding:13px 16px;outline:none}
@@ -127,6 +128,7 @@ select,.toggle{background:var(--card);color:var(--text);border:1px solid var(--l
 .foot{text-align:center;color:var(--muted);font-size:12px;padding:26px 24px calc(26px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
 
 @media (max-width:900px){.product{grid-template-columns:1fr;gap:20px}.gallery{position:static;order:-1}.main-img{aspect-ratio:4/3}}
+@media (max-width:1000px){.header-inner{gap:18px}.wordmark .script{font-size:24px}}
 @media (max-width:720px){
   .header-inner{flex-wrap:wrap;gap:12px;padding:10px 16px}
   .search{order:3;flex-basis:100%;max-width:none}
@@ -138,6 +140,8 @@ select,.toggle{background:var(--card);color:var(--text);border:1px solid var(--l
   .p-title{font-size:23px}.best-price{font-size:36px}
   .wm{width:96px;font-size:14px}.o-mid{display:none}.offer{padding:12px}
   .status .pill:not(.err){display:none}.status{margin:0}
-  .wordmark{font-size:19px}
+  .brand{flex:1;min-width:0}.wordmark .script{font-size:clamp(20px,6vw,26px);white-space:normal;text-wrap:balance;line-height:1.02}
   .toolbar{align-items:stretch}.controls{width:100%}.controls select{flex:1}
 }
+@media (max-width:430px){.action span{display:none}.action svg{width:24px;height:24px}.actions{gap:16px}}
+@media (max-width:360px){.logo{width:32px;height:32px}.actions{gap:12px}.wordmark small{font-size:10px;letter-spacing:.01em;white-space:nowrap}}

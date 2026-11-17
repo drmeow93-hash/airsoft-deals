@@ -54,4 +54,4 @@ app.get('/api/deals', async (req, res) => {
 app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
 
 const port = process.env.PORT || 8787;
-app.listen(port, () => console.log(`Airsoft Deals running on http://localhost:${port}`));
+app.listen(port, () => console.log(`Felony's Airsoft Emporium running on http://localhost:${port}`));

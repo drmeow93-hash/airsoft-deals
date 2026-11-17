@@ -1,6 +1,6 @@
-# AirsoftDeals
+# Felony's Airsoft Emporium
 
-Live airsoft price comparison across trusted US retailers. Search once, and AirsoftDeals checks every supported store in parallel, matches the same product across stores, and flags real deals. Ships as an installable iPhone web app (PWA) and as a native iOS shell (Capacitor).
+Live airsoft price comparison across trusted US retailers. Search once, and Felony's Airsoft Emporium checks every supported store in parallel, matches the same product across stores, and flags real deals. Ships as an installable iPhone web app (PWA) and as a native iOS shell (Capacitor).
 
 ## Stores
 
@@ -70,3 +70,6 @@ ios/               Capacitor iOS Xcode project
 scripts/           make-icons.js, screenshots.js, build-www.js
 screenshots/       desktop-* and iphone-* UI captures
 ```
+
+## Branding
+The header wordmark uses **Dancing Script** (SIL Open Font License 1.1). It's self-hosted at `public/fonts/` so it also works offline in the installed app. The license is in `public/fonts/OFL.txt`.

@@ -1,6 +1,6 @@
 {
   "appId": "com.airsoftdeals.app",
-  "appName": "AirsoftDeals",
+  "appName": "Felony's Airsoft Emporium",
   "webDir": "www",
   "backgroundColor": "#0f0b1a",
   "ios": { "contentInset": "never", "backgroundColor": "#0f0b1a" }
