@@ -283,8 +283,8 @@ stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(20000 + i * 
 const WARM = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
 const warmDeals = () => cached('deals', 10 * 60 * 1000, 0, computeDeals, { force: true }).catch(() => {});
 async function warmChips() {
-  for (const q of WARM) { await cached('s:' + q.toLowerCase(), 10 * 60 * 1000, 0, () => computeSearch(q), { force: true }).catch(() => {}); await sleep(1500); }
-  for (const c of Object.keys(CAT_TERMS)) { await cached('c:' + c, 10 * 60 * 1000, 0, () => computeBrowse(c), { force: true }).catch(() => {}); await sleep(1500); }
+  for (const q of WARM) { await cached('s:' + q.toLowerCase(), 10 * 60 * 1000, 0, () => computeSearch(q), { force: true }).catch(() => {}); await sleep(6000); }
+  for (const c of Object.keys(CAT_TERMS)) { await cached('c:' + c, 10 * 60 * 1000, 0, () => computeBrowse(c), { force: true }).catch(() => {}); await sleep(6000); }
   cached('drops', 10 * 60 * 1000, 0, computeDrops, { force: true }).catch(() => {});
 }
 // History: pull the newest copy committed by the GitHub Action shortly after boot and every 3 hours.
@@ -295,7 +295,7 @@ if (BG) {
   setInterval(() => history.refreshRemote(), 3 * 60 * 60 * 1000);
 }
 if (BG) {
-  setTimeout(async () => { await warmDeals(); warmChips(); }, 300);
+  setTimeout(async () => { await warmDeals(); await sleep(5000); warmChips(); }, 300);
   setInterval(warmDeals, 9 * 60 * 1000);
   setInterval(warmChips, 30 * 60 * 1000);
 }

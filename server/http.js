@@ -4,16 +4,33 @@ const { isVetted } = require('./vetting');
 const cache = new Map();
 const inflight = new Map(); // identical concurrent requests share one fetch
 
-async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000 } = {}) {
+// Politeness: a host that answers 429 (rate limited) is left alone until its Retry-After passes
+// (default 60 s, doubling up to 15 min if it keeps happening). Meanwhile the last good copy is served
+// if we have one. Requests in a pool (all Shopify storefronts share one) run a few at a time, not in bursts.
+const backoff = new Map(); // host -> { until, ms }
+const pools = { shopify: { max: 4, active: 0, q: [] } };
+const acquire = (name) => { const p = pools[name]; if (!p) return Promise.resolve(); if (p.active < p.max) { p.active++; return Promise.resolve(); } return new Promise((r) => p.q.push(r)); };
+const release = (name) => { const p = pools[name]; if (!p) return; const next = p.q.shift(); if (next) next(); else p.active--; };
+
+async function get(url, { ttlMs = 10 * 60 * 1000, json = false, timeoutMs = 15000, pool = null } = {}) {
   // Allowlist: only domains that passed the legitimacy vetting (data/vetting.json) are ever fetched.
   if (!isVetted(url)) throw new Error(`Blocked: ${(() => { try { return new URL(url).hostname; } catch { return url; } })()} is not a vetted domain`);
   const key = (json ? 'j:' : 'h:') + url;
   const hit = cache.get(key);
   if (hit && hit.exp > Date.now()) return hit.val;
+  const host = new URL(url).host;
+  const b = backoff.get(host);
+  if (b && b.until > Date.now()) {
+    if (hit) return hit.val; // stale but honest: last copy we were allowed to fetch
+    throw new Error(`${host} asked us to slow down (HTTP 429); waiting ${Math.ceil((b.until - Date.now()) / 1000)} s`);
+  }
   if (inflight.has(key)) return inflight.get(key);
-  const p = fetchOnce(url, key, { ttlMs, json, timeoutMs });
+  const p = (async () => {
+    await acquire(pool);
+    try { return await fetchOnce(url, key, { ttlMs, json, timeoutMs }); } finally { release(pool); }
+  })();
   inflight.set(key, p);
-  try { return await p; } finally { inflight.delete(key); }
+  try { return await p; } catch (e) { if (hit && /HTTP (429|5\d\d)|abort/i.test(e.message)) return hit.val; throw e; } finally { inflight.delete(key); }
 }
 
 async function fetchOnce(url, key, { ttlMs, json, timeoutMs }) {
@@ -25,10 +42,18 @@ async function fetchOnce(url, key, { ttlMs, json, timeoutMs }) {
       signal: ctrl.signal,
       redirect: 'follow',
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${new URL(url).host}`);
+    const host = new URL(url).host;
+    if (res.status === 429) {
+      const ra = parseInt(res.headers.get('retry-after'), 10);
+      const prev = backoff.get(host);
+      const ms = Math.min(15 * 60 * 1000, Number.isFinite(ra) && ra > 0 ? ra * 1000 : prev && prev.until > Date.now() - 10 * 60 * 1000 ? prev.ms * 2 : 60 * 1000);
+      backoff.set(host, { until: Date.now() + ms, ms });
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${host}`);
+    backoff.delete(host);
     const val = json ? await res.json() : await res.text();
     cache.set(key, { val, exp: Date.now() + ttlMs });
-    if (cache.size > 500) cache.delete(cache.keys().next().value);
+    if (cache.size > 800) cache.delete(cache.keys().next().value);
     return val;
   } finally {
     clearTimeout(t);
@@ -65,4 +90,6 @@ function sliceHtml(html, { marker, startTag, endTag, tail = 0 }) {
   return start < 0 ? html : html.slice(start, end);
 }
 
-module.exports = { get, money, thumb, sliceHtml, UA };
+const backoffStatus = () => Object.fromEntries([...backoff].filter(([, b]) => b.until > Date.now()).map(([h, b]) => [h, Math.ceil((b.until - Date.now()) / 1000)]));
+
+module.exports = { get, backoffStatus, money, thumb, sliceHtml, UA };

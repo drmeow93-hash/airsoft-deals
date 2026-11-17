@@ -47,7 +47,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
 
   async function search(q) {
     const u = `${base}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=10&resources[options][unavailable_products]=last`;
-    const data = await get(u, { json: true });
+    const data = await get(u, { json: true, pool: 'shopify' });
     return (data?.resources?.results?.products || []).map(norm).filter((p) => p.price);
   }
 
@@ -55,7 +55,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
   async function deals() {
     const out = [];
     for (let page = 1; page <= 4; page++) {
-      const data = await get(`${base}/products.json?limit=250&page=${page}`, { json: true, ttlMs: 30 * 60 * 1000 });
+      const data = await get(`${base}/products.json?limit=250&page=${page}`, { json: true, ttlMs: 30 * 60 * 1000, pool: 'shopify' });
       const prods = data?.products || [];
       for (const p of prods) { const x = fromProduct(base, p, fx); if (x && x.originalPrice) out.push(x); }
       if (prods.length < 250) break;
