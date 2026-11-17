@@ -520,8 +520,9 @@ async function dealsPage() {
       remember(top, drops.fetchedAt); bindCarousel($('#ddCar'), '#/deals');
     };
     api('/api/drops').then((d) => { drops = d; cache.set('/api/drops', d); strip(); }).catch(() => {});
-    await loadLive('/api/deals', (d) => { S.deals = d; listView(d, { crumb: [['Home', '#/'], ["Today's deals"]], sortDefault: 'featured', title: (n) => `<b>${n}</b> deals from ${d.status.filter((s) => s.ok).length} stores ${freshness(d)}` }); strip(); });
+    // Start the store check right away (not after the list loads), so stale stores are re-checked by the cycle.
     liveStart('', '/api/deals');
+    await loadLive('/api/deals', (d) => { S.deals = d; listView(d, { crumb: [['Home', '#/'], ["Today's deals"]], sortDefault: 'featured', title: (n) => `<b>${n}</b> deals from ${d.status.filter((s) => s.ok).length} stores ${freshness(d)}` }); strip(); });
   } catch (e) { if (!$('#grid')) errorView(e); }
 }
 
