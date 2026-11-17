@@ -16,7 +16,7 @@ const GAP_MS = +process.env.REFRESH_GAP_MS || 60 * 1000; // at least this long b
 const SCOPE_TTL = 30 * 60 * 1000;
 // A refresh cycle waits this long for each store (including time queued in the 4-at-a-time Shopify pool)
 // before calling it failed. Page requests still give up after a few seconds and show what's ready.
-const STORE_HARD_MS = +process.env.REFRESH_STORE_MS || 90 * 1000;
+const STORE_HARD_MS = +process.env.REFRESH_STORE_MS || 45 * 1000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let ctx = null; // { stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history }

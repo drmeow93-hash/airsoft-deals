@@ -36,11 +36,16 @@ async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
     const work = Promise.resolve().then(() => fn(s));
     work.catch(() => {});
     return Promise.race([work, sleep(timeoutMs).then(() => TIMEOUT)])
-      .then((v) => (v === TIMEOUT ? { slow: true } : { value: v }), (e) => ({ error: e }));
+      .then((v) => (v === TIMEOUT ? { slow: true } : { value: v }), (e) => ({ error: e }))
+      .then((r) => {
+        // Report each store as soon as it answers, so the live status counts up store by store.
+        refresh.noteStore(s, r.value ? { ok: true, snapshotAt: r.value.snapshotAt } : r.slow ? { ok: false, slow: true } : { ok: false, error: String(r.error?.message || r.error) });
+        return r;
+      });
   }));
   const items = [];
   let slow = 0;
-  const status = settled.map((r, i) => { const st = statusOf(r, i); refresh.noteStore(stores[i], st); return st; });
+  const status = settled.map((r, i) => statusOf(r, i));
   return { items, status, slow, ms: Date.now() - t0, fetchedAt: new Date().toISOString() };
   function statusOf(r, i) {
     const s = stores[i];
