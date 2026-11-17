@@ -1,5 +1,5 @@
 // App-shell cache; API calls always go to the network so prices are never stale.
-const CACHE = 'airsoft-deals-v6';
+const CACHE = 'airsoft-deals-v7';
 const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/config.js', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/fonts/DancingScript-latin.woff2'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });

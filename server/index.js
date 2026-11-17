@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { stores, skipped, reviews } = require('./stores');
 const { enrich, groupProducts } = require('./deals');
+const marketplaces = require('./marketplaces');
 
 const app = express();
 app.use((req, res, next) => { res.set('Access-Control-Allow-Origin', '*'); next(); });
@@ -24,6 +25,13 @@ app.get('/api/stores', (req, res) => res.json({
   skipped,
   reviews,
 }));
+
+app.get('/api/marketplaces', (req, res) => res.json({ marketplaces: marketplaces.list() }));
+app.get('/api/marketplace-search', async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 80);
+  if (q.length < 2) return res.status(400).json({ error: 'Query too short' });
+  res.json(await marketplaces.searchMarketplaces(q));
+});
 
 app.get('/api/search', async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 80);

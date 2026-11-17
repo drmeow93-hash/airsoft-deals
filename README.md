@@ -91,3 +91,26 @@ screenshots/       desktop-* and iphone-* UI captures
 
 ## Branding
 The header wordmark uses **Dancing Script** (SIL Open Font License 1.1). It's self-hosted at `public/fonts/` so it also works offline in the installed app. The license is in `public/fonts/OFL.txt`.
+
+## Marketplaces (used / third-party)
+
+The **Marketplaces** tab (`#/marketplaces`) and a separate "Used & marketplace listings" section under each search are kept apart from the new-retail price comparison.
+
+| Marketplace | Mode | Why |
+|---|---|---|
+| HopUp (hopupairsoft.com) | Link only | robots.txt allows crawling, but the Terms of Use forbid scraping/automated collection without written permission |
+| eBay airsoft (cat. 31680) | Link only, **live with free API key** | Pages return 403 to bots and robots.txt disallows search; the official Browse API is the compliant route |
+| GunBroker airsoft | Link only | Cloudflare 403 to automated requests; official API requires a developer key |
+| r/airsoftmarket | Link only | robots.txt disallows all crawling; Reddit API requires OAuth/approval |
+| Facebook Marketplace / groups | Link only | Login required |
+| Airsoft Classifieds | Dropped | airsoftclassifieds.com is a parked domain; .org did not respond |
+
+### Turning on live eBay listings
+Create a free eBay developer account (developer.ebay.com), make a Production keyset, then set these env vars on Render:
+
+```
+EBAY_CLIENT_ID=...       # App ID
+EBAY_CLIENT_SECRET=...   # Cert ID
+```
+
+The server uses the client-credentials OAuth flow and the Browse API (`item_summary/search`, category 31680), caching results for 10 minutes.

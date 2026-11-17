@@ -18,6 +18,12 @@ const STORE_INFO = {
   evike: { name: 'Evike.com', sub: 'California' },
   sniperas: { name: 'Sniper Airsoft', sub: 'Germany' },
   replicaairguns: { name: 'ReplicaAirguns', sub: 'Reviews' },
+  hopup: { name: 'HopUp', sub: 'Buy/sell app' },
+  ebay: { name: 'eBay Airsoft', sub: 'Auctions & BIN' },
+  gunbroker: { name: 'GunBroker', sub: 'Auctions' },
+  reddit: { name: 'r/airsoftmarket', sub: 'Reddit' },
+  fbmarket: { name: 'FB Marketplace', sub: 'Local' },
+  fbgroups: { name: 'FB Groups', sub: 'Buy/sell/trade' },
 };
 const wordmark = (id, name) => `<div class="wm wm-${esc(id)}">${esc(STORE_INFO[id]?.name || name)}<small>${esc(STORE_INFO[id]?.sub || '')}</small></div>`;
 
@@ -108,6 +114,8 @@ async function searchPage(q) {
     if (!S.search || S.search.query !== q) S.search = await api('/api/search?q=' + encodeURIComponent(q));
     const d = S.search, multi = d.groups.filter((g) => g.storeCount > 1).length, deals = d.groups.filter((g) => g.onSale).length;
     listView(d, { title: `<b>${d.groups.length}</b> products for <b>“${esc(q)}”</b> · ${multi} compared across stores · ${deals} deals`, crumb: [['Home', '#/'], [`Search “${q}”`]], defaultSort: 'relevance' });
+    app.insertAdjacentHTML('beforeend', `<section class="mkt-section" id="mkt"><div class="section-h"><h2>Used &amp; marketplace listings</h2><a href="#/marketplaces">About marketplaces →</a></div><p class="more-note">Kept separate from the new-retail comparison above. Prices from players and sellers vary by condition.</p><div id="mktBody"><div class="sk" style="height:90px"></div></div></section>`);
+    loadMarketplaceSection(q);
   } catch (e) { errorView(e); }
 }
 
@@ -182,7 +190,7 @@ async function homePage() {
   const chips = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
   app.innerHTML = `<section class="hero"><h1>Find the <em>best price</em> on airsoft gear.</h1>
     <p>Felony&#39;s Airsoft Emporium checks 10 trusted airsoft retailers, matches the same product across stores, and flags real sales so you never overpay.</p>
-    <p class="hero-more"><a href="#/more">More stores we can't price-check →</a></p>
+    <p class="hero-more"><a href="#/marketplaces">Used gear marketplaces →</a> <span class="sep">·</span> <a href="#/more">More stores we can't price-check →</a></p>
     <div class="chips">${chips.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
     <div class="section-h"><h2>Top deals right now</h2><a href="#/deals">See all deals →</a></div><div id="homeDeals">${skeletons(8)}</div>`;
   app.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => (location.hash = '#/search?q=' + encodeURIComponent(c.dataset.q))));
@@ -219,6 +227,34 @@ async function storesPage() {
   } catch (e) { errorView(e); }
 }
 
+async function loadMarketplaceSection(q) {
+  try {
+    const m = await api('/api/marketplace-search?q=' + encodeURIComponent(q));
+    if (!$('#mktBody')) return;
+    const listings = m.listings.length ? `<div class="grid mkt-grid">${m.listings.map((l) => `<a class="pcard" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="pimg">${l.image ? `<img loading="lazy" src="${esc(l.image)}" alt="">` : ''}<div class="tags">${l.condition ? `<span class="tag">${esc(l.condition.toUpperCase())}</span>` : ''}</div></div>
+        <div class="pbody"><div class="brandline">${esc(l.marketplace)} · ${esc(l.format)}</div><div class="ptitle">${esc(l.title)}</div>
+        <div class="pprice"><b>${money(l.price)}</b></div></div></a>`).join('')}</div>` : '';
+    $('#mktBody').innerHTML = listings + `<div class="mkt-links"><span>Search “${esc(q)}” on</span>${m.links.map((l) => `<a class="mkt-chip" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)} ↗</a>`).join('')}</div>`;
+  } catch (e) { if ($('#mktBody')) $('#mktBody').innerHTML = `<p class="more-note">${esc(e.message)}</p>`; }
+}
+
+async function marketplacesPage() {
+  $('#q').value = '';
+  app.innerHTML = crumbs([['Home', '#/'], ['Marketplaces']]) + skeletons(3);
+  try {
+    const d = await api('/api/marketplaces');
+    app.innerHTML = crumbs([['Home', '#/'], ['Marketplaces']]) + `
+      <div class="section-h" style="margin-top:0"><h2>Marketplaces</h2></div>
+      <p class="more-note">Used and third-party listings with sellers' own prices. They're kept out of the new-retail comparison. When you search, these show up in their own section with direct search links.</p>
+      <div class="stores">${d.marketplaces.map((m) => `<a class="scard more" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="more-top">${wordmark(m.id, m.name)}<span class="ext" aria-hidden="true">↗</span></div>
+        <p class="domain">${esc(m.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, ''))}${m.live ? ' <span class="live-pill">LIVE PRICES</span>' : ''}</p>
+        <p>${esc(m.note)}</p><p class="why">${esc(m.why)}</p></a>`).join('')}</div>
+      <p class="more-note" style="margin-top:18px">Buying used: check seller feedback, ask for a video of the gun firing, and pay with a protected method (PayPal Goods &amp; Services). Never pay with Friends &amp; Family.</p>`;
+  } catch (e) { errorView(e); }
+}
+
 async function moreStoresPage() {
   $('#q').value = '';
   app.innerHTML = crumbs([['Home', '#/'], ['More Stores']]) + skeletons(3);
@@ -248,6 +284,7 @@ function route() {
   if (h === '#/watchlist') return watchlistPage();
   if (h === '#/stores') return storesPage();
   if (h === '#/more') return moreStoresPage();
+  if (h === '#/marketplaces') return marketplacesPage();
   return homePage();
 }
 $('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#q').value.trim(); if (q.length > 1) { $('#q').blur(); location.hash = '#/search?q=' + encodeURIComponent(q); } });
