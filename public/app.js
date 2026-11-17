@@ -620,18 +620,24 @@ function liveBar() {
   const rl = lives.filter((x) => x.state === 'rate-limited');
   const rlTxt = rl.length ? ` · <span class="lb-warn">${rl.length} limited${(() => { const t = rl.map((x) => x.checkedAt || x.snapshotAt).filter(Boolean).sort().pop(); return t ? ` (${clock(t)})` : ''; })()}</span>` : '';
   if (st.running) {
-    const upd = lives.filter((x) => x.checkedAt && st.startedAt && x.checkedAt >= st.startedAt).length;
-    el.innerHTML = `<span class="spin"></span>Checking ${c.live + c.catalog} stores… <b>${upd}</b> updated${st.newest ? ` · ${agoS(st.newest)}` : ''}${rlTxt}`;
+    const checking = lives.filter((x) => x.state === 'checking').length;
+    const upd = lives.length - checking;
+    el.innerHTML = `<span class="spin"></span><b>${upd}</b> of ${lives.length} updated${checking ? `, checking ${checking}…` : ', finishing…'}${rlTxt}`;
   } else {
     el.innerHTML = `<span class="lb-dot ok"></span>Checked <b>${agoS(st.newest)}</b> · ${c.fresh}/${c.live} stores${live.changed ? ` · <b>${live.changed}</b> changed` : ''}${rlTxt}`;
   }
+}
+function detailsHtml(st) {
+  const name = { ok: 'Checked', checking: 'Checking…', 'rate-limited': 'Rate-limited', error: 'No answer', pending: 'Waiting', catalog: 'Catalog' };
+  // While a store is being re-checked its old time is shown greyed as "last …", never as a green "Checked".
+  const when = (x) => (x.state === 'checking' ? (x.checkedAt ? `last ${agoS(x.checkedAt)}` : '') : x.checkedAt ? agoS(x.checkedAt) : x.snapshotAt ? 'saved ' + clock(x.snapshotAt) : '—');
+  return `<ul>${st.stores.map((x) => `<li><span>${esc(x.name)}</span><span class="lb-s ${x.state}">${x.state === 'checking' ? '<span class="spin"></span>' : ''}${name[x.state] || esc(x.state)}</span><span class="lb-t${x.state === 'checking' ? ' old' : ''}" title="${esc(x.note || '')}">${when(x)}</span></li>`).join('')}</ul>`;
 }
 function liveDetails() {
   const st = live.st; if (!st) return;
   let d = $('#lbDetails');
   if (d) { d.remove(); return; }
-  const name = { ok: 'Checked', checking: 'Checking…', 'rate-limited': 'Rate-limited', error: 'No answer', pending: 'Waiting', catalog: 'Catalog' };
-  $('#livebar').insertAdjacentHTML('afterend', `<div class="lb-details" id="lbDetails"><ul>${st.stores.map((x) => `<li><span>${esc(x.name)}</span><span class="lb-s ${x.state}">${name[x.state] || esc(x.state)}</span><span class="lb-t">${x.checkedAt ? agoS(x.checkedAt) : x.snapshotAt ? 'saved ' + clock(x.snapshotAt) : '—'}</span></li>`).join('')}</ul><p>Stores are re-checked when you visit, at most every ${st.minIntervalMin} min each. Catalog stores (search not allowed) follow their own slower crawl schedule.</p></div>`);
+  $('#livebar').insertAdjacentHTML('afterend', `<div class="lb-details" id="lbDetails"><div id="lbList">${detailsHtml(st)}</div><p>Stores are re-checked when you visit, at most every ${st.minIntervalMin} min each. Catalog stores (search not allowed) follow their own slower crawl schedule.</p></div>`);
 }
 
 function applyLive(d) {
@@ -669,8 +675,10 @@ async function livePoll(tok) {
       if (!d.partial) cache.set(live.path, d);
     }
     liveBar();
-    if (st.running && ++live.polls < 60) live.timer = setTimeout(() => livePoll(tok), document.hidden ? 8000 : 2500);
-  } catch { if (++live.polls < 60) live.timer = setTimeout(() => livePoll(tok), 5000); }
+    if ($('#lbList')) $('#lbList').innerHTML = detailsHtml(st);
+    // Keep polling until the server says the cycle is really over (up to ~5 min).
+    if (st.running && ++live.polls < 120) live.timer = setTimeout(() => livePoll(tok), document.hidden ? 8000 : 2500);
+  } catch { if (++live.polls < 120) live.timer = setTimeout(() => livePoll(tok), 5000); }
 }
 // params: 'q=…' | 'cat=…' | 'brand=…' | '' (deals). path: the endpoint whose results are on screen.
 async function liveStart(params, path) {

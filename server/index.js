@@ -97,7 +97,7 @@ async function computeSearch(q, timeoutMs) {
   return { partial: out.slow > 0, body: JSON.stringify({ query: q, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
 
-async function computeDeals() {
+async function computeDeals(timeoutMs = 15000) {
   // Keep each store's top 40 by discount so one big catalog doesn't drown out the rest.
   const out = await fanOut(async (s) => (await s.deals())
     .map((p) => ({ ...p, _d: p.originalPrice ? (p.originalPrice - p.price) / p.originalPrice : 0 }))
@@ -105,7 +105,7 @@ async function computeDeals() {
     .sort((a, b) => b._d - a._d)
     // Collapse color/size variants ("Pouch - Black", "Pouch - Tan") so one product doesn't fill the feed.
     .filter(((seen) => (p) => { const k = p.title.split(/\s[-–|]\s/)[0].toLowerCase(); return seen.has(k) ? false : seen.add(k); })(new Set()))
-    .slice(0, 40).map(({ _d, ...p }) => p), 15000);
+    .slice(0, 40).map(({ _d, ...p }) => p), timeoutMs);
   // Interleave stores (each in its own discount order) so the default feed is a fair mix.
   const byStore = {};
   for (const g of groupProducts(out.items)) (byStore[g.offers[0].storeId] ||= []).push(g);

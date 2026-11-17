@@ -14,6 +14,9 @@ const MIN_MS = +process.env.REFRESH_MIN_MS || 15 * 60 * 1000;
 const PRODUCT_MS = +process.env.PRODUCT_RECHECK_MS || 5 * 60 * 1000;
 const GAP_MS = +process.env.REFRESH_GAP_MS || 60 * 1000; // at least this long between cycles
 const SCOPE_TTL = 30 * 60 * 1000;
+// A refresh cycle waits this long for each store (including time queued in the 4-at-a-time Shopify pool)
+// before calling it failed. Page requests still give up after a few seconds and show what's ready.
+const STORE_HARD_MS = +process.env.REFRESH_STORE_MS || 90 * 1000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let ctx = null; // { stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history }
@@ -30,9 +33,13 @@ function noteStore(s, st) {
   const e = S.stores.get(s.id); if (!e) return;
   const now = Date.now();
   if (e.kind === 'catalog') return;
+  // A page request that gave up waiting says nothing about the store: keep whatever state it had.
+  if (st.slow) return;
   if (st.ok && !st.snapshotAt) {
     // "Checked" means the store's site actually answered, not that a cached copy was reused.
     const t = lastOkAt(s.base) || e.checkedAt || now;
+    // During a cycle, an answer from an older cached copy doesn't count as this cycle's check.
+    if (S.running && e.state === 'checking' && t < S.startedAt) return;
     e.state = 'ok'; e.checkedAt = t; e.dueAt = t + MIN_MS; e.note = null; e.snapshotAt = null; return;
   }
   const err = String(st.note || st.error || '');
@@ -42,7 +49,6 @@ function noteStore(s, st) {
     e.dueAt = now + (m ? +m[1] * 1000 : MIN_MS);
     return;
   }
-  if (st.slow) { e.state = 'checking'; return; }
   e.state = 'error'; e.note = err.slice(0, 120); e.dueAt = now + MIN_MS;
 }
 
@@ -63,9 +69,13 @@ async function cycle(reason) {
   const dueNow = due();
   dueNow.forEach((e) => { e.state = 'checking'; });
   console.log(`[refresh] cycle ${S.cycle} (${reason}): ${dueNow.length} stores due`);
+  // The deals feed fetches every store's sale pages, so it IS the per-store check: here it waits up to
+  // STORE_HARD_MS per store (instead of a page's 15 s) so every due store ends ok, failed or rate-limited.
   const jobFor = (k) => (k === 'deals' ? () => ctx.computeDeals() : k.startsWith('s:') ? () => ctx.computeSearch(k.slice(2)) : k.startsWith('c:') ? () => ctx.computeBrowse(k.slice(2)) : k.startsWith('b:') ? () => ctx.computeBrand(k.slice(2)) : null);
   // Scopes viewed while the cycle runs are picked up too (deals first, then newest views first).
-  const done = new Set();
+  const done = new Set(['deals']);
+  // Step 1, the store check itself (awaited directly, so a page's shorter deals request can't stand in for it).
+  try { const r = await ctx.computeDeals(STORE_HARD_MS); await ctx.cached('deals', 10 * 60 * 1000, 0, async () => r, { force: true }); S.version++; S.scopeVer.set('deals', S.version); } catch (e) { console.log(`[refresh] deals failed: ${e.message}`); }
   const next = () => ['deals', ...[...S.scopes.keys()].reverse()].find((k) => !done.has(k) && jobFor(k));
   for (let k = next(); k && done.size < 16; k = next()) {
     done.add(k);
@@ -73,8 +83,9 @@ async function cycle(reason) {
     try { await ctx.cached(k, 10 * 60 * 1000, 0, fn, { force: true }); S.version++; S.scopeVer.set(k, S.version); } catch (e) { console.log(`[refresh] ${k} failed: ${e.message}`); }
     await sleep(800); // let page requests in between (0.1 CPU on the free plan)
   }
-  // Anything still marked "checking" didn't answer in time; leave it due again soon.
-  for (const e of S.stores.values()) if (e.state === 'checking') { e.state = e.checkedAt ? 'ok' : 'error'; if (!e.checkedAt) e.note = 'No answer in time'; e.dueAt = Math.min(e.dueAt, Date.now() + GAP_MS); }
+  // Anything still "checking" didn't answer within the hard limit: it's a failure (shown as "No answer",
+  // with its last good check time), due again on the next visit.
+  for (const e of S.stores.values()) if (e.state === 'checking') { e.state = 'error'; e.note = `No answer within ${Math.round(STORE_HARD_MS / 1000)} s`; e.dueAt = Date.now() + GAP_MS; }
   S.finishedAt = Date.now();
   // Price alerts piggyback on the cycle: a few due watchlist targets are re-checked right after it.
   if (ctx.afterCycle) { try { await ctx.afterCycle(); } catch (e) { console.log('[refresh] afterCycle failed', e.message); } }
