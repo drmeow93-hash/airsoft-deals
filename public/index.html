@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Felony&#39;s Airsoft Emporium — Airsoft price comparison</title>
-  <meta name="description" content="Felony&#39;s Airsoft Emporium compares live airsoft prices across trusted US retailers and flags the best deals." />
+  <meta name="description" content="Compare live airsoft prices across trusted US stores, see price history, and catch real price drops." />
   <meta name="theme-color" content="#0b0816" />
   <meta name="color-scheme" content="dark" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -14,35 +14,78 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Felony&#39;s" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-  <link rel="preload" href="/fonts/DancingScript-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/DancingScript-wordmark.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M22 17l-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></symbol>
+      <symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-5h4v5"/></symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5C19 15.6 12 20 12 20z"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4 10 14"/><path d="M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="c-rifles" viewBox="0 0 24 24"><path d="M2 11h13l2-2h5v3h-3l-1.5 2H14l-1 4h-3l1-4H2z"/></symbol>
+      <symbol id="c-pistols" viewBox="0 0 24 24"><path d="M3 7h17v4h-8l-1 2H9l-1.2 6H4.5L6 11H3z"/></symbol>
+      <symbol id="c-snipers" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></symbol>
+      <symbol id="c-gear" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/></symbol>
+      <symbol id="c-optics" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="c-parts" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+      <symbol id="c-bbs" viewBox="0 0 24 24"><circle cx="7" cy="8" r="3"/><circle cx="16.5" cy="9" r="3"/><circle cx="11" cy="16.5" r="3"/></symbol>
+    </defs>
+  </svg>
   <div class="galaxy" aria-hidden="true"><i class="nebula"></i><i class="stars s1"></i><i class="stars s2"></i></div>
-  <header class="header">
-    <div class="header-inner">
-      <a href="#/" class="brand" aria-label="Felony&#39;s Airsoft Emporium home">
-        <img src="/icons/icon.svg" alt="" class="logo" />
-        <span class="wordmark"><span class="script">Felony&#39;s Airsoft Emporium</span><small>airsoft price comparison</small></span>
+  <a class="skip" href="#app">Skip to content</a>
+  <header class="hdr" id="hdr">
+    <div class="hrow">
+      <a href="#/" class="brand" aria-label="Felony&#39;s Airsoft Emporium, home">
+        <img src="/icons/icon.svg" alt="" class="logo" width="34" height="34" />
+        <span class="script">Felony&#39;s Airsoft Emporium</span>
       </a>
       <form id="searchForm" class="search" autocomplete="off" role="search">
-        <input id="q" type="search" placeholder="Search airsoft guns, gear, parts…" enterkeyhint="search" aria-label="Search" />
-        <button type="submit" class="search-btn" aria-label="Search">
-          <svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 0 1 6.32 12.9l5.39 5.4-1.41 1.4-5.4-5.38A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
-        </button>
+        <label class="sr" for="cat">Category</label>
+        <select id="cat" class="search-cat" aria-label="Search in category">
+          <option value="">All</option><option value="rifles">Rifles / AEG</option><option value="pistols">Pistols / GBB</option><option value="snipers">Snipers</option><option value="gear">Gear</option><option value="optics">Optics</option><option value="parts">Parts</option><option value="bbs">BBs / Gas</option>
+        </select>
+        <div class="search-box">
+          <input id="q" type="search" placeholder="Search guns, gear, parts…" enterkeyhint="search" aria-label="Search products" role="combobox" aria-expanded="false" aria-controls="sugg" aria-autocomplete="list" />
+          <ul id="sugg" class="sugg" role="listbox" aria-label="Suggestions" hidden></ul>
+        </div>
+        <button type="submit" class="search-btn" aria-label="Search"><svg class="ic"><use href="#i-search"/></svg></button>
       </form>
-      <nav class="actions">
-        <a href="#/deals" class="action"><svg viewBox="0 0 24 24"><path d="M21.4 11.6 12.4 2.6A2 2 0 0 0 11 2H4a2 2 0 0 0-2 2v7c0 .53.21 1.04.59 1.41l9 9a2 2 0 0 0 2.82 0l7-7a2 2 0 0 0 0-2.82zM6.5 8A1.5 1.5 0 1 1 6.5 5a1.5 1.5 0 0 1 0 3z"/></svg><span>Deals</span></a>
-        <a href="#/watchlist" class="action"><svg viewBox="0 0 24 24"><path d="M12 21.35 10.55 20C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 7.5 3c1.74 0 3.41.81 4.5 2.09A6 6 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54z"/></svg><span>Watchlist</span><i id="watchCount" class="count hidden"></i></a>
-        <a href="#/marketplaces" class="action"><svg viewBox="0 0 24 24"><path d="M3 4h18l-1.5 6.2A3 3 0 0 1 16.6 12a3 3 0 0 1-2.3-1.1A3 3 0 0 1 12 12a3 3 0 0 1-2.3-1.1A3 3 0 0 1 7.4 12a3 3 0 0 1-2.9-1.8zM5 13.6V20h5v-4h4v4h5v-6.4a4.9 4.9 0 0 1-2.4.4 5 5 0 0 1-2.3-.7A5 5 0 0 1 12 14a5 5 0 0 1-2.3-.7 5 5 0 0 1-2.3.7 4.9 4.9 0 0 1-2.4-.4z"/></svg><span>Marketplaces</span></a>
-        <a href="#/more" class="action"><svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-8.29 8.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span>More</span></a>
-        <a href="#/stores" class="action"><svg viewBox="0 0 24 24"><path d="M4 4h16l1 5a3 3 0 0 1-2 2.83V20H5v-8.17A3 3 0 0 1 3 9zm3 9v5h4v-5zm6 0v5h4v-5z"/></svg><span>Stores</span></a>
-      </nav>
+      <a href="#/watchlist" class="hicon" aria-label="Watchlist"><svg class="ic"><use href="#i-heart"/></svg><span class="hicon-l">Watchlist</span><i id="watchCount" class="count hidden"></i></a>
     </div>
+    <nav class="navrow" aria-label="Main">
+      <div class="tabs">
+        <a class="tab" data-tab="home" href="#/"><svg class="ic"><use href="#i-home"/></svg>Home</a>
+        <a class="tab" data-tab="deals" href="#/deals"><svg class="ic"><use href="#i-tag"/></svg>Deals</a>
+        <a class="tab" data-tab="drops" href="#/drops"><svg class="ic"><use href="#i-down"/></svg>Price Drops</a>
+        <a class="tab" data-tab="stores" href="#/stores"><svg class="ic"><use href="#i-store"/></svg>Stores</a>
+        <a class="tab" data-tab="markets" href="#/marketplaces"><svg class="ic"><use href="#i-bag"/></svg>Marketplaces</a>
+      </div>
+      <div class="cats" id="catnav">
+        <a class="cat" data-cat="rifles" href="#/c/rifles">Rifles / AEG</a><a class="cat" data-cat="pistols" href="#/c/pistols">Pistols / GBB</a><a class="cat" data-cat="snipers" href="#/c/snipers">Snipers</a><a class="cat" data-cat="gear" href="#/c/gear">Gear</a><a class="cat" data-cat="optics" href="#/c/optics">Optics</a><a class="cat" data-cat="parts" href="#/c/parts">Parts</a><a class="cat" data-cat="bbs" href="#/c/bbs">BBs / Gas</a>
+      </div>
+    </nav>
   </header>
-  <main id="app"></main>
+  <main id="app" tabindex="-1"></main>
   <footer class="foot">Prices change often; confirm at the store. Not affiliated with any retailer.</footer>
-  <script src="/config.js"></script>
-  <script src="/app.js"></script>
+  <nav class="tabbar" aria-label="Main">
+    <a class="tb" data-tab="home" href="#/"><svg class="ic"><use href="#i-home"/></svg><span>Home</span></a>
+    <a class="tb" data-tab="deals" href="#/deals"><svg class="ic"><use href="#i-tag"/></svg><span>Deals</span></a>
+    <a class="tb" data-tab="drops" href="#/drops"><svg class="ic"><use href="#i-down"/></svg><span>Drops</span></a>
+    <a class="tb" data-tab="stores" href="#/stores"><svg class="ic"><use href="#i-store"/></svg><span>Stores</span></a>
+    <a class="tb" data-tab="markets" href="#/marketplaces"><svg class="ic"><use href="#i-bag"/></svg><span>Markets</span></a>
+  </nav>
+  <script src="/config.js" defer></script>
+  <script src="/app.js" defer></script>
 </body>
 </html>

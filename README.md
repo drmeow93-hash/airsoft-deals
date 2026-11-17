@@ -10,6 +10,8 @@ Live airsoft price comparison across trusted US retailers. Search once, and Felo
 |---|---|
 | Airsoft Atlanta (GA) | Shopify `/search/suggest.json`; deals from `/products.json` items priced below compare-at |
 | Airsoft N More (LA) | Same as above |
+| Fox Airsoft | Same as above |
+| Ballahack Airsoft (VA) | Same as above |
 | SpeedQB (UT) | Same as above |
 | Airsoft Station (KY) | BigCommerce `/search.php`; deals from `/deals/` |
 | Airsoft Megastore (CA) | OpenCart `route=product/search`; deals from `/Mega-Deals` |
@@ -55,7 +57,7 @@ FEED_REFRESH_HOURS=6
 npm install
 npm start            # http://localhost:8787
 ```
-API: `GET /api/search?q=glock`, `GET /api/deals`, `GET /api/stores`.
+API: `GET /api/search?q=glock`, `GET /api/deals`, `GET /api/drops`, `GET /api/browse?cat=pistols`, `GET /api/suggest?q=glo`, `GET /api/stores`.
 
 ## Put it on your phone (PWA, the fastest way)
 1. Deploy the backend (it also serves the web app) to any Node host:
@@ -90,7 +92,7 @@ screenshots/       desktop-* and iphone-* UI captures
 ```
 
 ## Branding
-The header wordmark uses **Dancing Script** (SIL Open Font License 1.1). It's self-hosted at `public/fonts/` so it also works offline in the installed app. The license is in `public/fonts/OFL.txt`.
+The header wordmark uses **Dancing Script** (SIL Open Font License 1.1), subset to just the wordmark's letters (6 KB). It's self-hosted at `public/fonts/` so it also works offline in the installed app. The license is in `public/fonts/OFL.txt`.
 
 ## Marketplaces (used / third-party)
 
@@ -127,3 +129,19 @@ Render's free plan gives the server a small slice of CPU and puts it to sleep af
 
 ### Galaxy background
 The animated space background is pure CSS: two star layers and one nebula layer, each painted once and then moved with `transform` on the GPU. It does no per-frame JavaScript or layout work, pauses while the tab is hidden, and stays still when the device has "Reduce Motion" turned on.
+
+## Price history (free, survives restarts)
+
+Render's free plan has no disk, so price history lives in the repo:
+
+- **Collector.** `deploy/price-history.yml` (move it to `.github/workflows/` to enable; pushing workflow files needs a token with the `workflow` scope) runs `scripts/collect-history.js` on GitHub Actions at 5:17 AM and 5:17 PM US Central (free for public repos). It uses the same compliant routes as the app: robots.txt-allowed endpoints, an honest User-Agent, each store's Crawl-delay or at least 2 s between requests, and no bot-check evasion. Shopify stores and Wolverine are read from their public catalog JSON; catalog-indexed stores are crawled as before; HTML-search-only stores are sampled with a fixed list of searches.
+- **Storage.** `data/history/<store>.json`, one product per line: `"<key>":["2026-11-16",129.99,"2026-11-20",119.99]`. The key is a hash of the normalized product URL. A point is added only when the price changes, so files stay small (about 600 KB for 16,000 products) and each commit only touches changed lines. `drops.json` lists recent drops with titles and images; `index.json` has the run time.
+- **Server.** Loads the bundled copy at boot, then pulls the latest from `raw.githubusercontent.com` 45 s after boot and every 3 hours (`HISTORY_RAW_BASE` overrides the URL). A live price that differs from the last recorded one counts as a new point.
+- **Honesty.** Nothing is back-filled. With one recorded price the app says "Tracking since <date>"; arrows (▼ green = cheaper, ▲ red = pricier, vs. the previous recorded price) appear only after a real change.
+- Run it by hand: `node scripts/collect-history.js [storeId ...]`. `scripts/history-loop.sh` runs the collector twice a day on any always-on machine and pushes the data (used on the build box until the Actions workflow is enabled).
+
+## Matching
+Listings are grouped as one product only when accessory type words agree, generation/mark/version tokens match exactly (Gen 4 ≠ Gen 5), model numbers agree, platform agrees (CO2 ≠ gas), explicit colors don't conflict, distinct-variant words (Match, Custom, CRB, SPR, MOS, …) don't differ, prices are within 1.6×, and titles overlap strongly. Brand spellings are normalized (TM = Tokyo Marui, Umarex = Elite Force, G&G).
+
+## Front end
+Amazon-style layout in the galaxy theme: full-width search with category dropdown and autocomplete, category row, filter sidebar (sheet on phones), product cards with price-change arrows and sparklines, buy box, store comparison table and price-history chart. The server minifies JS/CSS with esbuild at boot, inlines the CSS, and serves brotli/gzip pre-compressed assets and JSON.

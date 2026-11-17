@@ -3,8 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { stores, skipped, reviews } = require('./stores');
-const { enrich, groupProducts } = require('./deals');
+const zlib = require('zlib');
+const { enrich, groupProducts, categoryOf } = require('./deals');
 const marketplaces = require('./marketplaces');
+const history = require('./history');
+const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
 
 const app = express();
 app.disable('x-powered-by');
@@ -59,7 +62,21 @@ async function cached(key, freshMs, maxAgeMs, compute, { force = false } = {}) {
   const r = await refresh();
   return { body: r.body, cache: 'miss' };
 }
-const sendJson = (res, { body, cache }) => res.set({ 'Content-Type': 'application/json; charset=utf-8', 'X-Cache': cache, 'Cache-Control': 'no-cache' }).send(body);
+// Compressed bodies are memoized per cached string, so a cache hit costs no CPU.
+const zcache = new Map();
+function sendJson(res, { body, cache }) {
+  res.set({ 'Content-Type': 'application/json; charset=utf-8', 'X-Cache': cache, 'Cache-Control': 'no-cache', Vary: 'Accept-Encoding' });
+  const ae = String(res.req.headers['accept-encoding'] || '');
+  if (body.length < 1400 || !/\b(br|gzip)\b/.test(ae)) return res.send(body);
+  let z = zcache.get(body);
+  if (!z) {
+    const useBr = /\bbr\b/.test(ae);
+    z = { enc: useBr ? 'br' : 'gzip', buf: useBr ? zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } }) : zlib.gzipSync(body, { level: 6 }) };
+    if (useBr) zcache.set(body, z);
+    if (zcache.size > 60) zcache.delete(zcache.keys().next().value);
+  }
+  res.set('Content-Encoding', z.enc).send(z.buf);
+}
 
 async function computeSearch(q, timeoutMs) {
   const out = await fanOut((s) => s.search(q), timeoutMs);
@@ -86,7 +103,8 @@ async function computeDeals() {
 }
 
 app.get('/api/stores', (req, res) => res.json({
-  stores: stores.map(({ id, name, base, location, blurb, platform, mode, index }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', index: index ? index.info() : undefined })),
+  stores: stores.map(({ id, name, base, location, blurb, platform, mode, index, shipping }) => ({ id, name, url: base, location, blurb, platform, mode: mode || 'live', shipping, index: index ? index.info() : undefined })),
+  history: history.meta(),
   skipped,
   reviews,
 }));
@@ -117,27 +135,110 @@ app.get('/api/search', async (req, res) => {
 
 app.get('/api/deals', async (req, res) => sendJson(res, await cached('deals', 10 * 60 * 1000, 24 * 60 * 60 * 1000, computeDeals)));
 
-// ---- static files: hashed asset URLs get long-lived caching ----
+// Category browse: catalog-indexed stores contribute their whole category (cheap, in memory);
+// live stores answer one category search each.
+const CAT_TERMS = { rifles: 'aeg', pistols: 'pistol', snipers: 'sniper', gear: 'plate carrier', optics: 'red dot', parts: 'hop up', bbs: 'bbs' };
+async function computeBrowse(cat) {
+  const out = await fanOut(async (s) => {
+    if (s.index) {
+      const list = s.index.idx.items.filter((p) => (p._c ||= categoryOf(p.title)) === cat);
+      return list.sort((a, b) => (b.originalPrice ? 1 : 0) - (a.originalPrice ? 1 : 0)).slice(0, 36).map(({ _n, _w, _c, ...p }) => p);
+    }
+    return (await s.search(CAT_TERMS[cat])).filter((p) => categoryOf(p.title) === cat);
+  });
+  const groups = groupProducts(out.items).filter((g) => g.cat === cat).sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
+  return { partial: out.slow > 0, body: JSON.stringify({ cat, groups, status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+}
+app.get('/api/browse', async (req, res) => {
+  const cat = String(req.query.cat || '');
+  if (!CAT_TERMS[cat]) return res.status(400).json({ error: 'Unknown category' });
+  sendJson(res, await cached('c:' + cat, 10 * 60 * 1000, 6 * 60 * 60 * 1000, () => computeBrowse(cat)));
+});
+
+// Price drops: products whose latest recorded price is lower than the one before (last 21 days),
+// from the committed history plus drops this server has seen live since it woke up.
+async function computeDrops() {
+  const items = history.dropItems().filter((d) => storeById[d.storeId]).map((d) => enrich(d, storeById[d.storeId]));
+  const groups = groupProducts(items).filter((g) => g.h && g.h.chg < 0)
+    .sort((a, b) => a.h.pct - b.h.pct);
+  const m = history.meta();
+  return { partial: false, body: JSON.stringify({ groups, history: { since: m.since, updated: m.updated, tracked: m.tracked }, fetchedAt: new Date().toISOString(), status: [] }) };
+}
+app.get('/api/drops', async (req, res) => sendJson(res, await cached('drops', 10 * 60 * 1000, 60 * 60 * 1000, computeDrops)));
+
+// Autocomplete: product names from the in-memory catalogs, recent searches and popular terms.
+const POPULAR = ['Glock', 'Hi-Capa', 'M4 AEG', 'AK', 'MP5', 'Tokyo Marui', 'Elite Force', 'Krytac Trident', 'VFC', 'KWA', 'Novritsch', 'Sniper rifle', 'VSR-10', 'HPA', 'Gas blowback', 'Plate carrier', 'Red dot', 'Green gas', '0.28g BBs', '0.25g BBs', 'Hop up', 'Magazine', 'Mask', 'Battery'];
+app.get('/api/suggest', (req, res) => {
+  const q = String(req.query.q || '').toLowerCase().replace(/[^a-z0-9.& -]+/g, ' ').trim().slice(0, 60);
+  res.set('Cache-Control', 'public, max-age=300');
+  if (!q) return res.json({ q, suggestions: POPULAR.slice(0, 8) });
+  const terms = q.split(/\s+/);
+  const out = new Map();
+  const add = (s) => { const k = s.toLowerCase(); if (!out.has(k) && out.size < 8) out.set(k, s); };
+  POPULAR.filter((p) => p.toLowerCase().startsWith(q)).forEach(add);
+  for (const k of results.keys()) if (k.startsWith('s:' + q) && k.length < 40) add(k.slice(2).replace(/\b\w/g, (c) => c.toUpperCase()));
+  for (const s of stores) {
+    if (out.size >= 8 || !s.index) continue;
+    for (const p of s.index.idx.items) {
+      if (!terms.every((t) => p._n.includes(t))) continue;
+      const short = p.title.replace(/\s*[-–|(].*$/, '').split(/\s+/).slice(0, 7).join(' ');
+      if (terms.every((t) => short.toLowerCase().includes(t))) add(short);
+      if (out.size >= 8) break;
+    }
+  }
+  res.json({ q, suggestions: [...out.values()] });
+});
+
+// ---- static files ----
+// app.js and styles.css are minified with esbuild at boot; the CSS is inlined into the HTML (one
+// render-blocking request fewer). Text responses are pre-compressed (brotli + gzip) once.
 const PUB = path.join(__dirname, '..', 'public');
-const hashOf = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(PUB, f))).digest('hex').slice(0, 10);
-const ASSETS = ['app.js', 'styles.css', 'config.js'];
-const version = Object.fromEntries(ASSETS.map((f) => [f, hashOf(f)]));
-const indexHtml = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8')
-  .replace(/(src|href)="\/(app\.js|styles\.css|config\.js)"/g, (m, attr, f) => `${attr}="/${f}?v=${version[f]}"`);
-const sendIndex = (req, res) => res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }).send(indexHtml);
-app.get(['/', '/index.html'], sendIndex);
-app.get('/sw.js', (req, res) => res.set({ 'Cache-Control': 'no-cache', 'Content-Type': 'text/javascript; charset=utf-8' }).send(
-  fs.readFileSync(path.join(PUB, 'sw.js'), 'utf8').replace('__ASSET_VERSIONS__', JSON.stringify(version))));
+let esbuild = null;
+try { esbuild = require('esbuild'); } catch { /* serve unminified */ }
+const read = (f) => fs.readFileSync(path.join(PUB, f), 'utf8');
+const minify = (code, loader) => { try { return esbuild ? esbuild.transformSync(code, { loader, minify: true, target: loader === 'js' ? 'es2020' : 'safari14' }).code : code; } catch (e) { console.log('minify failed', e.message); return code; } };
+const hash = (s) => crypto.createHash('sha1').update(s).digest('hex').slice(0, 10);
+const appJs = minify(read('app.js'), 'js');
+const css = minify(read('styles.css'), 'css').trim();
+const configJs = read('config.js');
+const version = { 'app.js': hash(appJs), 'config.js': hash(configJs), 'styles.css': hash(css) };
+const indexHtml = read('index.html')
+  .replace(/<link rel="stylesheet" href="\/styles\.css" \/>/, `<style>${css}</style>`)
+  .replace(/(src|href)="\/(app\.js|config\.js)"/g, (m, attr, f) => `${attr}="/${f}?v=${version[f]}"`)
+  .replace(/>\s+</g, '><').replace(/\n\s*/g, '');
+function packed(body, type, cacheControl) {
+  const buf = Buffer.from(body);
+  return { type, cacheControl, raw: buf, br: zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } }), gz: zlib.gzipSync(buf, { level: 9 }) };
+}
+function sendPacked(req, res, p) {
+  const ae = String(req.headers['accept-encoding'] || '');
+  const enc = /\bbr\b/.test(ae) ? 'br' : /\bgzip\b/.test(ae) ? 'gz' : null;
+  res.set({ 'Content-Type': p.type, 'Cache-Control': p.cacheControl, Vary: 'Accept-Encoding' });
+  if (enc) res.set('Content-Encoding', enc === 'br' ? 'br' : 'gzip');
+  res.send(enc ? p[enc] : p.raw);
+}
+const IMMUTABLE = 'public, max-age=31536000, immutable';
+const PACKS = {
+  '/': packed(indexHtml, 'text/html; charset=utf-8', 'no-cache'),
+  '/app.js': packed(appJs, 'text/javascript; charset=utf-8', IMMUTABLE),
+  '/config.js': packed(configJs, 'text/javascript; charset=utf-8', IMMUTABLE),
+  '/styles.css': packed(css, 'text/css; charset=utf-8', IMMUTABLE),
+  '/sw.js': packed(minify(read('sw.js').replace('__ASSET_VERSIONS__', JSON.stringify(version)), 'js'), 'text/javascript; charset=utf-8', 'no-cache'),
+  '/manifest.webmanifest': packed(read('manifest.webmanifest'), 'application/manifest+json', 'public, max-age=86400'),
+  '/icons/icon.svg': packed(read('icons/icon.svg'), 'image/svg+xml', 'public, max-age=2592000, immutable'),
+};
+PACKS['/index.html'] = PACKS['/'];
+app.get(Object.keys(PACKS), (req, res) => sendPacked(req, res, PACKS[req.path]));
 app.use(express.static(PUB, {
-  extensions: ['html'],
+  index: false,
   setHeaders: (res, file) => {
     const rel = path.relative(PUB, file);
     if (/^(fonts|icons)\//.test(rel)) res.set('Cache-Control', 'public, max-age=2592000, immutable');
-    else if (res.req.query.v) res.set('Cache-Control', 'public, max-age=31536000, immutable');
     else res.set('Cache-Control', 'no-cache');
   },
 }));
 
+// Compress API JSON too (search/deals payloads compress ~8x).
 // Background work: catalog indexes load their bundled snapshot instantly, then refresh one at a
 // time in a worker thread. The deals feed and the home-page search chips are kept warm.
 const BG = !process.env.NO_BACKGROUND; // NO_BACKGROUND=1 for a UI-only dev server (no crawls, no warming)
@@ -146,6 +247,15 @@ const WARM = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Snip
 const warmDeals = () => cached('deals', 10 * 60 * 1000, 0, computeDeals, { force: true }).catch(() => {});
 async function warmChips() {
   for (const q of WARM) { await cached('s:' + q.toLowerCase(), 10 * 60 * 1000, 0, () => computeSearch(q), { force: true }).catch(() => {}); await sleep(1500); }
+  for (const c of Object.keys(CAT_TERMS)) { await cached('c:' + c, 10 * 60 * 1000, 0, () => computeBrowse(c), { force: true }).catch(() => {}); await sleep(1500); }
+  cached('drops', 10 * 60 * 1000, 0, computeDrops, { force: true }).catch(() => {});
+}
+// History: pull the newest copy committed by the GitHub Action shortly after boot and every 3 hours.
+// New history changes every arrow, so cached results are dropped when it arrives.
+history.onUpdate.push(() => results.clear());
+if (BG) {
+  setTimeout(() => history.refreshRemote(), 45 * 1000);
+  setInterval(() => history.refreshRemote(), 3 * 60 * 60 * 1000);
 }
 if (BG) {
   setTimeout(async () => { await warmDeals(); warmChips(); }, 300);

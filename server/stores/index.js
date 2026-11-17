@@ -5,6 +5,8 @@ const stores = [
   makeShopifyStore({ id: 'airsoftatlanta', name: 'Airsoft Atlanta', base: 'https://www.airsoftatlanta.com', location: 'Georgia, USA', blurb: 'Retail store & field supplier, Shopify storefront' }),
   makeShopifyStore({ id: 'airsoftnmore', name: 'Airsoft N More', base: 'https://airsoftnmore.com', location: 'Los Angeles, USA', blurb: 'LA airsoft shop, Shopify storefront' }),
   makeShopifyStore({ id: 'speedqb', name: 'SpeedQB', base: 'https://www.speedqb.com', location: 'Utah, USA', blurb: 'Gear & HPA specialist, Shopify storefront' }),
+  makeShopifyStore({ id: 'foxairsoft', name: 'Fox Airsoft', base: 'https://www.foxairsoft.com', location: 'USA', blurb: 'US airsoft retailer, Shopify storefront' }),
+  makeShopifyStore({ id: 'ballahack', name: 'Ballahack Airsoft', base: 'https://www.ballahackairsoft.com', location: 'Virginia, USA', blurb: 'Virginia shop & field, Shopify storefront' }),
   require('./airsoftstation'),
   require('./megastore'),
   require('./wolverine'),
@@ -14,6 +16,19 @@ const stores = [
   require('./airsoftgi'),
   ...feedStores(), // optional affiliate feeds, enabled via FEED_* env vars
 ];
+
+// Free-shipping thresholds as each store publishes them on its own site (checked Nov 2026).
+const SHIPPING = {
+  airsoftnmore: { freeOver: 149, note: 'Free shipping over $149' },
+  speedqb: { freeOver: 100, note: 'Free US shipping over $100' },
+  foxairsoft: { freeOver: 200, note: 'Free shipping over $200' },
+  airsoftstation: { freeOver: 199, note: 'Free shipping over $199' },
+  megastore: { freeOver: 149, note: 'Free shipping over $149 (code FREESHIP, lower 48)' },
+  airsoftextreme: { freeOver: 199.99, note: 'Free shipping over $199.99' },
+  amped: { freeOver: 149, note: 'Free shipping over $149' },
+  ehobbyasia: { freeOver: null, note: 'Ships from Hong Kong; shipping charged' },
+};
+for (const s of stores) if (SHIPPING[s.id]) s.shipping = SHIPPING[s.id];
 
 // Stores we can't price-check. They're shown on the "More Stores" tab as plain links.
 const skipped = [

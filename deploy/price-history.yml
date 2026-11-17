@@ -1,0 +1,34 @@
+# To enable: move this file to .github/workflows/price-history.yml (pushing it needs a GitHub token with the `workflow` scope).
+# Records real store prices twice a day and commits only the products whose price changed.
+# Free for public repos. The app server pulls these files from raw.githubusercontent.com.
+name: Price history
+on:
+  schedule:
+    - cron: '17 11,23 * * *'   # 5:17 AM and 5:17 PM US Central (standard time)
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: price-history
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --omit=dev --ignore-scripts
+      - run: node scripts/collect-history.js
+      - name: Commit changes
+        run: |
+          git config user.name "price-history-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Price history $(TZ=America/Chicago date '+%Y-%m-%d %H:%M %Z') [skip render]"
+          for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          exit 1

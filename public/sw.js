@@ -3,8 +3,8 @@
 // the app right away even while the free server is waking up. Prices are not cached here; the app
 // keeps its own last results and always asks the server for fresh ones.
 const V = __ASSET_VERSIONS__; // filled in by the server: content hashes of app.js / styles.css / config.js
-const CACHE = 'airsoft-deals-' + Object.values(V).join('').slice(0, 16);
-const SHELL = ['/', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/fonts/DancingScript-latin.woff2',
+const CACHE = 'felony-v2-' + Object.values(V).join('').slice(0, 16);
+const SHELL = ['/', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/fonts/DancingScript-wordmark.woff2',
   ...Object.entries(V).map(([f, h]) => `/${f}?v=${h}`)];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });

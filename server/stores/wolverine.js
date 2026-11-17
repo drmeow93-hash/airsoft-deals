@@ -26,5 +26,15 @@ module.exports = {
   blurb: 'HPA engine manufacturer, direct store (WooCommerce Store API)',
   platform: 'WooCommerce', mode: 'live',
   search: async (q) => (await get(`${base}/wp-json/wc/store/v1/products?search=${encodeURIComponent(q)}&per_page=20`, { json: true })).map((p) => norm(p)).filter((p) => p.price),
+  // Whole catalog for the price-history collector.
+  catalog: async ({ fetchJson }) => {
+    const out = [];
+    for (let page = 1; page <= 20; page++) {
+      const list = await fetchJson(`${base}/wp-json/wc/store/v1/products?per_page=100&page=${page}`);
+      out.push(...list.map((p) => norm(p)).filter((p) => p.price));
+      if (list.length < 100) break;
+    }
+    return out;
+  },
   deals: async () => (await get(`${base}/wp-json/wc/store/v1/products?on_sale=true&per_page=100`, { json: true, ttlMs: 30 * 60 * 1000 })).map((p) => norm(p, true)).filter((p) => p.price),
 };

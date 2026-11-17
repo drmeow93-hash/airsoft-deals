@@ -4,6 +4,7 @@ COPY package*.json ./
 RUN npm install --omit=dev
 COPY server ./server
 COPY public ./public
+COPY data ./data
 ENV PORT=8080
 EXPOSE 8080
 CMD ["node", "server/index.js"]
