@@ -46,6 +46,7 @@ async function crawlList(path, fetchPage, add, { deal, maxPages }) {
 }
 
 const index = createIndex({
+  workerModule: __filename,
   name: 'Airsoft GI',
   delayMs: 5500,
   refreshMs: 12 * 60 * 60 * 1000,

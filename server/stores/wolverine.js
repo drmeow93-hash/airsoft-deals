@@ -15,7 +15,7 @@ function norm(p, storeDeal = false) {
     price,
     originalPrice: reg && price && reg > price ? reg : null,
     inStock: typeof p.is_in_stock === 'boolean' ? p.is_in_stock : null,
-    image: p.images?.[0]?.src || null,
+    image: (p.images?.[0]?.srcset || '').match(/(\S+) 416w/)?.[1] || p.images?.[0]?.thumbnail || p.images?.[0]?.src || null,
     url: p.permalink,
     storeDeal,
   };

@@ -114,3 +114,16 @@ EBAY_CLIENT_SECRET=...   # Cert ID
 ```
 
 The server uses the client-credentials OAuth flow and the Browse API (`item_summary/search`, category 31680), caching results for 10 minutes.
+
+## Speed (free hosting)
+
+Render's free plan gives the server a small slice of CPU and puts it to sleep after 15 idle minutes, so the app is built to feel fast anyway:
+
+- **Progressive search.** The first answer (`/api/search?fast=1`) comes back after ~1.2 s with the stores that have responded; the page then fills in the rest. Each store gets at most 4 s, so one slow store can't hold up the page.
+- **Result cache.** Finished searches and the deals feed are cached for 10 minutes. Older results are still shown instantly (marked "updating") while a background refresh runs. The deals feed and the home-page chips are kept warm.
+- **Catalog snapshots.** Catalog-indexed stores save their last crawl to `server/snapshot/*.json.gz`, and a copy ships with each deploy, so a fresh wake starts with a full catalog. Crawls run in a worker thread, one store at a time. Each offer shows how old its catalog data is. To refresh the bundled snapshots, run the server locally until the logs show the index finished, then commit `server/snapshot/`.
+- **Front end.** Hashed asset URLs with year-long caching, a service worker that serves the app shell instantly, last results kept on the device (labelled with their age), smaller store-CDN thumbnails, lazy images, and a "waking up" notice when the server is asleep.
+- **Cold starts.** On the free plan, the first visit after 15 idle minutes waits about a minute for Render to wake the server. Returning visitors see the cached app and last prices during that time. The only way to remove the wait is a paid always-on instance (see Render's pricing page).
+
+### Galaxy background
+The animated space background is pure CSS: two star layers and one nebula layer, each painted once and then moved with `transform` on the GPU. It does no per-frame JavaScript or layout work, pauses while the tab is hidden, and stays still when the device has "Reduce Motion" turned on.

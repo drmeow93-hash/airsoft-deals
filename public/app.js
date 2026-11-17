@@ -29,7 +29,7 @@ const wordmark = (id, name) => `<div class="wm wm-${esc(id)}">${esc(STORE_INFO[i
 
 // ---- state & storage ----
 const S = { search: null, deals: null, groups: new Map(), lastList: '#/' };
-const remember = (gs) => gs.forEach((g) => S.groups.set(g.id, g));
+const remember = (gs, at) => gs.forEach((g) => { if (at && !g.checkedAt) g.checkedAt = at; S.groups.set(g.id, g); });
 const watch = {
   all: () => JSON.parse(localStorage.getItem('ad_watch') || '[]'),
   has: (g) => watch.all().some((w) => w.key === keyOf(g)),
@@ -43,11 +43,61 @@ const watch = {
 const keyOf = (g) => g.offers[0].url;
 function badgeCount() { const n = watch.all().length; const el = $('#watchCount'); el.textContent = n; el.classList.toggle('hidden', !n); }
 
-async function api(path) {
-  const r = await fetch(API + path);
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Server error ${r.status}`);
-  return r.json();
+// Free hosting sleeps when idle; if a request is slow, say so instead of looking frozen.
+let slowReqs = 0;
+function wakeBanner(on) {
+  slowReqs += on ? 1 : -1;
+  let b = $('#wake');
+  if (slowReqs > 0 && !b) { b = document.createElement('div'); b.id = 'wake'; b.className = 'wake'; b.innerHTML = '<span class="spin"></span>Waking up the price server. Free hosting naps when idle; this takes up to a minute the first time.'; document.body.appendChild(b); }
+  if (slowReqs <= 0 && b) b.remove();
 }
+async function api(path) {
+  let flagged = false;
+  const t = setTimeout(() => { flagged = true; wakeBanner(true); }, 3500);
+  try {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Server error ${r.status}`);
+    return await r.json();
+  } finally { clearTimeout(t); if (flagged) wakeBanner(false); }
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Last results are kept on the device so pages paint instantly (marked with their age), then refresh.
+const store = {
+  get(k) { try { const v = JSON.parse(localStorage.getItem('ad_c:' + k)); return v && Date.now() - v.t < 24 * 3600e3 ? v.d : null; } catch { return null; } },
+  set(k, d) {
+    try {
+      const idx = JSON.parse(localStorage.getItem('ad_c_idx') || '[]').filter((x) => x !== k);
+      idx.unshift(k);
+      while (idx.length > 10) localStorage.removeItem('ad_c:' + idx.pop());
+      localStorage.setItem('ad_c_idx', JSON.stringify(idx));
+      localStorage.setItem('ad_c:' + k, JSON.stringify({ t: Date.now(), d }));
+    } catch { localStorage.removeItem('ad_c_idx'); }
+  },
+};
+let navToken = 0;
+// Show cached data at once, then whatever the server has (fast partial first for new searches),
+// re-rendering as slow stores and background refreshes finish.
+async function loadLive(path, render, { fast = false } = {}) {
+  const tok = ++navToken, alive = () => tok === navToken;
+  const c = store.get(path);
+  let last = null;
+  const show = (d) => { if (!alive() || (last && last.fetchedAt === d.fetchedAt && last.partial === d.partial)) return; last = d; render(d); };
+  if (c) show({ ...c, fromDevice: true });
+  let d = await api(fast && !c ? path + (path.includes('?') ? '&' : '?') + 'fast=1' : path);
+  show(d);
+  for (let i = 0; i < 4 && alive() && (d.partial || d.refreshing || (fast && !c && i === 0 && d.partial)); i++) {
+    await sleep(i ? 2000 : 300);
+    d = await api(path);
+    show(d);
+  }
+  if (!d.partial) store.set(path, { ...d, refreshing: undefined });
+  return d;
+}
+const ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+const freshness = (d) => d.partial ? ' · <span class="fresh"><span class="spin"></span>more stores loading</span>'
+  : d.refreshing || d.fromDevice ? ` · <span class="fresh"><span class="spin"></span>updating prices from ${ago(d.fetchedAt)}</span>`
+  : d.fetchedAt && Date.now() - Date.parse(d.fetchedAt) > 3 * 60000 ? ` · <span class="fresh">prices from ${ago(d.fetchedAt)}</span>` : '';
 
 // ---- shared pieces ----
 const crumbs = (parts) => `<nav class="crumbs">${parts.map(([l, h]) => (h ? `<a href="${h}">${esc(l)}</a>` : `<span>${esc(l)}</span>`)).join('<span class="sep">›</span>')}</nav>`;
@@ -59,7 +109,7 @@ function tagHtml(b) {
 function stockText(v) { return v === true ? '<span class="green">In stock</span>' : v === false ? 'Out of stock' : 'Stock: check store'; }
 function card(g) {
   return `<article class="pcard" data-id="${g.id}" tabindex="0">
-    <div class="pimg">${g.images[0] ? `<img loading="lazy" src="${esc(g.images[0])}" alt="">` : ''}<div class="tags">${g.badges.slice(0, 2).map(tagHtml).join('')}</div></div>
+    <div class="pimg">${g.images[0] ? `<img loading="lazy" decoding="async" width="400" height="400" src="${esc(g.images[0])}" alt="" onerror="this.remove()">` : ''}<div class="tags">${g.badges.slice(0, 2).map(tagHtml).join('')}</div></div>
     <div class="pbody">
       ${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : ''}
       <div class="ptitle">${esc(g.title)}</div>
@@ -74,12 +124,14 @@ function bindCards(root) {
     el.addEventListener('keydown', (e) => e.key === 'Enter' && go());
   });
 }
-function statusPills(st) { return `<div class="status">${st.map((s) => `<span class="pill ${s.ok ? '' : s.indexing ? 'wait' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.ok ? s.count : s.indexing ? 'indexing…' : 'unavailable'}</span>`).join('')}</div>`; }
+function statusPills(st) { return `<div class="status">${st.map((s) => `<span class="pill ${s.ok ? '' : s.indexing || s.slow ? 'wait' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.ok ? s.count : s.indexing ? 'indexing…' : s.slow ? 'loading…' : 'unavailable'}</span>`).join('')}</div>`; }
 
 // ---- list view (search + deals share it) ----
-function listView(data, { title, crumb, defaultSort }) {
-  remember(data.groups);
-  app.innerHTML = `${crumbs(crumb)}
+function listView(data, { title, crumb, defaultSort, target = app }) {
+  remember(data.groups, data.fetchedAt);
+  const keep = $('#sort') && target.dataset.view === location.hash ? { sort: $('#sort').value, store: $('#store').value, instock: $('#instock').checked, dealsonly: $('#dealsonly').checked } : null;
+  target.dataset.view = location.hash;
+  target.innerHTML = `${crumbs(crumb)}
     <div class="toolbar">
       <div class="summary">${title}</div>
       <div class="controls">
@@ -94,7 +146,8 @@ function listView(data, { title, crumb, defaultSort }) {
     </div>
     ${statusPills(data.status)}
     <div id="grid"></div>`;
-  $('#sort').value = defaultSort;
+  $('#sort').value = keep ? keep.sort : defaultSort;
+  if (keep) { if ([...$('#store').options].some((o) => o.value === keep.store)) $('#store').value = keep.store; $('#instock').checked = keep.instock; $('#dealsonly').checked = keep.dealsonly; }
   const render = () => {
     const sort = $('#sort').value, store = $('#store').value, inStock = $('#instock').checked, dealsOnly = $('#dealsonly').checked;
     let gs = data.groups.filter((g) => (!store || g.offers.some((o) => o.storeId === store)) && (!inStock || g.inStock !== false) && (!dealsOnly || g.onSale));
@@ -109,23 +162,25 @@ function listView(data, { title, crumb, defaultSort }) {
 
 async function searchPage(q) {
   $('#q').value = q;
-  app.innerHTML = crumbs([['Home', '#/'], [`Search “${q}”`]]) + skeletons();
+  app.innerHTML = `<div id="lv">${crumbs([['Home', '#/'], [`Search “${q}”`]]) + skeletons()}</div><section class="mkt-section" id="mkt"><div class="section-h"><h2>Used &amp; marketplace listings</h2><a href="#/marketplaces">All marketplaces →</a></div><div id="mktBody"><div class="sk" style="height:90px"></div></div></section>`;
+  loadMarketplaceSection(q);
   try {
-    if (!S.search || S.search.query !== q) S.search = await api('/api/search?q=' + encodeURIComponent(q));
-    const d = S.search, multi = d.groups.filter((g) => g.storeCount > 1).length, deals = d.groups.filter((g) => g.onSale).length;
-    listView(d, { title: `<b>${d.groups.length}</b> products for <b>“${esc(q)}”</b> · ${multi} compared across stores · ${deals} deals`, crumb: [['Home', '#/'], [`Search “${q}”`]], defaultSort: 'relevance' });
-    app.insertAdjacentHTML('beforeend', `<section class="mkt-section" id="mkt"><div class="section-h"><h2>Used &amp; marketplace listings</h2><a href="#/marketplaces">About marketplaces →</a></div><p class="more-note">Kept separate from the new-retail comparison above. Prices from players and sellers vary by condition.</p><div id="mktBody"><div class="sk" style="height:90px"></div></div></section>`);
-    loadMarketplaceSection(q);
-  } catch (e) { errorView(e); }
+    await loadLive('/api/search?q=' + encodeURIComponent(q), (d) => {
+      S.search = d;
+      const multi = d.groups.filter((g) => g.storeCount > 1).length, deals = d.groups.filter((g) => g.onSale).length;
+      listView(d, { target: $('#lv'), title: `<b>${d.groups.length}</b> products for <b>“${esc(q)}”</b> · ${multi} compared across stores · ${deals} deals${freshness(d)}`, crumb: [['Home', '#/'], [`Search “${q}”`]], defaultSort: 'relevance' });
+    }, { fast: true });
+  } catch (e) { if (!S.search || S.search.query !== q) errorView(e); }
 }
 
 async function dealsPage() {
   $('#q').value = '';
   app.innerHTML = crumbs([['Home', '#/'], ['Deals']]) + skeletons();
+  const render = (d) => { S.deals = d; listView(d, { title: `<b>${d.groups.length}</b> sale items from ${d.status.filter((s) => s.ok).length} stores${freshness(d)}`, crumb: [['Home', '#/'], ['Deals']], defaultSort: 'relevance' }); };
   try {
-    if (!S.deals) S.deals = await api('/api/deals');
-    listView(S.deals, { title: `<b>${S.deals.groups.length}</b> live sale items from ${S.deals.status.filter((s) => s.ok).length} stores`, crumb: [['Home', '#/'], ['Deals']], defaultSort: 'relevance' });
-  } catch (e) { errorView(e); }
+    if (S.deals && !S.deals.fromDevice && Date.now() - Date.parse(S.deals.fetchedAt) < 5 * 60000) { navToken++; return render(S.deals); }
+    await loadLive('/api/deals', render);
+  } catch (e) { if (!S.deals) errorView(e); }
 }
 
 // ---- product comparison page ----
@@ -152,7 +207,7 @@ function productPage(id) {
     const stock = o.inStock === true ? '<span class="stock-in">In stock</span>' : o.inStock === false ? '<span class="stock-out">Out of stock</span>' : 'Check stock on site';
     return `<a class="offer ${i === 0 && multi ? 'best-offer' : ''}" href="${esc(o.url)}" target="_blank" rel="noopener">
       ${wordmark(o.storeId, o.store)}
-      <div class="o-mid">${stock}${o.originalPrice ? ` · was ${money(o.originalPrice)}` : ''}</div>
+      <div class="o-mid">${stock}${o.originalPrice ? ` · was ${money(o.originalPrice)}` : ''}${o.indexedAt ? ` · catalog ${ago(o.indexedAt)}` : ''}</div>
       <div class="o-right"><div class="o-price">${badge}${money(o.price)}</div><div class="o-delta">${delta || 'View at store →'}</div></div></a>`;
   };
 
@@ -170,9 +225,9 @@ function productPage(id) {
       <div class="offers">${g.offers.map(offerRow).join('')}</div>
       <div class="p-actions">
         <a class="btn primary" href="${esc(best.url)}" target="_blank" rel="noopener">Go to ${esc(best.store)} →</a>
-        <button class="btn ghost ${watch.has(g) ? 'on' : ''}" id="watchBtn">${watch.has(g) ? '♥ Watching' : '♡ Add to watchlist'}</button>
+        <button class="btn secondary ${watch.has(g) ? 'on' : ''}" id="watchBtn">${watch.has(g) ? '♥ Watching' : '♡ Add to watchlist'}</button>
       </div>
-      <p class="note">Prices checked live ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Shipping and tax are calculated by each store. Listings are matched across stores by brand and model name, so double-check the variant (color, version) before buying.</p>
+      <p class="note">Prices checked ${g.checkedAt ? ago(g.checkedAt) : 'live'}. Shipping and tax extra. Check the variant before buying.</p>
     </div>
     <div class="gallery">
       <div class="main-img">${g.images[0] ? `<img id="mainImg" src="${esc(g.images[0])}" alt="">` : ''}</div>
@@ -189,20 +244,24 @@ async function homePage() {
   $('#q').value = '';
   const chips = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
   app.innerHTML = `<section class="hero"><h1>Find the <em>best price</em> on airsoft gear.</h1>
-    <p>Felony&#39;s Airsoft Emporium checks 10 trusted airsoft retailers, matches the same product across stores, and flags real sales so you never overpay.</p>
-    <p class="hero-more"><a href="#/marketplaces">Used gear marketplaces →</a> <span class="sep">·</span> <a href="#/more">More stores we can't price-check →</a></p>
-    <div class="chips">${chips.map((c) => `<button class="chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
+    <p>Live prices from 10 airsoft stores, matched side by side.</p>
+    <p class="hero-more"><a href="#/marketplaces">Used marketplaces →</a><span class="sep">·</span><a href="#/more">More stores →</a></p>
+    <div class="chips">${chips.map((c) => `<button class="btn secondary sm chip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div></section>
     <div class="section-h"><h2>Top deals right now</h2><a href="#/deals">See all deals →</a></div><div id="homeDeals">${skeletons(8)}</div>`;
   app.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => (location.hash = '#/search?q=' + encodeURIComponent(c.dataset.q))));
-  try {
-    if (!S.deals) S.deals = await api('/api/deals');
-    remember(S.deals.groups);
+  const render = (d) => {
+    S.deals = d;
+    remember(d.groups, d.fetchedAt);
     // A balanced preview: the two best discounts from each store.
     const per = {}; const pick = [];
-    for (const g of S.deals.groups) { const s = g.offers[0].storeId; if ((per[s] = (per[s] || 0) + 1) <= 2) pick.push(g); }
+    for (const g of d.groups) { const s = g.offers[0].storeId; if ((per[s] = (per[s] || 0) + 1) <= 2) pick.push(g); }
     $('#homeDeals').innerHTML = `<div class="grid">${pick.slice(0, 10).map(card).join('')}</div>`;
     S.lastList = '#/deals'; bindCards($('#homeDeals'));
-  } catch (e) { $('#homeDeals').innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`; }
+  };
+  try {
+    if (S.deals && !S.deals.fromDevice && Date.now() - Date.parse(S.deals.fetchedAt) < 5 * 60000) { navToken++; return render(S.deals); }
+    await loadLive('/api/deals', render);
+  } catch (e) { if (!S.deals && $('#homeDeals')) $('#homeDeals').innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`; }
 }
 
 function watchlistPage() {
@@ -222,8 +281,8 @@ async function storesPage() {
   try {
     const d = await api('/api/stores');
     app.innerHTML = crumbs([['Home', '#/'], ['Stores']]) +
-      `<div class="section-h" style="margin-top:0"><h2>Checked live</h2></div><div class="stores">${d.stores.map((s) => `<div class="scard">${wordmark(s.id, s.name)}<p>${esc(s.location)} · ${esc(s.platform)}</p><p>${esc(s.blurb)}</p>${s.index ? `<p class="idx">${s.index.products ? `${s.index.products.toLocaleString()} products indexed${s.index.builtAt ? ` · updated ${new Date(s.index.builtAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ' so far'}` : `Building index (${s.index.pages} pages read)…`}</p>` : ''}<p><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))} →</a></p></div>`).join('')}</div>
-       <div class="section-h"><h2>Can't compare these</h2><a href="#/more">More Stores →</a></div><p class="more-note">${d.skipped.map((s) => esc(s.name)).join(', ')}. These are listed as direct links on the More Stores tab.</p>`;
+      `<div class="section-h" style="margin-top:0"><h2>Checked live</h2></div><div class="stores">${d.stores.map((s) => `<div class="scard">${wordmark(s.id, s.name)}<p>${esc(s.location)}</p>${s.index ? `<p class="idx">${s.index.products ? `${s.index.products.toLocaleString()} products indexed${s.index.builtAt ? ` · updated ${new Date(s.index.builtAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ' so far'}` : `Building index (${s.index.pages} pages read)…`}</p>` : ''}<p><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))} →</a></p></div>`).join('')}</div>
+       <p class="more-note" style="margin-top:22px"><a href="#/more">More stores we can't price-check →</a></p>`;
   } catch (e) { errorView(e); }
 }
 
@@ -235,7 +294,7 @@ async function loadMarketplaceSection(q) {
         <div class="pimg">${l.image ? `<img loading="lazy" src="${esc(l.image)}" alt="">` : ''}<div class="tags">${l.condition ? `<span class="tag">${esc(l.condition.toUpperCase())}</span>` : ''}</div></div>
         <div class="pbody"><div class="brandline">${esc(l.marketplace)} · ${esc(l.format)}</div><div class="ptitle">${esc(l.title)}</div>
         <div class="pprice"><b>${money(l.price)}</b></div></div></a>`).join('')}</div>` : '';
-    $('#mktBody').innerHTML = listings + `<div class="mkt-links"><span>Search “${esc(q)}” on</span>${m.links.map((l) => `<a class="mkt-chip" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)} ↗</a>`).join('')}</div>`;
+    $('#mktBody').innerHTML = listings + `<div class="mkt-links"><span>Search used:</span>${m.links.map((l) => `<a class="btn secondary sm" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)} ↗</a>`).join('')}</div>`;
   } catch (e) { if ($('#mktBody')) $('#mktBody').innerHTML = `<p class="more-note">${esc(e.message)}</p>`; }
 }
 
@@ -246,12 +305,9 @@ async function marketplacesPage() {
     const d = await api('/api/marketplaces');
     app.innerHTML = crumbs([['Home', '#/'], ['Marketplaces']]) + `
       <div class="section-h" style="margin-top:0"><h2>Marketplaces</h2></div>
-      <p class="more-note">Used and third-party listings with sellers' own prices. They're kept out of the new-retail comparison. When you search, these show up in their own section with direct search links.</p>
       <div class="stores">${d.marketplaces.map((m) => `<a class="scard more" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">
         <div class="more-top">${wordmark(m.id, m.name)}<span class="ext" aria-hidden="true">↗</span></div>
-        <p class="domain">${esc(m.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, ''))}${m.live ? ' <span class="live-pill">LIVE PRICES</span>' : ''}</p>
-        <p>${esc(m.note)}</p><p class="why">${esc(m.why)}</p></a>`).join('')}</div>
-      <p class="more-note" style="margin-top:18px">Buying used: check seller feedback, ask for a video of the gun firing, and pay with a protected method (PayPal Goods &amp; Services). Never pay with Friends &amp; Family.</p>`;
+        <p class="domain">${esc(m.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, ''))}${m.live ? ' <span class="live-pill">LIVE PRICES</span>' : ''}</p></a>`).join('')}</div>`;
   } catch (e) { errorView(e); }
 }
 
@@ -262,13 +318,11 @@ async function moreStoresPage() {
     const d = await api('/api/stores');
     const link = (s, extra = '') => `<a class="scard more ${extra}" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">
         <div class="more-top">${wordmark(s.id, s.name)}<span class="ext" aria-hidden="true">↗</span></div>
-        <p class="domain">${esc(s.url.replace(/^https?:\/\/(www\.)?/, ''))}</p>
-        <p>${esc(s.note || '')}</p>${s.reason ? `<p class="why">${esc(s.reason)}</p>` : ''}</a>`;
+        <p class="domain">${esc(s.url.replace(/^https?:\/\/(www\.)?/, ''))}</p></a>`;
     app.innerHTML = crumbs([['Home', '#/'], ['More Stores']]) + `
       <div class="section-h" style="margin-top:0"><h2>More Stores</h2></div>
-      <p class="more-note">We can't compare prices for these stores, so check them directly. Links open in a new tab.</p>
       <div class="stores">${d.skipped.map((s) => link(s)).join('')}</div>
-      ${d.reviews?.length ? `<div class="section-h"><h2>Reviews</h2></div><p class="more-note">Not a store. Useful for reading reviews before you buy.</p><div class="stores">${d.reviews.map((s) => link(s, 'review')).join('')}</div>` : ''}`;
+      ${d.reviews?.length ? `<div class="section-h"><h2>Reviews</h2></div><div class="stores">${d.reviews.map((s) => link(s, 'review')).join('')}</div>` : ''}`;
   } catch (e) { errorView(e); }
 }
 
@@ -276,6 +330,7 @@ function errorView(e) { app.innerHTML = `<div class="empty"><h2>Couldn’t reach
 
 // ---- router ----
 function route() {
+  navToken++;
   const h = location.hash || '#/';
   document.querySelectorAll('.action').forEach((a) => a.classList.toggle('on', h.startsWith(a.getAttribute('href'))));
   if (h.startsWith('#/search')) return searchPage(new URLSearchParams(h.split('?')[1]).get('q') || '');
@@ -290,6 +345,8 @@ function route() {
 $('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#q').value.trim(); if (q.length > 1) { $('#q').blur(); location.hash = '#/search?q=' + encodeURIComponent(q); } });
 window.addEventListener('hashchange', route);
 badgeCount(); route();
+// Galaxy background: pause its animation while the tab is hidden.
+document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.hidden));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 // Native iOS shell (Capacitor): light status-bar text over the dark header.

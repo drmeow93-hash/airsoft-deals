@@ -30,12 +30,15 @@ function platformOf(title) {
   return null;
 }
 
+const { thumb } = require('./http');
+
 function enrich(p, store) {
+  if (p.image) p = { ...p, image: thumb(p.image) };
   // A "was" price more than 80% above the sale price is almost always a placeholder/MSRP typo; ignore it.
   if (p.originalPrice && p.price && (p.originalPrice - p.price) / p.originalPrice > 0.8) p = { ...p, originalPrice: null };
   const discountPct = p.originalPrice && p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
   const savings = p.originalPrice && p.price ? +(p.originalPrice - p.price).toFixed(2) : 0;
-  return { ...p, store: store.name, storeId: store.id, discountPct, savings, onSale: discountPct > 0 || !!p.storeDeal };
+  return { ...p, store: store.name, storeId: store.id, indexedAt: store.index?.idx.builtAt || undefined, discountPct, savings, onSale: discountPct > 0 || !!p.storeDeal };
 }
 
 let gid = 0;

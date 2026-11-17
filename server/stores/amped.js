@@ -6,6 +6,7 @@ const base = 'https://ampedairsoft.com';
 const CATEGORIES = ['airsoft-guns', 'magazines-accessories', 'hpa-systems-parts-accessories', 'internal-airsoft-upgrades', 'external-parts-accessories', 'optics-lights-lasers-tracers', 'tactical-gear'];
 
 const index = createIndex({
+  workerModule: __filename,
   name: 'Amped Airsoft',
   delayMs: 2500,
   refreshMs: 6 * 60 * 60 * 1000,

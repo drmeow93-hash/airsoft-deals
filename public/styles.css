@@ -185,3 +185,64 @@ select,.toggle{background:var(--card);color:var(--text);border:1px solid var(--l
   .header{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(15,11,26,.98)}
   .brand{flex:1}
 }
+
+/* Loading states */
+.wake{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:60;max-width:min(92vw,560px);
+  background:#241b3d;border:1px solid var(--accent);color:var(--text);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.4;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;gap:10px;align-items:center}
+.spin{width:12px;height:12px;flex:none;border-radius:50%;border:2px solid rgba(167,139,250,.3);border-top-color:var(--accent2);display:inline-block;vertical-align:-1px;margin-right:5px;animation:spin .8s linear infinite}
+.fresh{color:var(--muted);font-weight:500;white-space:nowrap}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pimg img{width:100%;height:100%}
+@media (max-width:720px){.wake{bottom:calc(78px + env(safe-area-inset-bottom));width:92vw}}
+
+/* ===== Galaxy theme (GPU-only: two pre-painted star layers + one nebula layer, moved with transform) ===== */
+html{background:#0b0816}
+html,body{background-color:transparent}
+html{background:#0b0816}
+.galaxy{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;
+  background:radial-gradient(1100px 700px at 12% -8%,rgba(76,29,149,.55),transparent 62%),radial-gradient(900px 650px at 105% 18%,rgba(49,27,104,.6),transparent 58%),radial-gradient(800px 600px at 50% 115%,rgba(91,33,182,.28),transparent 60%),#0b0816}
+.galaxy i{position:absolute;display:block;will-change:transform;backface-visibility:hidden}
+.nebula{inset:-20%;background:radial-gradient(38% 28% at 28% 38%,rgba(139,92,246,.18),transparent 70%),radial-gradient(32% 26% at 72% 62%,rgba(192,132,252,.12),transparent 70%),radial-gradient(26% 22% at 58% 18%,rgba(99,102,241,.12),transparent 70%);animation:neb 80s ease-in-out infinite alternate}
+.stars{left:0;top:0;width:100%;background-repeat:repeat}
+.s1{height:calc(100% + 960px);background-image:radial-gradient(1px 1px at 82px 38px,rgba(255,255,255,0.57),transparent),radial-gradient(1px 1px at 18px 210px,rgba(221,214,254,0.64),transparent),radial-gradient(1px 1px at 149px 14px,rgba(255,255,255,0.85),transparent),radial-gradient(1px 1px at 9px 22px,rgba(255,255,255,0.59),transparent),radial-gradient(1px 1px at 61px 23px,rgba(255,255,255,0.65),transparent),radial-gradient(1px 1px at 211px 144px,rgba(255,255,255,0.42),transparent),radial-gradient(1px 1px at 161px 160px,rgba(255,255,255,0.67),transparent),radial-gradient(1px 1px at 147px 149px,rgba(255,255,255,0.57),transparent),radial-gradient(1px 1px at 11px 142px,rgba(221,214,254,0.82),transparent),radial-gradient(1px 1px at 107px 36px,rgba(221,214,254,0.65),transparent),radial-gradient(1px 1px at 143px 208px,rgba(255,255,255,0.73),transparent),radial-gradient(1px 1px at 148px 146px,rgba(221,214,254,0.7),transparent),radial-gradient(1px 1px at 24px 140px,rgba(255,255,255,0.74),transparent),radial-gradient(1px 1px at 158px 52px,rgba(221,214,254,0.62),transparent),radial-gradient(1px 1px at 198px 80px,rgba(221,214,254,0.61),transparent),radial-gradient(1px 1px at 92px 76px,rgba(255,255,255,0.49),transparent),radial-gradient(1px 1px at 178px 199px,rgba(221,214,254,0.48),transparent),radial-gradient(1px 1px at 134px 126px,rgba(221,214,254,0.83),transparent),radial-gradient(1px 1px at 73px 155px,rgba(255,255,255,0.89),transparent),radial-gradient(1px 1px at 131px 107px,rgba(221,214,254,0.44),transparent),radial-gradient(1px 1px at 38px 238px,rgba(255,255,255,0.62),transparent),radial-gradient(1px 1px at 171px 19px,rgba(221,214,254,0.77),transparent),radial-gradient(1px 1px at 87px 177px,rgba(221,214,254,0.54),transparent),radial-gradient(1px 1px at 148px 204px,rgba(255,255,255,0.6),transparent),radial-gradient(1px 1px at 69px 121px,rgba(255,255,255,0.73),transparent),radial-gradient(1px 1px at 15px 187px,rgba(221,214,254,0.74),transparent);background-size:240px 240px;animation:drift1 140s linear infinite}
+.s2{height:calc(100% + 960px);background-image:radial-gradient(1.6px 1.6px at 145px 366px,rgba(233,213,255,0.69),transparent),radial-gradient(1.6px 1.6px at 177px 11px,rgba(196,181,253,0.97),transparent),radial-gradient(1.6px 1.6px at 86px 312px,rgba(255,255,255,0.56),transparent),radial-gradient(1.6px 1.6px at 111px 393px,rgba(233,213,255,0.64),transparent),radial-gradient(1.6px 1.6px at 126px 203px,rgba(196,181,253,0.7),transparent),radial-gradient(1.6px 1.6px at 41px 85px,rgba(233,213,255,0.72),transparent),radial-gradient(1.6px 1.6px at 142px 452px,rgba(196,181,253,0.57),transparent),radial-gradient(1.6px 1.6px at 442px 281px,rgba(196,181,253,0.64),transparent),radial-gradient(1.6px 1.6px at 183px 349px,rgba(255,255,255,0.94),transparent),radial-gradient(1.6px 1.6px at 77px 42px,rgba(255,255,255,0.59),transparent),radial-gradient(1.6px 1.6px at 337px 119px,rgba(233,213,255,0.51),transparent),radial-gradient(1.6px 1.6px at 93px 134px,rgba(255,255,255,0.64),transparent);background-size:480px 480px;animation:drift2 90s linear infinite,twinkle 7s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate3d(0,-960px,0)}}
+@keyframes drift2{to{transform:translate3d(0,-960px,0)}}
+@keyframes twinkle{from{opacity:.65}to{opacity:1}}
+@keyframes neb{to{transform:translate3d(4%,-3%,0) rotate(6deg) scale(1.08)}}
+.paused .galaxy i{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.galaxy i,.sk,.spin{animation:none!important}.pcard,.scard.more{transition:none}}
+
+/* Surfaces sit on the galaxy (no backdrop blur: blurring a moving background costs GPU every frame) */
+:root{--card:rgba(28,22,48,.86);--card2:rgba(38,30,64,.9);--line:rgba(167,139,250,.14);--line2:rgba(167,139,250,.26)}
+.header{background:rgba(11,8,22,.9);backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom-color:rgba(167,139,250,.12)}
+.foot{border-top-color:rgba(167,139,250,.1)}
+.pcard,.offer,.scard{box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.25)}
+.pcard:hover,.scard.more:hover{border-color:rgba(167,139,250,.5)}
+.hero h1 em{background:linear-gradient(90deg,#c4b5fd,#a78bfa 60%,#e9d5ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Buttons: one system. Pills everywhere; primary = violet, secondary = outlined glass. */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 22px;border-radius:999px;font-weight:650;font-size:14px;line-height:1;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s,transform .1s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#9d74f8,#7c4ef0);color:#fff;box-shadow:0 6px 18px rgba(124,78,240,.35)}
+.btn.primary:hover{background:linear-gradient(180deg,#a986fa,#8656f3)}
+.btn.secondary{background:rgba(255,255,255,.04);border-color:var(--line2);color:var(--text)}
+.btn.secondary:hover{border-color:var(--accent2);color:#fff;background:rgba(139,92,246,.12)}
+.btn.secondary.on{border-color:var(--accent);color:var(--accent2);background:rgba(139,92,246,.12)}
+.btn.sm{height:34px;padding:0 15px;font-size:13px;font-weight:600}
+.chip{color:var(--sub)}
+.search{border-radius:999px;padding:4px;background:rgba(28,22,48,.9)}
+.search input{padding:10px 16px}
+.search-btn{border-radius:999px;width:48px;height:42px;background:linear-gradient(180deg,#9d74f8,#7c4ef0)}
+select,.toggle{border-radius:999px;padding:8px 14px;background:var(--card)}
+.hero-more{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hero-more .sep{margin:0}
+.mkt-links{gap:8px}
+.scard.more{padding:16px 18px}
+.scard.more .domain{margin-top:6px}
+@media (max-width:720px){
+  .actions{background:rgba(11,8,22,.94);backdrop-filter:none;-webkit-backdrop-filter:none;border-top-color:rgba(167,139,250,.14)}
+  .btn{height:42px}.btn.sm{height:34px}
+  .p-actions .btn{flex:1}
+}

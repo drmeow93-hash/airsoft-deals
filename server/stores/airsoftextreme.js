@@ -37,6 +37,7 @@ async function crawlCategory(cat, fetchPage, add, { deal = false, maxPages = 15 
 }
 
 const index = createIndex({
+  workerModule: __filename,
   name: 'Airsoft Extreme',
   delayMs: 2500,
   refreshMs: 6 * 60 * 60 * 1000,
