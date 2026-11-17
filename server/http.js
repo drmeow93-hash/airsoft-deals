@@ -50,4 +50,16 @@ function thumb(url, w = 500) {
   return url;
 }
 
-module.exports = { get, money, thumb, UA };
+// Cut a page down to its product-list region before parsing. Parsing a whole store page costs
+// 50-150 ms of CPU, which is over a second on a free 0.1-CPU instance; the list region alone is far cheaper.
+// Falls back to the whole page if the markers aren't found.
+function sliceHtml(html, { marker, startTag, endTag, tail = 0 }) {
+  const first = html.indexOf(marker), last = html.lastIndexOf(marker);
+  if (first < 0) return html;
+  const start = startTag ? html.lastIndexOf(startTag, first) : first;
+  let end = endTag ? html.indexOf(endTag, last) : -1;
+  end = end < 0 ? Math.min(html.length, last + (tail || 8000)) : end + endTag.length + tail;
+  return start < 0 ? html : html.slice(start, end);
+}
+
+module.exports = { get, money, thumb, sliceHtml, UA };

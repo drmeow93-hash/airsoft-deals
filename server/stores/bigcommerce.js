@@ -1,9 +1,9 @@
 // Shared parser for BigCommerce Stencil product cards (category/search/deals listings).
 const cheerio = require('cheerio');
-const { money } = require('../http');
+const { money, sliceHtml } = require('../http');
 
 function parseBigCommerceCards(html, { storeDeal = false } = {}) {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(sliceHtml(html, { marker: '<article class="card', endTag: '</article>' }));
   const out = [];
   $('article.card').each((_, el) => {
     const c = $(el);

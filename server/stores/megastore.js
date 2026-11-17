@@ -1,10 +1,10 @@
 // Airsoft Megastore (OpenCart). product/search and /Mega-Deals are allowed by robots.txt.
 const cheerio = require('cheerio');
-const { get, money } = require('../http');
+const { get, money, sliceHtml } = require('../http');
 const base = 'https://www.airsoftmegastore.com';
 
 function parse(html, { storeDeal = false } = {}) {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(sliceHtml(html, { marker: 'category-product-grid-prodname', startTag: '<div class="box', tail: 6000 }));
   const out = [];
   $('a.category-product-grid-prodname').each((_, el) => {
     const a = $(el);

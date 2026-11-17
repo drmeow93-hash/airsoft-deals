@@ -2,11 +2,11 @@
 // /search.json, so we don't use any JSON endpoint. The HTML search page (/search) is allowed and
 // is server-rendered, so we read the product cards from it.
 const cheerio = require('cheerio');
-const { get, money } = require('../http');
+const { get, money, sliceHtml } = require('../http');
 const base = 'https://www.ehobbyasia.com';
 
 function parse(html) {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(sliceHtml(html, { marker: 'boost-sd-fb__card', startTag: '<ul', endTag: '</ul>' }));
   const out = [];
   $('li.boost-sd-fb__card').each((_, el) => {
     const c = $(el);
