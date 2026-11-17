@@ -350,7 +350,7 @@ function productPage(id) {
       <div class="o-right"><div class="o-price">${badge}${money(o.price)}</div><div class="o-sub">${o.h?.chg ? trendHtml(o.h) : `View ${ic('i-ext', 'ic')}`.replace('class="ic"', 'class="ic" style="width:13px;height:13px"')}</div></div></a>`;
   };
   const histPanel = h ? `<section class="panel hist" aria-label="Price history">
-      <div class="hist-top"><div class="trend">${trendHtml(h, { long: true })}</div><span class="fresh">Since ${fmtDate(h.since)}</span></div>
+      <div class="hist-top"><div class="trend">${trendHtml(h, { long: true })}</div>${h.chg ? `<span class="fresh">Since ${fmtDate(h.since)}</span>` : ''}</div>
       ${chartHtml(h)}
       <div class="hstats"><div class="kv"><small>Now</small><b>${money(g.bestPrice)}</b></div><div class="kv"><small>Lowest</small><b class="dn">${money(h.lo)}</b></div><div class="kv"><small>Highest</small><b class="up">${money(h.hi)}</b></div><div class="kv"><small>Average</small><b>${money(h.avg)}</b></div></div>
       ${h.pts.length < 2 ? `<p class="hist-note">One price recorded so far. The chart fills in as the price changes; prices are re-checked twice a day.</p>` : ''}
