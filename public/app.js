@@ -171,7 +171,14 @@ async function loadLive(path, render, { fast = false } = {}) {
     try { d = await api(path); } catch { break; }
     show(d);
   }
-  if (alive() && (d.partial || d.refreshing)) show({ ...d, refreshing: false, final: true });
+  if (alive() && (d.partial || d.refreshing)) {
+    show({ ...d, refreshing: false, final: true });
+    // A slow (cold) server usually finishes a little later: check twice more, quietly, and fill in.
+    for (const wait of [15000, 30000]) {
+      await sleep(wait); if (!alive()) break;
+      try { const d2 = await api(path); if (!d2.partial) { show({ ...d2, refreshing: false, final: true }); d = d2; break; } } catch { break; }
+    }
+  }
   if (!d.partial) cache.set(path, { ...d, refreshing: undefined });
   return d;
 }
