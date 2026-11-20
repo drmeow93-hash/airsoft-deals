@@ -97,6 +97,7 @@ async function cycle(reason) {
   for (let k = next(); k && done.size < 16; k = next()) {
     done.add(k);
     const fn = jobFor(k);
+    for (let w = 0; ctx.busy && ctx.busy() && w < 40; w++) await sleep(250); // shoppers first (up to 10 s)
     try { await ctx.cached(k, 10 * 60 * 1000, 0, fn, { force: true }); S.version++; S.scopeVer.set(k, S.version); } catch (e) { console.log(`[refresh] ${k} failed: ${e.message}`); }
     await sleep(800); // let page requests in between (0.1 CPU on the free plan)
   }

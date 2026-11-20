@@ -16,6 +16,15 @@ const storeById = Object.fromEntries(stores.map((s) => [s.id, s]));
 
 const app = express();
 app.disable('x-powered-by');
+// Shoppers first: the background refresh cycle waits while a page request is being computed.
+let userBusy = 0, userLast = 0;
+app.use('/api', (req, res, next) => {
+  if (!/^\/(search|browse|deals|brand|drops|match|popular)/.test(req.path)) return next();
+  userBusy++; userLast = Date.now();
+  res.on('close', () => { userBusy--; userLast = Date.now(); });
+  next();
+});
+const shoppersBusy = () => userBusy > 0 || Date.now() - userLast < 700;
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') { res.set({ 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' }); return res.sendStatus(204); }
@@ -301,10 +310,37 @@ app.get('/api/deals', async (req, res) => {
 // Category browse: catalog-indexed stores contribute their whole category (cheap, in memory);
 // live stores answer one category search each.
 const CAT_TERMS = { rifles: 'aeg', pistols: 'pistol', snipers: 'sniper', mags: 'magazine', holsters: 'holster', gear: 'plate carrier', optics: 'red dot', parts: 'hop up', batteries: 'lipo battery', bbs: 'bbs', gas: 'green gas', other: 'airsoft' };
+// Filters a big list in chunks, yielding between them so other requests keep flowing.
+async function chunkFilter(items, fn, max = Infinity) {
+  const out = [];
+  for (let i = 0; i < items.length && out.length < max; i += 250) {
+    for (const p of items.slice(i, i + 250)) if (fn(p)) { out.push(p); if (out.length >= max) break; }
+    await new Promise((r) => setImmediate(r));
+  }
+  return out;
+}
+// Category lists for a catalog index, classified once per catalog build in small chunks that yield to
+// other requests (classifying ~8,000 products in one go blocked the server for ~3 s on the free plan).
+const catCache = new WeakMap(); // idx -> { builtAt, items, map | promise }
+function indexCats(idx) {
+  const c = catCache.get(idx);
+  if (c && c.builtAt === idx.builtAt && c.items === idx.items) return c.promise;
+  const items = idx.items;
+  const promise = (async () => {
+    const map = new Map();
+    for (let i = 0; i < items.length; i += 250) {
+      for (const p of items.slice(i, i + 250)) { const k = judgeCached(p); if (!map.has(k)) map.set(k, []); map.get(k).push(p); }
+      await new Promise((r) => setImmediate(r));
+    }
+    return map;
+  })();
+  catCache.set(idx, { builtAt: idx.builtAt, items, promise });
+  return promise;
+}
 async function computeBrowse(cat) {
   const out = await fanOut(async (s) => {
     if (s.index) {
-      const list = s.index.idx.items.filter((p) => judgeCached(p) === cat);
+      const list = (await indexCats(s.index.idx)).get(cat) || [];
       return list.sort((a, b) => (b.originalPrice ? 1 : 0) - (a.originalPrice ? 1 : 0)).slice(0, 36).map(({ _n, _w, ...p }) => p);
     }
     return s.search(CAT_TERMS[cat]);
@@ -332,19 +368,27 @@ app.get('/api/drops', async (req, res) => sendJson(res, await cached('drops', 10
 // Brands: the user's brand directory, shown only for brands with at least one live airsoft listing
 // (seen in a catalog index, the deals feed, a search or a category page since the server woke up).
 let brandSeeded = 0;
+// Runs in the background in small chunks (it used to classify every catalog product in one go, inside
+// the first autocomplete request, freezing the server for seconds); callers use what's seeded so far.
 function seedBrands() {
   if (Date.now() - brandSeeded < 10 * 60 * 1000) return;
   brandSeeded = Date.now();
-  for (const s of stores) {
-    if (!s.index) continue;
-    for (const p of s.index.idx.items) { const cat = judgeCached(p); if (!cat) continue; const b = brands.detect(p); if (b) noteBrand(b, p.url, cat); }
-  }
+  (async () => {
+    for (const s of stores) {
+      if (!s.index) continue;
+      const items = s.index.idx.items;
+      for (let i = 0; i < items.length; i += 200) {
+        for (const p of items.slice(i, i + 200)) { const cat = judgeCached(p); if (!cat) continue; const b = brands.detect(p); if (b) noteBrand(b, p.url, cat); }
+        await new Promise((r) => setImmediate(r));
+      }
+    }
+  })().catch(() => {});
 }
 app.get('/api/brands', (req, res) => { seedBrands(); res.set('Cache-Control', 'public, max-age=300'); res.json({ brands: brandList() }); });
 async function computeBrand(id) {
   const b = brands.byId(id);
   const out = await fanOut(async (s) => {
-    if (s.index) return s.index.idx.items.filter((p) => judgeCached(p) && brands.detect(p)?.id === id).slice(0, 48).map(({ _n, _w, ...p }) => p);
+    if (s.index) return (await chunkFilter(s.index.idx.items, (p) => judgeCached(p) && brands.detect(p)?.id === id, 48)).map(({ _n, _w, ...p }) => p);
     return s.search(b.name);
   });
   const groups = groupProducts(out.items).filter((g) => g.brandId === id || g.offers.some((o) => o.brandId === id))
@@ -402,7 +446,7 @@ app.use(express.static(PUB, {
 // Compress API JSON too (search/deals payloads compress ~8x).
 // Background work: catalog indexes load their bundled snapshot instantly, then refresh one at a
 // time in a worker thread. The deals feed and the home-page search chips are kept warm.
-refresh.init({ stores, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history, afterCycle: () => accounts.checkAlerts() });
+refresh.init({ stores, busy: shoppersBusy, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history, afterCycle: () => accounts.checkAlerts() });
 accounts.init({ recheck: (offers, title) => refresh.recheck(offers, title), latest: (urls) => history.latestFor(urls) });
 const BG = !process.env.NO_BACKGROUND; // NO_BACKGROUND=1 for a UI-only dev server (no crawls, no warming)
 stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(20000 + i * 1000) : s.index.start(1e9)));
