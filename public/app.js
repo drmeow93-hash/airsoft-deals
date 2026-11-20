@@ -1,5 +1,6 @@
 /* Felony's Airsoft Emporium: hash router, search + filters, product compare, price history, deals, drops. */
 const API = (window.API_BASE || '').replace(/\/$/, '');
+const MY_V = ((document.currentScript && document.currentScript.src) || '').match(/[?&]v=(\w+)/)?.[1] || '';
 const app = document.getElementById('app');
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -50,15 +51,36 @@ const STORE_INFO = {
 const wordmark = (id, name) => `<div class="wm wm-${esc(id)}">${esc(STORE_INFO[id]?.[0] || name)}<small>${esc(STORE_INFO[id]?.[1] || '')}</small></div>`;
 
 // ---- state & storage ----
+// iOS Safari caps localStorage near 5 MB. The device result cache used to fill it (10 searches x 300 KB),
+// after which saving the watchlist threw and Track did nothing. Now: the cache is trimmed and capped, and
+// any failed write clears the cache and retries, so the watchlist always saves.
+const store = {
+  purgeCache() { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && (k.startsWith('ad_c:') || k === 'ad_c_idx')) localStorage.removeItem(k); } },
+  set(k, v) {
+    try { localStorage.setItem(k, v); return true; } catch { /* full */ }
+    try { store.purgeCache(); localStorage.setItem(k, v); return true; } catch { return false; }
+  },
+};
+try { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('ad_c:')) n += localStorage.getItem(k).length; } if (n > 1500000) store.purgeCache(); } catch { /* storage off */ }
 const S = { groups: new Map(), lastList: '#/', fstate: {} };
 const remember = (gs, at) => gs.forEach((g) => { if (at && !g.checkedAt) g.checkedAt = at; S.groups.set(g.id, g); });
 const keyOf = (g) => g.offers[0].url;
+// What a product page needs, without the bulky extras (keeps the watchlist and saved pages small).
+const slimGroup = (g) => ({ ...g, images: (g.images || []).slice(0, 4), offers: g.offers.slice(0, 12), alts: undefined, reviews: undefined });
+// Products opened recently are kept on the device, so a product link survives a reload or a shared link.
+const seen = {
+  get(id) { try { return (JSON.parse(localStorage.getItem('ad_seen') || '[]').find((g) => g.id === id)) || null; } catch { return null; } },
+  add(g) { try { const l = JSON.parse(localStorage.getItem('ad_seen') || '[]').filter((x) => x.id !== g.id); l.unshift(slimGroup(g)); store.set('ad_seen', JSON.stringify(l.slice(0, 25))); } catch { /* optional */ } },
+};
 const watch = {
   all: () => { try { return JSON.parse(localStorage.getItem('ad_watch') || '[]'); } catch { return []; } },
-  save(l) { localStorage.setItem('ad_watch', JSON.stringify(l.slice(0, 100))); badgeCount(); acct.soon(); },
+  save(l) {
+    if (!store.set('ad_watch', JSON.stringify(l.slice(0, 100)))) toast('Couldn’t save your watchlist: this browser’s storage is full or turned off (private mode?).');
+    badgeCount(); acct.soon();
+  },
   get: (g) => watch.all().find((w) => w.key === keyOf(g)),
   has: (g) => !!watch.get(g),
-  add(g, extra = {}) { const l = watch.all().filter((w) => w.key !== keyOf(g)); watch.save([{ key: keyOf(g), savedAt: Date.now(), savedPrice: g.bestPrice, group: g, ...extra }, ...l]); },
+  add(g, extra = {}) { const l = watch.all().filter((w) => w.key !== keyOf(g)); watch.save([{ key: keyOf(g), savedAt: Date.now(), savedPrice: g.bestPrice, group: slimGroup(g), ...extra }, ...l]); },
   toggle(g) { if (watch.has(g)) watch.remove(keyOf(g)); else watch.add(g); },
   remove(key) { watch.save(watch.all().filter((w) => w.key !== key)); },
   update(key, patch) { watch.save(watch.all().map((w) => (w.key === key ? { ...w, ...patch } : w))); },
@@ -69,7 +91,7 @@ const watch = {
 const acct = {
   key() {
     let k = localStorage.getItem('ad_acct');
-    if (!k) { const a = crypto.getRandomValues(new Uint8Array(18)); k = btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); localStorage.setItem('ad_acct', k); }
+    if (!k) { const a = crypto.getRandomValues(new Uint8Array(18)); k = btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); store.set('ad_acct', k); }
     return k;
   },
   email: () => localStorage.getItem('ad_email') || '',
@@ -82,7 +104,7 @@ const acct = {
     if (!r.ok) throw new Error(d.error || `Server error ${r.status}`);
     return d;
   },
-  keep(d) { if (d && Array.isArray(d.items)) { acct.state = d; localStorage.setItem('ad_acct_state', JSON.stringify(d)); } return d; },
+  keep(d) { if (d && Array.isArray(d.items)) { acct.state = d; store.set('ad_acct_state', JSON.stringify(d)); } return d; },
   async sync(extra = {}) { if (!acct.needed() && !extra.email) return acct.state; return acct.keep(await acct.post('sync', { email: acct.email(), items: acct.items(), ...extra })); },
   soon() { clearTimeout(acct._t); acct._t = setTimeout(() => acct.sync().catch(() => {}), 1500); },
 };
@@ -106,35 +128,58 @@ async function api(path) {
   } finally { clearTimeout(t); if (flagged) wakeBanner(false); }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function toast(msg) {
+  let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 4000);
+}
 const cache = {
   get(k) { try { const v = JSON.parse(localStorage.getItem('ad_c:' + k)); return v && Date.now() - v.t < 24 * 3600e3 ? v.d : null; } catch { return null; } },
+  // Only the first 72 products of a list are kept (enough to paint at once; the live answer fills in the
+  // rest), at most 8 lists and ~1 MB in total.
   set(k, d) {
     try {
+      const keep = d.groups && d.groups.length > 72 ? { ...d, groups: d.groups.slice(0, 72), total: d.groups.length, trimmed: true } : d;
+      const v = JSON.stringify({ t: Date.now(), d: keep });
+      if (v.length > 300000) return;
       const idx = JSON.parse(localStorage.getItem('ad_c_idx') || '[]').filter((x) => x !== k);
       idx.unshift(k);
-      while (idx.length > 10) localStorage.removeItem('ad_c:' + idx.pop());
+      while (idx.length > 8) localStorage.removeItem('ad_c:' + idx.pop());
       localStorage.setItem('ad_c_idx', JSON.stringify(idx));
-      localStorage.setItem('ad_c:' + k, JSON.stringify({ t: Date.now(), d }));
-    } catch { localStorage.removeItem('ad_c_idx'); }
+      localStorage.setItem('ad_c:' + k, v);
+    } catch { store.purgeCache(); }
   },
 };
 let navToken = 0;
 // Cached data paints at once, then live data (a fast partial answer first for new searches).
+// Updates are quiet: the list is updated in place (filters, sort and scroll stay put), and the "updating"
+// note always ends: after ~30 s of polling the last answer is shown as final, with any store that didn't
+// answer listed by name, instead of a spinner that never stops.
 async function loadLive(path, render, { fast = false } = {}) {
   const tok = ++navToken, alive = () => tok === navToken;
   const c = cache.get(path);
   let last = null;
-  const show = (d) => { if (!alive() || (last && last.fetchedAt === d.fetchedAt && last.partial === d.partial)) return; last = d; render(d); };
+  const show = (d) => { if (!alive() || (last && last.fetchedAt === d.fetchedAt && !!last.partial === !!d.partial && !!last.refreshing === !!d.refreshing && !!last.final === !!d.final)) return; last = d; render(d); };
   if (c) show({ ...c, fromDevice: true });
-  let d = await api(fast && !c ? path + (path.includes('?') ? '&' : '?') + 'fast=1' : path);
+  let d;
+  try { d = await api(fast && !c ? path + (path.includes('?') ? '&' : '?') + 'fast=1' : path); }
+  catch (e) { if (c) { show({ ...c, fromDevice: true, final: true, offline: true }); return c; } throw e; }
   show(d);
-  for (let i = 0; i < 4 && alive() && (d.partial || d.refreshing); i++) { await sleep(i ? 2000 : 300); d = await api(path); show(d); }
+  const t0 = Date.now();
+  for (let i = 0; alive() && (d.partial || d.refreshing) && Date.now() - t0 < 30000; i++) {
+    await sleep(i ? Math.min(1000 * 2 ** (i - 1), 5000) : 400);
+    if (!alive()) break;
+    try { d = await api(path); } catch { break; }
+    show(d);
+  }
+  if (alive() && (d.partial || d.refreshing)) show({ ...d, refreshing: false, final: true });
   if (!d.partial) cache.set(path, { ...d, refreshing: undefined });
   return d;
 }
 const ago = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
-const freshness = (d) => d.partial ? '<span class="fresh"><span class="spin"></span>more stores loading</span>'
-  : d.refreshing || d.fromDevice ? `<span class="fresh"><span class="spin"></span>updating from ${ago(d.fetchedAt)}</span>` : '';
+const freshness = (d) => d.offline ? `<span class="fresh">saved ${ago(d.fetchedAt)} · offline</span>`
+  : d.final ? (d.partial ? `<span class="fresh">${(d.status || []).filter((s) => s.slow).length || 'some'} store${(d.status || []).filter((s) => s.slow).length === 1 ? '' : 's'} didn’t answer in time</span>` : '')
+  : d.partial ? '<span class="fresh"><span class="spin"></span>more stores loading</span>'
+  : d.refreshing || d.fromDevice ? `<span class="fresh"><span class="spin"></span>updating</span>` : '';
 
 // ---- price history pieces ----
 function trendHtml(h, { long = false } = {}) {
@@ -370,9 +415,16 @@ function applyF(gs, F, skip) {
 }
 function counts(gs, fn) { const m = new Map(); for (const g of gs) for (const k of new Set([].concat(fn(g)))) m.set(k, (m.get(k) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); }
 
+function pillsHtml(data) {
+  const bad = (data.status || []).filter((s) => !s.ok);
+  if (!bad.length) return '';
+  return `<div class="status">${bad.map((s) => `<span class="pill ${s.indexing || (s.slow && !data.final) ? 'wait' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.indexing ? 'indexing' : s.slow ? (data.final ? 'didn’t answer' : 'loading') : /slow down|429/i.test(s.error || '') ? 'busy, try later' : 'unavailable'}</span>`).join('')}</div>`;
+}
 function listView(data, { title, crumb, target = app, preset, sortDefault = 'featured', empty }) {
   remember(data.groups, data.fetchedAt);
   const key = location.hash;
+  // Same list already on screen: swap the data and re-render the results only.
+  if (target._lv && target._lv.key === key && target._lv.grid === $('#grid', target) && target._lv.grid?.isConnected) { target._lv.update(data, title); return; }
   const F = S.fstate[key] || (S.fstate[key] = newF({ sort: sortDefault, ...(preset || {}) }));
   const storeName = Object.fromEntries(data.groups.flatMap((g) => g.offers.map((o) => [o.storeId, o.store])));
   target.innerHTML = `<div class="view">${crumbs(crumb)}
@@ -384,7 +436,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
           <div class="rtools"><button type="button" class="btn secondary sm fbtn" id="openF">${ic('i-filter')}Filters<span id="fN"></span></button>
           <label class="sr" for="sort">Sort by</label><select class="sel" id="sort">${SORTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div></div>
         <div class="active-f" id="activeF"></div>
-        ${data.status?.some((s) => !s.ok) ? `<div class="status">${data.status.filter((s) => !s.ok).map((s) => `<span class="pill ${s.ok ? '' : s.indexing || s.slow ? 'wait' : 'err'}" title="${esc(s.error || '')}">${esc(s.store)} · ${s.ok ? s.count : s.indexing ? 'indexing' : s.slow ? 'loading' : 'unavailable'}</span>`).join('')}</div>` : ''}
+        <div id="stPills">${pillsHtml(data)}</div>
         <div id="grid"></div>
         <div id="after"></div>
       </section>
@@ -425,20 +477,23 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     $('#fN', target).textContent = chips.length ? ` (${chips.length})` : '';
     return chips.map(([f, v, l]) => `<button type="button" class="chip on" data-rm="${f}" data-v="${esc(v)}" aria-label="Remove filter ${esc(l)}">${esc(l)}${ic('i-x')}</button>`).join('');
   };
-  const render = () => {
+  let shownBefore = 0;
+  const render = (keep = false) => {
     let gs = applyF(data.groups, F);
     if (sorters[F.sort]) gs = [...gs].sort(sorters[F.sort]);
     $('#rcount', target).innerHTML = title(gs.length);
     $('#applyF', target).textContent = `Show ${gs.length} result${gs.length === 1 ? '' : 's'}`;
-    $('#facets', target).innerHTML = facetHtml();
+    const typing = document.activeElement && $('#facets', target).contains(document.activeElement) && document.activeElement.type !== 'checkbox' && document.activeElement.type !== 'radio';
+    if (!typing) $('#facets', target).innerHTML = facetHtml();
     $('#activeF', target).innerHTML = activeHtml();
     $('.rtools', target).classList.toggle('hidden', !data.groups.length);
     // Long lists render in pages of 36 cards; the next page is added as you scroll near the end.
     const grid = $('#grid', target);
     if (grid._io) grid._io.disconnect();
-    grid.innerHTML = gs.length ? `<div class="grid">${gs.slice(0, PAGE).map((g, i) => card(g, i)).join('')}</div>` : (empty && !data.groups.length ? empty : `<div class="empty">${ic('i-search')}<h2>No matches</h2><p>Try fewer filters or a broader search.</p></div>`);
+    const first = keep ? Math.max(PAGE, Math.min(shownBefore, gs.length)) : PAGE;
+    grid.innerHTML = gs.length ? `<div class="grid">${gs.slice(0, first).map((g, i) => card(g, i)).join('')}</div>` : (empty && !data.groups.length ? empty : `<div class="empty">${ic('i-search')}<h2>No matches</h2><p>Try fewer filters or a broader search.</p></div>`);
     bindCards(grid);
-    let shown = Math.min(PAGE, gs.length);
+    let shown = Math.min(first, gs.length); shownBefore = shown;
     if (shown < gs.length && 'IntersectionObserver' in window) {
       const sent = document.createElement('div'); sent.className = 'grid-sentinel'; grid.appendChild(sent);
       grid._io = new IntersectionObserver((ents) => {
@@ -447,7 +502,7 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
         tmp.innerHTML = gs.slice(shown, shown + PAGE).map((g, i) => card(g, shown + i)).join('');
         bindCards(tmp);
         $('.grid', grid).append(...tmp.children);
-        shown += PAGE;
+        shown += PAGE; shownBefore = shown;
         if (shown >= gs.length) { grid._io.disconnect(); sent.remove(); }
       }, { rootMargin: '900px 0px' });
       grid._io.observe(sent);
@@ -481,6 +536,15 @@ function listView(data, { title, crumb, target = app, preset, sortDefault = 'fea
     render();
   });
   render();
+  target._lv = {
+    key, grid: $('#grid', target),
+    update(d, t) {
+      data = d; if (t) title = t;
+      Object.assign(storeName, Object.fromEntries(d.groups.flatMap((g) => g.offers.map((o) => [o.storeId, o.store]))));
+      const sp = $('#stPills', target); if (sp) sp.innerHTML = pillsHtml(d);
+      render(true);
+    },
+  };
 }
 
 // ---- pages ----
@@ -536,8 +600,9 @@ async function dropsPage() {
 }
 
 function productPage(id, { keepScroll = false } = {}) {
-  const g = S.groups.get(id) || watch.all().map((w) => w.group).find((x) => x.id === id);
-  if (!g) { location.hash = '#/'; return; }
+  const g = S.groups.get(id) || watch.all().map((w) => w.group).find((x) => x.id === id) || seen.get(id);
+  if (!g) { setQ(); view(`<div class="empty panel">${ic('i-search')}<h2>We couldn’t find that product</h2><p>Product links are kept on the device that opened them. Search for it again to see today’s prices.</p><a class="btn primary" href="#/">Back to home</a></div>`); return; }
+  S.groups.set(g.id, g); seen.add(g);
   setQ();
   const L = S.lastList;
   const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') || L.startsWith('#/dashboard') ? ['Dashboard', L] : L.startsWith('#/b/') ? ['Brand', L] : null;
@@ -1175,5 +1240,12 @@ $('#livebar')?.addEventListener('click', liveDetails);
 badgeCount(); route();
 if (acct.needed()) setTimeout(() => acct.sync().catch(() => {}), 4000); // keep the server copy fresh for alerts
 document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.hidden));
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {}));
+navigator.serviceWorker?.addEventListener('message', (e) => {
+  if (e.data?.type === 'felony-updated' && e.data.v && e.data.v !== MY_V && sessionStorage.getItem('ad_reloaded') !== e.data.v) { sessionStorage.setItem('ad_reloaded', e.data.v); location.reload(); }
+});
+// Version check: a tab running an older app.js than the server's reloads itself once (web only).
+if (!API && MY_V) setTimeout(() => fetch('/api/version', { cache: 'no-store' }).then((r) => r.json()).then((v) => {
+  if (v['app.js'] && v['app.js'] !== MY_V && sessionStorage.getItem('ad_reloaded') !== v['app.js']) { sessionStorage.setItem('ad_reloaded', v['app.js']); location.reload(); }
+}).catch(() => {}), 1500);
 if (window.Capacitor?.isNativePlatform?.()) window.Capacitor.Plugins?.StatusBar?.setStyle?.({ style: 'DARK' }).catch?.(() => {});

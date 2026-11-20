@@ -255,6 +255,7 @@ setTimeout(() => lag.reset(), 60 * 1000).unref();
 const stalls = []; let lastTick = Date.now(), lastReq = '';
 app.use((req, res, next) => { lastReq = req.path; next(); });
 setInterval(() => { const now = Date.now(), d = now - lastTick - 500; lastTick = now; if (d > 1000) { stalls.push({ at: new Date(now).toISOString(), ms: d, last: lastReq }); if (stalls.length > 10) stalls.shift(); console.log(`[stall] event loop blocked ${d} ms (last request ${lastReq})`); } }, 500).unref();
+app.get('/api/version', (req, res) => res.set('Cache-Control', 'no-store').json(SHELL.version));
 app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), bootMs: BOOT_MS, shell: SHELL.from, loopLagMs: { p50: Math.round(lag.percentile(50) / 1e6), p99: Math.round(lag.percentile(99) / 1e6), max: Math.round(lag.max / 1e6) }, stalls, keepWarm: keepWarm.status(), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
 app.get('/img', require('./imgproxy').handler);
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
