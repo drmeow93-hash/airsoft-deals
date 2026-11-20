@@ -11,7 +11,8 @@ const backoff = new Map(); // host -> { until, ms }
 const lastOk = new Map(); // host -> time of the last successful network fetch (not a cache hit)
 const lastOkAt = (url) => { try { return lastOk.get(new URL(url).host) || null; } catch { return null; } };
 const pools = { shopify: { max: 4, active: 0, q: [] } };
-const acquire = (name) => { const p = pools[name]; if (!p) return Promise.resolve(); if (p.active < p.max) { p.active++; return Promise.resolve(); } return new Promise((r) => p.q.push(r)); };
+// priority (a shopper's search) goes to the front of the queue, ahead of background sale-feed pages.
+const acquire = (name, priority = false) => { const p = pools[name]; if (!p) return Promise.resolve(); if (p.active < p.max) { p.active++; return Promise.resolve(); } return new Promise((r) => (priority ? p.q.unshift(r) : p.q.push(r))); };
 const release = (name) => { const p = pools[name]; if (!p) return; const next = p.q.shift(); if (next) next(); else p.active--; };
 
 // Memory budget for cached responses (the free instance has a ~256 MB JS heap): sized by response length,
@@ -27,7 +28,7 @@ function remember(key, val, size, ttlMs) {
   for (const [k, e] of cache) { if (cacheBytes <= BUDGET && cache.size <= 600) break; cache.delete(k); cacheBytes -= e.size; }
 }
 
-async function get(url, { ttlMs = DEFAULT_TTL, json = false, timeoutMs = 15000, pool = null, store = true } = {}) {
+async function get(url, { ttlMs = DEFAULT_TTL, json = false, timeoutMs = 15000, pool = null, store = true, priority = false } = {}) {
   // Allowlist: only domains that passed the legitimacy vetting (data/vetting.json) are ever fetched.
   if (!isVetted(url)) throw new Error(`Blocked: ${(() => { try { return new URL(url).hostname; } catch { return url; } })()} is not a vetted domain`);
   const key = (json ? 'j:' : 'h:') + url;
@@ -41,7 +42,7 @@ async function get(url, { ttlMs = DEFAULT_TTL, json = false, timeoutMs = 15000, 
   }
   if (inflight.has(key)) return inflight.get(key);
   const p = (async () => {
-    await acquire(pool);
+    await acquire(pool, priority);
     try { return await fetchOnce(url, key, { ttlMs, json, timeoutMs, store }); } finally { release(pool); }
   })();
   inflight.set(key, p);

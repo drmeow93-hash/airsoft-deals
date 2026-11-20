@@ -103,7 +103,7 @@ async function cycle(reason) {
   }
   // Anything still "checking" didn't answer within the hard limit: it's a failure (shown as "No answer",
   // with its last good check time), due again on the next visit.
-  for (const e of S.stores.values()) if (e.state === 'checking') { e.state = 'error'; e.note = `No answer within ${Math.round(STORE_HARD_MS / 1000)} s`; e.dueAt = Date.now() + GAP_MS; }
+  for (const e of S.stores.values()) if (e.state === 'checking') { e.state = 'error'; e.note = `No answer within ${Math.round(STORE_HARD_MS / 1000)} s`; e.dueAt = Date.now() + 5 * 60 * 1000; } // retried in 5 min, not on every visit (that kept the store pool busy)
   S.finishedAt = Date.now();
   // Price alerts piggyback on the cycle: a few due watchlist targets are re-checked right after it.
   if (ctx.afterCycle) { try { await ctx.afterCycle(); } catch (e) { console.log('[refresh] afterCycle failed', e.message); } }

@@ -5,7 +5,7 @@
 // Upgrades: the new worker takes over at once (skipWaiting + clients.claim). If it replaced an older
 // version, every open tab is reloaded once so no tab keeps running old JS against the new API.
 const V = __ASSET_VERSIONS__; // filled in by the server: content hashes of app.js / styles.css / config.js
-const CACHE = 'felony-v11c-' + Object.values(V).join('').slice(0, 16);
+const CACHE = 'felony-v11d-' + Object.values(V).join('').slice(0, 16);
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/fonts/DancingScript-wordmark.woff2',
   ...Object.entries(V).map(([f, h]) => `/${f}?v=${h}`)];
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {})); });

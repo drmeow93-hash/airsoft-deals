@@ -87,7 +87,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
 
   async function search(q) {
     const u = `${base}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=10&resources[options][unavailable_products]=last`;
-    const data = await get(u, { json: true, pool: 'shopify' });
+    const data = await get(u, { json: true, pool: 'shopify', priority: true }); // shopper searches jump the queue
     return (data?.resources?.results?.products || []).map(norm).filter((p) => p.price);
   }
 
@@ -118,7 +118,7 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
   // One product's current price from /products/<handle>.js (prices in cents; cheapest variant, like everywhere else).
   async function product(url) {
     const path = new URL(url).pathname.replace(/\/$/, '');
-    const p = await get(`${base}${path}.js`, { json: true, pool: 'shopify', ttlMs: 4 * 60 * 1000 });
+    const p = await get(`${base}${path}.js`, { json: true, pool: 'shopify', ttlMs: 4 * 60 * 1000, priority: true });
     let min = null;
     for (const v of p.variants || []) { const price = v.price / 100; if (price > 0 && (!min || price < min.price)) min = { price, cmp: v.compare_at_price ? v.compare_at_price / 100 : null }; }
     if (!min) return null;
