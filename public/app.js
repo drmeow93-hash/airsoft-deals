@@ -988,6 +988,7 @@ function dashboardPage() {
   const hit = l.filter((w) => w.target && rowPrice(w) <= w.target).length;
   const emailStatus = !email ? 'Add an email to get target-price alerts by email. No password; we send one confirmation link.'
     : st?.email === email && st.confirmed ? `<span class="instock">● Confirmed</span> · alerts go to <b>${esc(email)}</b>`
+    : st?.emailConnected === false ? `<span class="wait-t">● Saved</span> · <b>${esc(email)}</b> is on file. Email sending isn’t switched on for this site yet, so no link was sent; target-price alerts show on this dashboard.`
     : `<span class="wait-t">● Waiting for confirmation</span> · open the link we sent to <b>${esc(email)}</b>`;
   const server = st ? `${st.storage === 'postgres' ? 'Saved in the database' : 'Saved on the price server (it can reset on restarts; your list here is the backup and re-syncs on each visit)'}${st.emailConnected === false ? ' · email sending isn’t connected yet, so alerts show here only' : ''}` : 'Saved in this browser only';
   view(crumbs([['Home', '#/'], ['Dashboard']]) + `
@@ -1016,7 +1017,7 @@ function dashboardPage() {
     <p class="fnote dash-foot">Your list lives in this browser. <button class="linkbtn" id="acctDel">Delete my server copy and email</button></p>`);
   $('#emailForm').addEventListener('submit', async (e) => {
     e.preventDefault(); const v = $('#em').value.trim();
-    localStorage.setItem('ad_email', v); $('#emNote').innerHTML = '<span class="spin"></span>Saving…';
+    store.set('ad_email', v); $('#emNote').innerHTML = '<span class="spin"></span>Saving…';
     try { const r = await acct.sync({ email: v }); $('#emNote').textContent = r?.note || 'Saved'; setTimeout(dashboardPage, 1800); } catch (err) { $('#emNote').textContent = err.message; }
   });
   $('#emOff')?.addEventListener('click', async () => { localStorage.removeItem('ad_email'); try { await acct.sync({ email: '' }); } catch { /* offline */ } dashboardPage(); });
