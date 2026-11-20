@@ -155,8 +155,11 @@ function enrich(p, store) {
   };
 }
 
-let gid = 0;
+// Stable group ids (a hash of the offer URLs), so a product link or a device-cached list still points at
+// the same product after the server restarts (a running counter reused ids for different products).
+const gidOf = (offers) => { let h = 0x811c9dc5; for (const ch of offers.map((o) => o.url).sort().join('|')) { h ^= ch.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return 'g' + h.toString(36); };
 function groupProducts(items) {
+  const ids = new Set();
   const f = items.map(features);
   const used = new Array(items.length).fill(false);
   const groups = [];
@@ -178,7 +181,7 @@ function groupProducts(items) {
     }
     const maxDisc = offers.reduce((m, o) => Math.max(m, o.discountPct), 0);
     const g = {
-      id: 'g' + (++gid).toString(36),
+      id: ((id) => { let k = id, n = 1; while (ids.has(k)) k = id + '-' + n++; ids.add(k); return k; })(gidOf(offers)),
       title: best.title,
       brand: offers.find((o) => o.brand && !o.licensed)?.brand || offers.find((o) => o.brand)?.brand || null,
       brandId: offers.find((o) => o.brand && !o.licensed)?.brandId || offers.find((o) => o.brandId)?.brandId || null,

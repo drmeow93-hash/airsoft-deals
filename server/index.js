@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { stores, skipped, fields, reviews } = require('./stores');
 const vetting = require('./vetting');
 const zlib = require('zlib');
+const zlibP = { brotli: require('util').promisify(zlib.brotliCompress), gzip: require('util').promisify(zlib.gzip) };
 const { enrich, prep, judgeCached, groupProducts, filterStats, brandList, noteBrand, brands } = require('./deals');
 const marketplaces = require('./marketplaces');
 const history = require('./history');
@@ -86,18 +87,38 @@ function sendJson(res, { body, cache }) {
   res.set({ 'Content-Type': 'application/json; charset=utf-8', 'X-Cache': cache, 'Cache-Control': 'no-cache', Vary: 'Accept-Encoding' });
   const ae = String(res.req.headers['accept-encoding'] || '');
   if (body.length < 1400 || !/\b(br|gzip)\b/.test(ae)) return res.send(body);
-  let z = zcache.get(body);
+  let z = /\bbr\b/.test(ae) ? zcache.get(body) : null;
   if (!z) {
+    // Compress off the event loop (libuv thread pool); a big body used to block every other request.
     const useBr = /\bbr\b/.test(ae);
-    z = { enc: useBr ? 'br' : 'gzip', buf: useBr ? zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } }) : zlib.gzipSync(body, { level: 6 }) };
-    if (useBr) zcache.set(body, z);
-    if (zcache.size > 60) zcache.delete(zcache.keys().next().value);
+    const job = useBr ? zlibP.brotli(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } }) : zlibP.gzip(body, { level: 6 });
+    return job.then((buf) => {
+      z = { enc: useBr ? 'br' : 'gzip', buf };
+      if (useBr) { zcache.set(body, z); while (zcache.size > 60) zcache.delete(zcache.keys().next().value); }
+      res.set('Content-Encoding', z.enc).send(z.buf);
+    }, () => res.send(body));
   }
   res.set('Content-Encoding', z.enc).send(z.buf);
 }
 
+// Store search engines pad results with loosely related or "popular" products when nothing matches (a
+// nonsense query returned 9 HPA adapters). Every word of the query must appear in the product's title,
+// brand or category words; spaces and dashes are ignored, so "hi capa" matches "Hi-Capa" and "m4" "M4A1".
+const SEARCH_STOP = new Set(['the', 'and', 'for', 'with', 'airsoft']);
+function relevant(q) {
+  const words = String(q).toLowerCase().split(/[^a-z0-9.]+/).filter((w) => w.length >= 2 && !SEARCH_STOP.has(w));
+  if (!words.length) return () => true;
+  return (p) => {
+    const t = `${p.brand || ''} ${p.title || ''} ${p.cat || ''} ${p.platform || ''}`.toLowerCase();
+    const compact = t.replace(/[^a-z0-9.]+/g, '');
+    return words.every((w) => t.includes(w) || compact.includes(w));
+  };
+}
 async function computeSearch(q, timeoutMs) {
   const out = await fanOut((s) => s.search(q), timeoutMs);
+  const ok = relevant(q);
+  const dropped = out.items.length; out.items = out.items.filter(ok);
+  out.irrelevant = dropped - out.items.length;
   const groups = groupProducts(out.items).sort((a, b) => b.storeCount - a.storeCount || a.bestPrice - b.bestPrice);
   return { partial: out.slow > 0, body: JSON.stringify({ query: q, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
@@ -228,7 +249,13 @@ app.post('/api/recheck', express.json({ limit: '16kb' }), async (req, res) => {
   try { res.set('Cache-Control', 'no-store').json({ offers: await refresh.recheck(req.body && req.body.offers, String((req.body && req.body.title) || '').slice(0, 120)), minutes: refresh.PRODUCT_MS / 60000 }); } catch (e) { res.status(500).json({ error: 'recheck failed' }); }
 });
 const lag = require('perf_hooks').monitorEventLoopDelay({ resolution: 10 }); lag.enable();
-app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), bootMs: BOOT_MS, shell: SHELL.from, loopLagMs: { p50: Math.round(lag.percentile(50) / 1e6), p99: Math.round(lag.percentile(99) / 1e6), max: Math.round(lag.max / 1e6) }, keepWarm: keepWarm.status(), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
+// Boot work (loading history and catalog snapshots) is a one-off; measure steady-state stalls after it.
+setTimeout(() => lag.reset(), 60 * 1000).unref();
+// Stall log: any event-loop block over 1 s is recorded with what was being served, to find the cause.
+const stalls = []; let lastTick = Date.now(), lastReq = '';
+app.use((req, res, next) => { lastReq = req.path; next(); });
+setInterval(() => { const now = Date.now(), d = now - lastTick - 500; lastTick = now; if (d > 1000) { stalls.push({ at: new Date(now).toISOString(), ms: d, last: lastReq }); if (stalls.length > 10) stalls.shift(); console.log(`[stall] event loop blocked ${d} ms (last request ${lastReq})`); } }, 500).unref();
+app.get('/api/health', (req, res) => { const m = process.memoryUsage(); res.set('Cache-Control', 'no-store').json({ ok: true, uptimeS: Math.round(process.uptime()), bootMs: BOOT_MS, shell: SHELL.from, loopLagMs: { p50: Math.round(lag.percentile(50) / 1e6), p99: Math.round(lag.percentile(99) / 1e6), max: Math.round(lag.max / 1e6) }, stalls, keepWarm: keepWarm.status(), heapMB: Math.round(m.heapUsed / 1048576), rssMB: Math.round(m.rss / 1048576), img: require('./imgproxy').stats(), backoff: require('./http').backoffStatus() }); });
 app.get('/img', require('./imgproxy').handler);
 app.get('/api/verdict/info', (req, res) => res.json(verdicts.info()));
 app.get('/api/vetting', (req, res) => res.json(vetting.doc));
@@ -254,7 +281,10 @@ app.get('/api/search', async (req, res) => {
       return sendJson(res, { body: fast.body, cache: 'fast' });
     }
   }
-  sendJson(res, await cached(key, 10 * 60 * 1000, 6 * 60 * 60 * 1000, () => computeSearch(q)));
+  // A refresh of an answer that was missing a slow store waits longer (30 s), so it actually completes.
+  const prev = results.get(key);
+  const wasPartial = prev && prev.body && prev.freshMs === 15000;
+  sendJson(res, await cached(key, 10 * 60 * 1000, 6 * 60 * 60 * 1000, () => computeSearch(q, wasPartial ? 30000 : undefined)));
 });
 
 // ?top=1: just the first 60 groups of the store-interleaved feed, for the home page (about 10x smaller).

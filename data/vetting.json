@@ -145,7 +145,7 @@
    "id": "foxairsoft",
    "name": "Fox Airsoft",
    "kind": "store",
-   "url": "https://www.foxairsoft.com",
+   "url": "https://foxairsoft.com",
    "checkedAt": "2026-11-17",
    "checks": {
     "dns": true,
@@ -185,7 +185,7 @@
    "id": "ballahack",
    "name": "Ballahack Airsoft",
    "kind": "store",
-   "url": "https://www.ballahackairsoft.com",
+   "url": "https://ballahackairsoft.com",
    "checkedAt": "2026-11-17",
    "checks": {
     "dns": true,
@@ -305,7 +305,7 @@
    "id": "wgc",
    "name": "WGC Shop",
    "kind": "store",
-   "url": "https://wgcshop.com",
+   "url": "https://www.wgcshop.com",
    "checkedAt": "2026-11-17",
    "checks": {
     "dns": true,
@@ -1257,7 +1257,7 @@
    "id": "jkarmy",
    "name": "JK Army",
    "kind": "link",
-   "url": "https://www.jkarmy.com",
+   "url": "https://shop.jkarmy.com",
    "checkedAt": "2026-11-17",
    "checks": {
     "dns": true,

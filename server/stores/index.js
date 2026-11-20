@@ -5,12 +5,12 @@ const stores = [
   makeShopifyStore({ id: 'airsoftatlanta', name: 'Airsoft Atlanta', base: 'https://www.airsoftatlanta.com', location: 'Georgia, USA', blurb: 'Retail store & field supplier, Shopify storefront' }),
   makeShopifyStore({ id: 'airsoftnmore', name: 'Airsoft N More', base: 'https://airsoftnmore.com', location: 'Los Angeles, USA', blurb: 'LA airsoft shop, Shopify storefront' }),
   makeShopifyStore({ id: 'speedqb', name: 'SpeedQB', base: 'https://www.speedqb.com', location: 'Utah, USA', blurb: 'Gear & HPA specialist, Shopify storefront' }),
-  makeShopifyStore({ id: 'foxairsoft', name: 'Fox Airsoft', base: 'https://www.foxairsoft.com', location: 'USA', blurb: 'US airsoft retailer, Shopify storefront' }),
-  makeShopifyStore({ id: 'ballahack', name: 'Ballahack Airsoft', base: 'https://www.ballahackairsoft.com', location: 'Virginia, USA', blurb: 'Virginia shop & field, Shopify storefront' }),
+  makeShopifyStore({ id: 'foxairsoft', name: 'Fox Airsoft', base: 'https://foxairsoft.com', location: 'USA', blurb: 'US airsoft retailer, Shopify storefront' }),
+  makeShopifyStore({ id: 'ballahack', name: 'Ballahack Airsoft', base: 'https://ballahackairsoft.com', location: 'Virginia, USA', blurb: 'Virginia shop & field, Shopify storefront' }),
   makeShopifyStore({ id: 'brill', name: 'Brill Armory', base: 'https://brillarmory.com', location: 'USA', blurb: 'Upgrade parts & airsmithing specialist, Shopify storefront' }),
   makeShopifyStore({ id: 'echo1', name: 'Echo1 USA', base: 'https://echo1usa.com', location: 'California, USA', blurb: 'Echo1 / JAG Arms brand store, Shopify storefront' }),
   // WGC Shop prices only in Hong Kong dollars (HKD is pegged at ~7.8 per USD); shown converted to USD.
-  makeShopifyStore({ id: 'wgc', name: 'WGC Shop', base: 'https://wgcshop.com', location: 'Hong Kong (HKD, shown in USD)', blurb: 'Hong Kong retailer, Shopify storefront; prices converted from HKD', fx: { cur: 'HKD', rate: 7.8 } }),
+  makeShopifyStore({ id: 'wgc', name: 'WGC Shop', base: 'https://www.wgcshop.com', location: 'Hong Kong (HKD, shown in USD)', blurb: 'Hong Kong retailer, Shopify storefront; prices converted from HKD', fx: { cur: 'HKD', rate: 7.8 } }),
   // Added Nov 2026 after legitimacy vetting (data/vetting.json): public Shopify JSON, allowed by robots.txt.
   makeShopifyStore({ id: 'ssairsoft', name: 'SS Airsoft', base: 'https://store.ssairsoft.com', location: 'Atlanta, Georgia, USA', blurb: 'Atlanta airsoft shop, Shopify storefront' }),
   makeShopifyStore({ id: 'extremeri', name: 'Extreme Airsoft RI', base: 'https://extremeairsoftri.com', location: 'South Kingstown, Rhode Island, USA', blurb: 'Rhode Island pro shop & indoor field, Shopify storefront' }),

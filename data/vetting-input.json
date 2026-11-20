@@ -27,7 +27,7 @@
   "id": "foxairsoft",
   "name": "Fox Airsoft",
   "kind": "store",
-  "url": "https://www.foxairsoft.com",
+  "url": "https://foxairsoft.com",
   "official": "web search cross-check (Nov 2026)",
   "reputation": "Trustpilot 3.4 (few reviews); long-running US retailer, no scam reports"
  },
@@ -35,7 +35,7 @@
   "id": "ballahack",
   "name": "Ballahack Airsoft",
   "kind": "store",
-  "url": "https://www.ballahackairsoft.com",
+  "url": "https://ballahackairsoft.com",
   "official": "web search cross-check (Nov 2026)",
   "reputation": "MIXED: 4.8/5 public ratings; a 2024 r/airsoft thread raises customer-service/staffing concerns"
  },
@@ -62,7 +62,7 @@
   "id": "wgc",
   "name": "WGC Shop",
   "kind": "store",
-  "url": "https://wgcshop.com",
+  "url": "https://www.wgcshop.com",
   "official": "web search cross-check (Nov 2026)",
   "reputation": "Trustpilot listing; r/airsoft & r/GasBlowBack: legit HK retailer, mixed service, slow dispatch at times"
  },
@@ -294,7 +294,7 @@
   "id": "jkarmy",
   "name": "JK Army",
   "kind": "link",
-  "url": "https://www.jkarmy.com",
+  "url": "https://shop.jkarmy.com",
   "why": "Cloudflare bot check on every page",
   "official": "web search cross-check (Nov 2026)",
   "reputation": "Trustpilot 3.1 (5 reviews); HK retailer since 2009",

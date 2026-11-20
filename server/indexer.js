@@ -36,11 +36,15 @@ function createIndex({ name, delayMs, refreshMs, crawl, workerModule }) {
       console.log(`[index] ${name}: loaded snapshot from ${snap.builtAt} (${idx.items.length} products)`);
     } catch { /* no snapshot yet */ }
   }
+  // Compressed in the libuv thread pool and written asynchronously: the old synchronous level-9 gzip of
+  // a whole catalog froze the server for several seconds on the free plan's 0.1 CPU.
   function saveSnapshot() {
-    try {
-      fs.mkdirSync(SNAP_DIR, { recursive: true });
-      fs.writeFileSync(snapFile, zlib.gzipSync(JSON.stringify({ name, builtAt: idx.builtAt, items: idx.items.map(strip), deals: idx.deals.map(strip) }), { level: 9 }));
-    } catch (e) { console.log(`[index] ${name}: snapshot not saved: ${e.message}`); }
+    let json;
+    try { json = JSON.stringify({ name, builtAt: idx.builtAt, items: idx.items.map(strip), deals: idx.deals.map(strip) }); } catch (e) { return; }
+    zlib.gzip(json, { level: 6 }, (err, buf) => {
+      if (err) return console.log(`[index] ${name}: snapshot not saved: ${err.message}`);
+      fs.promises.mkdir(SNAP_DIR, { recursive: true }).then(() => fs.promises.writeFile(snapFile, buf)).catch((e) => console.log(`[index] ${name}: snapshot not saved: ${e.message}`));
+    });
   }
 
   // Runs the crawl either in a worker thread (HTML-heavy stores) or inline (feeds).
