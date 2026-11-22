@@ -13,7 +13,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await p.goto(SITE + '/', { waitUntil: 'domcontentloaded' }); await p.waitForSelector('#app *', { timeout: 60000 }); await sleep(2500); await shot('home');
     await p.evaluate(() => { location.hash = '#/search?q=glock'; });
     await p.waitForFunction(() => document.querySelectorAll('#grid .pcard').length > 3, null, { timeout: 60000 }); await sleep(2500); await shot('search');
-    await p.click('#grid .pcard'); await p.waitForSelector('.prod2, .prod', { timeout: 20000 }); await shot('product');
+    await p.click('#grid .pcard .ptitle'); await p.waitForSelector('.prod2, .prod', { timeout: 20000 }); await shot('product');
     const t = await p.$('[data-watch], #watchBtn, .watch-btn, button:has-text("Track")'); if (t) await t.click().catch(() => {});
     await p.evaluate(() => { location.hash = '#/deals'; }); await p.waitForSelector('#grid .pcard', { timeout: 60000 }); await sleep(1500); await shot('deals');
     await p.evaluate(() => { location.hash = '#/dashboard'; }); await sleep(1500); await shot('dashboard');

@@ -769,3 +769,74 @@ main{max-width:1240px;padding:28px 28px 80px}
 @media (min-width:761px){body[data-page=home] .hdr .search{visibility:hidden}}
 @media (prefers-reduced-motion:reduce){.sk{animation:none}.hsearch2,.pcard,.tile{transition:none}}
 @media (max-width:760px){body[data-page=home] .hdr .search,body[data-page=home] .navrow{display:none}}
+
+/* ---------- v12 pages: results, product, deals, dashboard, stores ---------- */
+/* Results */
+.rcount{font-size:15px;color:var(--sub)}.rcount b{color:var(--text);font-weight:650}
+.fgroup h3{font-size:11.5px;font-weight:650;letter-spacing:.1em}
+.fopt{color:var(--sub)}
+.sel{background-color:var(--s1);border-color:var(--line2);border-radius:12px}
+.tag{font-size:10px;font-weight:700;letter-spacing:.06em;padding:5px 8px;border-radius:999px;background:rgba(14,11,26,.88);color:#fff;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.tag.low{background:rgba(124,58,237,.92)}.tag.off{background:rgba(225,29,72,.92)}.tag.hot{background:rgba(225,29,72,.92)}
+.askg{height:32px;border-color:rgba(255,255,255,.14);background:rgba(14,11,26,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-weight:550}
+.askg:hover,.askg:focus-visible{background:var(--accent);border-color:transparent}
+.badge{border-radius:999px;font-weight:700;padding:3px 8px}
+
+/* Product page: verdict first, then the chart, score, reviews and stores, all on one calm grid. */
+.prod2{gap:8px 40px}
+.p-brand{font-size:12px;letter-spacing:.1em;font-weight:650;color:var(--accent2)}
+.p-title{font-size:clamp(26px,2.8vw,38px);line-height:1.1;letter-spacing:-.035em;margin:8px 0 14px}
+.main-img{border-radius:var(--r-lg);background:radial-gradient(120% 90% at 50% 25%,#ffffff 0%,#f2f0f6 70%,#e7e4ee 100%);box-shadow:var(--shadow-2)}
+.thumbs{gap:10px;margin-top:12px}
+.dealbox{padding:24px;border-radius:var(--r-lg);background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border-color:var(--line2);box-shadow:var(--shadow-3)}
+.dealbox.lvl-low{border-color:rgba(52,211,153,.45);background:linear-gradient(170deg,rgba(52,211,153,.1),rgba(255,255,255,.02) 50%)}
+.db-price .lbl{font-weight:650;letter-spacing:.12em;font-size:11px}
+.db-price .price{font-size:52px;letter-spacing:-.045em;font-weight:750;line-height:1.05}
+.db-cta .btn{min-height:50px}
+.db-target input,.tg-row input{background:var(--s1);border-color:var(--line2);border-radius:12px;min-height:46px}
+.db-target input:focus,.tg-row input:focus{border-color:var(--line-a);box-shadow:0 0 0 4px rgba(124,58,237,.18);outline:none}
+.p-chart{margin-top:var(--sp-6)}
+.p-chart h2,.prod2 h2,.below h2{font-size:clamp(20px,2vw,26px);letter-spacing:-.03em}
+.kv{border-radius:14px;background:var(--s0)}
+.kv small{font-weight:600;letter-spacing:.08em;font-size:11px}
+.kv b{font-weight:700;letter-spacing:-.02em}
+.offer{border-radius:16px;background:var(--s0);padding:16px 20px}
+.offer:hover{background:var(--s1);border-color:var(--line2)}
+.offer.best{border-color:rgba(52,211,153,.4);background:linear-gradient(90deg,rgba(52,211,153,.09),rgba(255,255,255,.02) 55%)}
+.o-price{font-weight:700;letter-spacing:-.02em}
+.vpanel{border-radius:var(--r-lg);padding:24px}
+
+/* Dashboard */
+.dash-top{gap:12px}
+.dash-top .kv{padding:18px 20px}
+.dash-top .kv b{font-size:30px;display:block;margin-top:4px}
+.drow{border-radius:16px;background:var(--s0);padding:12px 16px}
+.drow:hover{border-color:var(--line2)}
+.d-img{background:radial-gradient(120% 90% at 50% 25%,#fff,#efedf4);border-radius:12px}
+.d-title{font-weight:600}
+.dash-email h2{font-size:18px;letter-spacing:-.02em;margin-top:0}
+
+/* Stores / marketplaces / brands */
+.scard,.bcard{border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015))}
+.scard:hover,.bcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.bletter{font-size:22px;letter-spacing:-.03em;color:var(--accent2)}
+
+/* Sheets and the live-status drawer share the elevated surface */
+.gsheet,.side,.lb-details,.sheet-h,.sheet-f,.gs-h{background-color:#0f0c1c}
+.livebar{background:rgba(124,58,237,.05)}
+
+@media (max-width:760px){
+  .rhead{background:rgba(6,5,12,.78);-webkit-backdrop-filter:saturate(170%) blur(18px);backdrop-filter:saturate(170%) blur(18px)}
+  .p-title{font-size:clamp(24px,7vw,30px)}
+  .db-price .price{font-size:44px}
+  .dealbox{padding:18px;border-radius:22px}
+  .main-img{border-radius:20px}
+  .dash-top .kv{padding:14px 16px}.dash-top .kv b{font-size:24px}
+  .offer{padding:14px 16px}
+}
+.arrow{white-space:nowrap;font-size:12px}
+.car .trend .spark{display:none}
+.page-h{margin:4px 0 22px}
+.page-h h1{font-size:clamp(28px,3.4vw,44px);letter-spacing:-.04em;line-height:1.05;margin:0 0 6px;font-weight:750}
+.page-h p{margin:0;color:var(--sub);max-width:60ch}
+@media (max-width:760px){.sec-h{flex-wrap:wrap;gap:10px}.dash-act{display:flex;flex-wrap:wrap;gap:8px}}

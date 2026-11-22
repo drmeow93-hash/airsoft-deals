@@ -615,7 +615,7 @@ function productPage(id, { keepScroll = false } = {}) {
   const back = L.startsWith('#/search') ? [`“${decodeURIComponent((L.split('q=')[1] || '').split('&')[0])}”`, L] : L.startsWith('#/deals') ? ['Deals', L] : L.startsWith('#/drops') ? ['Price drops', L] : L.startsWith('#/c/') ? [CATS[L.slice(4)] || 'Category', L] : L.startsWith('#/watchlist') || L.startsWith('#/dashboard') ? ['Dashboard', L] : L.startsWith('#/b/') ? ['Brand', L] : null;
   const best = g.offers[0], multi = g.offers.length > 1, h = g.h;
   const spec = [CATS[g.cat] && g.cat !== 'other' ? CATS[g.cat] : null, g.platform, `${g.storeCount} store${g.storeCount > 1 ? 's' : ''}`, g.inStock === true ? 'In stock' : g.inStock === false ? 'Out of stock' : null].filter(Boolean);
-  const spread = multi ? g.offers[g.offers.length - 1].price - g.offers[0].price : 0;
+  const spread = multi ? Math.max(...g.offers.map((o) => o.price)) - g.offers[0].price : 0; // offers are in-stock first, so the last one isn't always the priciest
   const offerRow = (o, i) => {
     let badge = '';
     if (multi) badge = Math.abs(o.vsAvg) < 0.5 ? '<span class="badge n">AVG</span>' : o.vsAvg < 0 ? `<span class="badge g">${o.vsAvgPct}%</span>` : `<span class="badge r">+${o.vsAvgPct}%</span>`;
@@ -661,7 +661,7 @@ function productPage(id, { keepScroll = false } = {}) {
     </div>
     <div class="p-chart">${chartPanel(g) ? `<div class="sec-h"><h2>Price history</h2>${h.atl ? '<span class="atl">★ ALL-TIME LOW</span>' : ''}</div>${chartPanel(g)}` : ''}</div>
   </div>
-  <div class="below"><div><div class="sec-h"><h2>Compare ${g.storeCount} store${g.storeCount > 1 ? 's' : ''}</h2>${multi ? `<span class="fresh">avg ${money(g.avgPrice)} · save ${money(spread)} vs highest</span>` : ''}</div>
+  <div class="below"><div><div class="sec-h"><h2>Compare ${g.storeCount} store${g.storeCount > 1 ? 's' : ''}</h2>${multi ? `<span class="fresh">avg ${money(g.avgPrice)}${spread > 0.5 ? ` · save ${money(spread)} vs highest` : ''}</span>` : ''}</div>
   <div class="offers">${g.offers.map(offerRow).join('')}</div></div>
   <section class="panel vpanel" id="vpanel" aria-label="Score and reviews">${verdictSkeleton(g)}</section></div>`);
   $$('.thumb').forEach((t) => t.addEventListener('click', () => { const i = +t.dataset.i; $('#mainBox').innerHTML = imgHtml([g.images[i], ...g.images.filter((_, j) => j !== i)], g.cat, `id="mainImg" alt="${esc(g.title)}" width="600" height="600" decoding="async"`); $$('.thumb').forEach((x) => x.classList.toggle('on', x === t)); }));
@@ -1006,6 +1006,7 @@ function dashboardPage() {
     : `<span class="wait-t">● Waiting for confirmation</span> · open the link we sent to <b>${esc(email)}</b>`;
   const server = st ? `${st.storage === 'postgres' ? 'Saved in the database' : 'Saved on the price server (it can reset on restarts; your list here is the backup and re-syncs on each visit)'}${st.emailConnected === false ? ' · email sending isn’t connected yet, so alerts show here only' : ''}` : 'Saved in this browser only';
   view(crumbs([['Home', '#/'], ['Dashboard']]) + `
+    <header class="page-h"><h1>Your dashboard</h1><p>Everything you track, your target prices and the alerts we’ve sent.</p></header>
     <div class="dash-top">
       <div class="kv"><small>Tracked</small><b>${l.length}</b></div><div class="kv"><small>With target</small><b>${l.filter((w) => w.target).length}</b></div><div class="kv"><small>Target reached</small><b class="${hit ? 'dn' : ''}">${hit}</b></div><div class="kv"><small>Alerts sent</small><b>${events.length}</b></div>
     </div>
