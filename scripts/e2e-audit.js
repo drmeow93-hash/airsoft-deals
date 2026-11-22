@@ -33,7 +33,8 @@ async function run(name, dev) {
   for (const q of QUERIES) {
     const s = { q };
     t0 = Date.now();
-    await p.fill('#q', q); await p.press('#q', 'Enter');
+    const box = (await p.isVisible('#q')) ? '#q' : '#heroQ'; // on the v12 home page the hero search is the search box
+    await p.fill(box, q); await p.press(box, 'Enter');
     try { await p.waitForFunction((q) => (document.querySelector('#rcount')?.textContent || '').includes(q) && document.querySelector('#grid .grid > *, #grid .empty'), q, { timeout: 60000, polling: 100 }); s.usableMs = Date.now() - t0; } catch { s.usableMs = null; R.issues.push(`search "${q}": no results or empty state in 60 s`); }
     try { await p.waitForFunction(() => !document.querySelector('#rcount .spin, .fresh .spin, #wake'), null, { timeout: 45000, polling: 200 }); s.spinnerClearMs = Date.now() - t0; } catch { s.spinnerClearMs = null; R.issues.push(`search "${q}": spinner still showing after 45 s: ` + (await p.textContent('#rcount').catch(() => '')).trim().slice(0, 100)); }
     s.cards = await p.$$eval('#grid .grid > *', (l) => l.length).catch(() => 0);
@@ -44,7 +45,8 @@ async function run(name, dev) {
   }
   // repeat the first query (warm)
   await p.evaluate(() => { location.hash = '#/'; }); await sleep(500);
-  t0 = Date.now(); await p.fill('#q', QUERIES[0]); await p.press('#q', 'Enter');
+  const box0 = (await p.isVisible('#q')) ? '#q' : '#heroQ';
+  t0 = Date.now(); await p.fill(box0, QUERIES[0]); await p.press(box0, 'Enter');
   await p.waitForFunction((q) => (document.querySelector('#rcount')?.textContent || '').includes(q) && document.querySelector('#grid .grid > *'), QUERIES[0], { timeout: 30000 }).catch(() => {});
   R.searches.push({ q: QUERIES[0] + ' (again)', usableMs: Date.now() - t0 });
 
