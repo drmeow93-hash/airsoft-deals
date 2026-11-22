@@ -609,7 +609,7 @@ a.scard:hover{border-color:rgba(182,156,255,.5);transform:translateY(-2px)}
   --line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.13);--line-a:rgba(167,139,250,.45);
   --text:#f5f4f8;--sub:#bdb8cc;--muted:#938ea6;
   --accent:#7c3aed;--accent2:#b49bff;--accent-hi:#a78bfa;
-  --grad:linear-gradient(180deg,#8b5cf6 0%,#7c3aed 100%);
+  --grad:linear-gradient(180deg,#7c3aed 0%,#6d28d9 100%);
   --green:#34d399;--green-bg:rgba(52,211,153,.12);--red:#fb7185;--red-bg:rgba(251,113,133,.12);--gold:#f5c66b;
   --r:18px;--r-sm:12px;--r-lg:26px;--ease:cubic-bezier(.2,.8,.2,1);
   --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--sp-7:48px;--sp-8:72px;--sp-9:112px;
@@ -669,7 +669,7 @@ main{max-width:1240px;padding:28px 28px 80px}
 /* Buttons: one high-contrast primary (white on black reads strongest), purple for brand actions. */
 .btn{min-height:46px;padding:0 20px;border-radius:12px;font-weight:600;font-size:15px;letter-spacing:-.01em;transition:background .15s,border-color .15s,color .15s,transform .12s var(--ease),box-shadow .15s}
 .btn.primary{background:var(--grad);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 8px 22px -6px rgba(124,58,237,.7)}
-.btn.primary:hover{filter:none;background:linear-gradient(180deg,#9466f8,#8040f0)}
+.btn.primary:hover{filter:none;background:linear-gradient(180deg,#8445f0,#7431e3)}
 .btn.secondary{background:var(--s1);border-color:var(--line2);color:var(--text)}
 .btn.secondary:hover{background:var(--s2);border-color:rgba(255,255,255,.22)}
 .btn.sm{min-height:40px;padding:0 14px;font-size:14px;border-radius:10px}
