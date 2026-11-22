@@ -917,11 +917,18 @@ const STORE_N = 24;
 const POPULAR = ['Tokyo Marui', 'Glock', 'Hi-Capa', 'M4 AEG', 'Gas blowback', 'HPA', 'Sniper rifle', 'Plate carrier', '0.28g BBs'];
 async function homePage() {
   setQ();
-  view(`<section class="hero"><h1>Is it a <em>good price?</em> Know before you buy.</h1>
-      <p>Live airsoft prices from ${STORE_N} trusted stores, price history, and a clear buy-now-or-wait call.</p>
-      <form class="hsearch" id="heroForm" role="search"><label class="sr" for="heroQ">Search airsoft gear</label><input id="heroQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Search a gun, brand or part"><button class="btn primary" type="submit">${ic('i-search')}<span>Check price</span></button></form>
-      <div class="hlinks"><a href="#/import">${ic('i-upload')}Import a wishlist</a><a href="#/dashboard">${ic('i-heart')}Your tracked items & alerts</a></div>
-      <div class="stats" id="stats"><span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span></div></section>
+  view(`<section class="hero hero2" aria-labelledby="heroH"><span class="eyebrow">Live prices from ${STORE_N} vetted airsoft stores</span>
+      <h1 id="heroH">Is it a good price? <em>Know in a second.</em></h1>
+      <p class="lede">Search any airsoft gun, brand or part. We compare live prices, show the price history and tell you whether to buy now or wait.</p>
+      <form class="hsearch2" id="heroForm" role="search">${ic('i-search', 'ic lead')}<label class="sr" for="heroQ">Search airsoft gear</label><input id="heroQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Try “Hi-Capa” or “M4 AEG”"><button class="btn light" type="submit" aria-label="Check price">${ic('i-search')}<span>Check price</span></button></form>
+      <div class="hquick" aria-label="Popular searches">${POPULAR.slice(0, 6).map((c) => `<a href="#/search?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>
+      <div class="trust" id="stats"><span><i class="dot"></i><b>${STORE_N}</b> vetted stores live</span><span>${ic('i-check')}Real store reviews only</span></div></section>
+    <section class="steps" aria-label="How it works">
+      <div class="step"><span class="n">1</span><h3>Search once</h3><p>One search checks ${STORE_N} trusted stores and marketplaces at the same time.</p></div>
+      <div class="step"><span class="n">2</span><h3>See the real price</h3><p>Price history and a score out of 10 show if today’s price is actually good.</p></div>
+      <div class="step"><span class="n">3</span><h3>Buy or wait</h3><p>Track it, set a target price and get an alert when it drops.</p></div>
+    </section>
+    <div class="hlinks2"><a class="btn secondary sm" href="#/import">${ic('i-upload')}Import a wishlist</a><a class="btn secondary sm" href="#/dashboard">${ic('i-heart')}Tracked items & alerts</a></div>
     <div class="sec-h"><h2>Top price drops</h2><a href="#/drops">See all ${ic('i-right')}</a></div><div id="homeDrops"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <div class="sec-h"><h2>Highlighted deals</h2><a href="#/deals">See all ${ic('i-right')}</a></div><div id="homeDeals"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
     <div class="sec-h"><h2>Popular products</h2><span class="fresh">compared across the most stores</span></div><div id="homePop"><div class="car"><div class="car-track">${'<div class="sk card"></div>'.repeat(5)}</div></div></div>
@@ -941,7 +948,7 @@ async function homePage() {
     if (tok !== navToken || !$('#homeDrops')) return;
     remember(d.groups, d.fetchedAt);
     const hm = d.history || {};
-    if (hm.tracked) $('#stats').innerHTML = `<span class="stat"><span class="dot"></span><b>${STORE_N}</b> stores live</span><span class="stat"><b>${hm.tracked.toLocaleString()}</b> prices tracked</span>${hm.updated ? `<span class="stat opt">History updated ${ago(hm.updated)}</span>` : ''}`;
+    if (hm.tracked && $('#stats')) $('#stats').innerHTML = `<span><i class="dot"></i><b>${STORE_N}</b> vetted stores live</span><span>${ic('i-spark')}<b>${hm.tracked.toLocaleString()}</b> prices tracked</span>${hm.updated ? `<span>${ic('i-clock')}History updated ${ago(hm.updated)}</span>` : ''}<span>${ic('i-check')}Real store reviews only</span>`;
     $('#homeDrops').innerHTML = d.groups.length ? carousel('dropsCar', [...d.groups].sort(sorters.drop).slice(0, 16), 0) : dropsEmpty(hm).replace('class="empty panel"', 'class="empty panel sm"');
     bindCarousel($('#dropsCar'), '#/drops');
   };
@@ -1219,6 +1226,7 @@ function setTabs(tab, cat) {
 }
 function route() {
   navToken++;
+  document.body.dataset.page = (location.hash || '#/').replace(/^#\/?/, '').split(/[/?]/)[0] || 'home';
   document.body.style.overflow = '';
   const h = location.hash || '#/';
   const params = new URLSearchParams(h.split('?')[1] || '');

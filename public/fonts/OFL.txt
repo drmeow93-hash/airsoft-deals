@@ -1,3 +1,7 @@
+This folder ships two fonts, both under the SIL Open Font License 1.1 (text below):
+- Inter-var.woff2 (subset): Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter).
+- DancingScript-wordmark.woff2 (subset): see below.
+
 Copyright 2016 The Dancing Script Project Authors (https://github.com/googlefonts/DancingScript), with Reserved Font Name 'Dancing Script'.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
