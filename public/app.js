@@ -365,7 +365,7 @@ function card(g, i = 99) {
   const stock = g.inStock === true ? '<span class="instock">In stock</span>' : g.inStock === false ? '<span class="oos">Out of stock</span>' : '';
   // The first few images are the page's largest paint, so they load eagerly; the rest lazily.
   const load = i < 4 ? `loading="eager"${i < 2 ? ' fetchpriority="high"' : ''}` : 'loading="lazy"';
-  return `<div class="pcard" data-id="${g.id}" tabindex="0" role="link" aria-label="${esc(g.title)}, ${money(g.bestPrice)}">
+  return `<div class="pcard" data-id="${g.id}" tabindex="0" role="link">
     <div class="pimg">${imgHtml(g.images, g.cat, `${load} decoding="async" width="300" height="300" alt=""`, '(max-width: 760px) 46vw, 240px')}<div class="tags">${tags.map(tagHtml).join('')}</div><button type="button" class="askg" data-ask="${g.id}" aria-label="Ask Grok if ${esc(g.title)} is a good buy">${ic('i-spark')}<span>Ask Grok</span></button></div>
     <div class="pbody">
       ${g.brand || g.score ? `<div class="prow1">${g.brand ? `<div class="brandline">${esc(g.brand)}</div>` : '<span></span>'}${scoreBadge(g)}</div>` : ''}
@@ -923,7 +923,7 @@ async function homePage() {
       <form class="hsearch2" id="heroForm" role="search">${ic('i-search', 'ic lead')}<label class="sr" for="heroQ">Search airsoft gear</label><input id="heroQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="Try “Hi-Capa” or “M4 AEG”"><button class="btn light" type="submit" aria-label="Check price">${ic('i-search')}<span>Check price</span></button></form>
       <div class="hquick" aria-label="Popular searches">${POPULAR.slice(0, 6).map((c) => `<a href="#/search?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div>
       <div class="trust" id="stats"><span><i class="dot"></i><b>${STORE_N}</b> vetted stores live</span><span>${ic('i-check')}Real store reviews only</span></div></section>
-    <section class="steps" aria-label="How it works">
+    <section class="steps" aria-labelledby="howH"><h2 class="sr" id="howH">How it works</h2>
       <div class="step"><span class="n">1</span><h3>Search once</h3><p>One search checks ${STORE_N} trusted stores and marketplaces at the same time.</p></div>
       <div class="step"><span class="n">2</span><h3>See the real price</h3><p>Price history and a score out of 10 show if today’s price is actually good.</p></div>
       <div class="step"><span class="n">3</span><h3>Buy or wait</h3><p>Track it, set a target price and get an alert when it drops.</p></div>
