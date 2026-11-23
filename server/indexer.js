@@ -77,6 +77,7 @@ function createIndex({ name, delayMs, refreshMs, crawl, workerModule }) {
     idx.building = true;
     idx.status = idx.items.length ? 'refreshing' : 'indexing';
     const items = [], deals = [];
+    const t0 = Date.now();
     idx.pages = 0;
     try {
       await runCrawl((list, { deal = false } = {}) => {
@@ -93,7 +94,7 @@ function createIndex({ name, delayMs, refreshMs, crawl, workerModule }) {
       idx.source = 'live crawl';
       idx.error = null;
       saveSnapshot();
-      console.log(`[index] ${name}: ${idx.items.length} products, ${idx.deals.length} deals from ${idx.pages} pages`);
+      console.log(`[index] ${name}: ${idx.items.length} products, ${idx.deals.length} deals from ${idx.pages} pages in ${Math.round((Date.now() - t0) / 1000)} s (Node ${process.versions.node})`);
     } catch (e) {
       idx.error = String(e.message || e);
       idx.status = idx.items.length ? 'ready (last refresh failed)' : 'failed';
