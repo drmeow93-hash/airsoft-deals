@@ -125,7 +125,7 @@ async function api(path) {
   let done = false;
   const t = setTimeout(async () => {
     if (performance.now() >= 20000 || done) return;
-    const up = await fetch(API + '/api/health', { cache: 'no-store', signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined }).then((r) => r.ok, () => false);
+    const up = await fetch(API + '/api/health', { cache: 'no-store', signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined }).then((r) => r.ok, () => false);
     if (!up && !done) { flagged = true; wakeBanner(true); }
   }, 3500);
   try {
