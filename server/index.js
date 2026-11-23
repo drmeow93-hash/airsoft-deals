@@ -39,6 +39,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Ask every store at once. Stores slower than `timeoutMs` are reported as "still loading"; their
 // request keeps running in the background and lands in the HTTP cache for the next call.
+const failedCount = (out) => out.status.filter((x) => !x.ok && !x.slow).length;
 async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
   const t0 = Date.now();
   const TIMEOUT = Symbol('timeout');
@@ -76,7 +77,9 @@ async function cached(key, freshMs, maxAgeMs, compute, { force = false } = {}) {
     if (e && e.pending) return e.pending;
     const pending = compute().then((v) => {
       // Results missing a slow store are kept only briefly, so the next request picks it up.
-      results.set(key, { body: v.body, at: Date.now(), freshMs: v.partial ? 15000 : freshMs, pending: null });
+      // Answers where 2+ stores errored (rate limit, timeout behind a busy pool) are kept 1 minute, not 10,
+      // so a cold-start hiccup doesn't leave a category showing a fraction of its stores.
+      results.set(key, { body: v.body, at: Date.now(), freshMs: v.partial ? 15000 : v.failed >= 2 ? 60000 : freshMs, pending: null });
       if (results.size > 300) results.delete(results.keys().next().value);
       return results.get(key);
     }).finally(() => { const cur = results.get(key); if (cur && cur.pending === pending) cur.pending = null; });
@@ -129,7 +132,7 @@ async function computeSearch(q, timeoutMs) {
   const dropped = out.items.length; out.items = out.items.filter(ok);
   out.irrelevant = dropped - out.items.length;
   const groups = groupProducts(out.items).sort((a, b) => b.storeCount - a.storeCount || a.bestPrice - b.bestPrice);
-  return { partial: out.slow > 0, body: JSON.stringify({ query: q, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
+  return { partial: out.slow > 0, failed: failedCount(out), body: JSON.stringify({ query: q, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
 
 async function computeDeals(timeoutMs = 15000) {
@@ -137,6 +140,8 @@ async function computeDeals(timeoutMs = 15000) {
   const out = await fanOut(async (s) => (await s.deals())
     .map((p) => ({ ...p, _d: p.originalPrice ? (p.originalPrice - p.price) / p.originalPrice : 0 }))
     .filter((p) => p._d <= 0.8 || p.storeDeal)
+    // A deal you can't buy isn't a deal: sold-out sale items stay findable in search, not in the deals feed.
+    .filter((p) => p.inStock !== false)
     .sort((a, b) => b._d - a._d)
     // Collapse color/size variants ("Pouch - Black", "Pouch - Tan") so one product doesn't fill the feed.
     .filter(((seen) => (p) => { const k = p.title.split(/\s[-–|]\s/)[0].toLowerCase(); return seen.has(k) ? false : seen.add(k); })(new Set()))
@@ -147,7 +152,7 @@ async function computeDeals(timeoutMs = 15000) {
   const lists = Object.values(byStore).map((l) => l.sort((a, b) => b.discountPct - a.discountPct));
   const mixed = [];
   for (let i = 0; lists.some((l) => l[i]); i++) lists.forEach((l) => l[i] && mixed.push(l[i]));
-  return { partial: out.slow > 0, body: JSON.stringify({ groups: slim(mixed), status: out.status, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
+  return { partial: out.slow > 0, failed: failedCount(out), body: JSON.stringify({ groups: slim(mixed), status: out.status, ms: out.ms, fetchedAt: out.fetchedAt, offerCount: out.items.length }) };
 }
 
 app.get('/api/stores', (req, res) => res.json({
@@ -346,7 +351,7 @@ async function computeBrowse(cat) {
     return s.search(CAT_TERMS[cat]);
   });
   const groups = groupProducts(out.items).filter((g) => g.cat === cat).sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
-  return { partial: out.slow > 0, body: JSON.stringify({ cat, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+  return { partial: out.slow > 0, failed: failedCount(out), body: JSON.stringify({ cat, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
 }
 app.get('/api/browse', async (req, res) => {
   const cat = String(req.query.cat || '');
@@ -358,8 +363,9 @@ app.get('/api/browse', async (req, res) => {
 // from the committed history plus drops this server has seen live since it woke up.
 async function computeDrops() {
   const items = history.dropItems().filter((d) => storeById[d.storeId]).map((d) => prep(d, storeById[d.storeId])).filter(Boolean);
+  // Biggest drops first, but sold-out products go after everything you can still buy.
   const groups = groupProducts(items).filter((g) => g.h && g.h.chg < 0)
-    .sort((a, b) => a.h.pct - b.h.pct);
+    .sort((a, b) => (a.inStock === false) - (b.inStock === false) || a.h.pct - b.h.pct);
   const m = history.meta();
   return { partial: false, body: JSON.stringify({ groups: slim(groups), history: { since: m.since, updated: m.updated, tracked: m.tracked }, fetchedAt: new Date().toISOString(), status: [] }) };
 }
@@ -393,7 +399,7 @@ async function computeBrand(id) {
   });
   const groups = groupProducts(out.items).filter((g) => g.brandId === id || g.offers.some((o) => o.brandId === id))
     .sort((a, b) => b.storeCount - a.storeCount || (b.maxDiscountPct || 0) - (a.maxDiscountPct || 0));
-  return { partial: out.slow > 0, body: JSON.stringify({ brand: { id: b.id, name: b.name, aliases: b.aliases, licensed: b.licensed || undefined }, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
+  return { partial: out.slow > 0, failed: failedCount(out), body: JSON.stringify({ brand: { id: b.id, name: b.name, aliases: b.aliases, licensed: b.licensed || undefined }, groups: slim(groups), status: out.status, partial: out.slow > 0, ms: out.ms, fetchedAt: out.fetchedAt }) };
 }
 app.get('/api/brand', async (req, res) => {
   const id = String(req.query.id || '');

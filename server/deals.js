@@ -146,6 +146,10 @@ function enrich(p, store) {
   if (p.image) p = { ...p, image: thumb(p.image) };
   // A "was" price more than 80% above the sale price is almost always a placeholder/MSRP typo; ignore it.
   if (p.originalPrice && p.price && (p.originalPrice - p.price) / p.originalPrice > 0.8) p = { ...p, originalPrice: null };
+  // Defensive price sanity for every store: cents only, and a "was" price must be above the price.
+  if (p.price) p = { ...p, price: Math.round(p.price * 100) / 100 };
+  if (p.originalPrice != null && !(p.originalPrice > p.price)) p = { ...p, originalPrice: null };
+  if (p.originalPrice) p = { ...p, originalPrice: Math.round(p.originalPrice * 100) / 100 };
   const discountPct = p.originalPrice && p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
   const savings = p.originalPrice && p.price ? +(p.originalPrice - p.price).toFixed(2) : 0;
   const ship = store.shipping;
