@@ -455,7 +455,7 @@ app.use(express.static(PUB, {
 refresh.init({ stores, busy: shoppersBusy, cached, computeDeals, computeSearch, computeBrowse, computeBrand, history, afterCycle: () => accounts.checkAlerts() });
 accounts.init({ recheck: (offers, title) => refresh.recheck(offers, title), latest: (urls) => history.latestFor(urls) });
 const BG = !process.env.NO_BACKGROUND; // NO_BACKGROUND=1 for a UI-only dev server (no crawls, no warming)
-stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(20000 + i * 1000) : s.index.start(1e9)));
+stores.filter((s) => s.index).forEach((s, i) => (BG ? s.index.start(150000 + i * 1000) : s.index.start(1e9)));
 const WARM = ['Tokyo Marui', 'Gas blowback', 'M4 AEG', 'Glock', 'Hi-Capa', 'Sniper rifle', 'Plate carrier', 'HPA', '0.28g BBs'];
 async function warmChips() {
   for (const q of WARM) { await cached('s:' + q.toLowerCase(), 10 * 60 * 1000, 0, () => computeSearch(q), { force: true }).catch(() => {}); await sleep(6000); }

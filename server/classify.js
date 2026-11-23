@@ -127,7 +127,9 @@ function classify(p) {
     const accRe = acc === 'gear' ? R.gearStrong : R[acc] || R.parts;
     const accEnd = lastIdx(accRe, head);
     // ...but carry gear never describes a gun: "Dbl Mag Pouch Glock Mag" is a pouch, "KYWI ... Glock" a pouch.
-    if (accEnd >= 0 && gunEnd >= accEnd && gun.how !== 'weak' && !/\b(pouch(es)?|kywis?|holsters?|mag(azine)? carriers?|holders?)\b/.test(head)) acc = null;
+    if (accEnd >= 0 && gunEnd >= accEnd && gun.how !== 'weak' && !/\b(pouch(es)?|kywis?|holsters?|mag(azine)? carriers?|holders?)\b/.test(head)
+      // ...nor does a bare model name after a part noun with no gun word: "Aluminum Trigger T2 Hi Capa / 1911" is a trigger.
+      && !(gun.how === 'model' && acc === 'parts' && /\b(triggers?|hammers?|sears?|nozzles?|inner barrels?|hop[ -]?ups?|buckings?|valves?|springs?|guide rods?|recoil springs?|mag(azine)? catch(es)?|thumb safety|safet(y|ies)|grip safety|slide stops?|charging handles?)\b/.test(head))) acc = null;
   }
   // "Green gas" describing a gun or a magazine ("CZ P-09 Green Gas/CO2 Gun", "Hi-Capa 28 round magazine, green gas").
   if (acc === 'gas') {
