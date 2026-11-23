@@ -35,7 +35,11 @@ async function collect(s) {
   let items = [];
   if (s.index) {
     const f = politeFetcher(s.index._delayMs);
-    await s.index._crawl({ fetchPage: f.fetchPage, add: (list) => items.push(...list) });
+    const deals = [];
+    await s.index._crawl({ fetchPage: f.fetchPage, add: (list, { deal = false } = {}) => { items.push(...list); if (deal) deals.push(...list); } });
+    // Also refresh the catalog snapshot the server boots from (server/snapshot/<slug>.json.gz), so a cold start
+    // serves this run's prices while its own slow crawl (5 s+ per page) catches up, not a days-old catalog.
+    if (items.length > 50) writeIndexSnapshot(s, items, deals);
   } else if (s.catalog) {
     items = await s.catalog(politeFetcher(2000));
   } else {
@@ -56,6 +60,14 @@ function writeSnapshot(s, items) {
   const dir = path.join(__dirname, '..', 'server', 'snapshot');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `shopify-${s.id}.json.gz`), zlib.gzipSync(JSON.stringify({ store: s.id, builtAt: NOW, items: slim }), { level: 9 }));
+}
+
+function writeIndexSnapshot(s, items, deals) {
+  const uniq = (l) => { const seen = new Set(); return l.filter((p) => p.url && !seen.has(p.url) && seen.add(p.url)); };
+  const dir = path.join(__dirname, '..', 'server', 'snapshot');
+  fs.mkdirSync(dir, { recursive: true });
+  const slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  fs.writeFileSync(path.join(dir, `${slug}.json.gz`), zlib.gzipSync(JSON.stringify({ name: s.name, builtAt: NOW, items: uniq(items), deals: uniq(deals) }), { level: 9 }));
 }
 
 function readStore(id) {

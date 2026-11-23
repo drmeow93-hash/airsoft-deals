@@ -14,6 +14,7 @@ const { Worker } = require('worker_threads');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9.]+/g, ' ').trim();
 const SNAP_DIR = path.join(__dirname, 'snapshot');
+const SNAP_RAW = (process.env.SNAPSHOT_RAW_BASE || 'https://raw.githubusercontent.com/drmeow93-hash/airsoft-deals/main/server/snapshot').replace(/\/$/, '');
 let queue = Promise.resolve(); // one crawl at a time across all stores
 
 function createIndex({ name, delayMs, refreshMs, crawl, workerModule }) {
@@ -118,15 +119,39 @@ function createIndex({ name, delayMs, refreshMs, crawl, workerModule }) {
     return hits.sort((a, b) => b[0] - a[0]).slice(0, limit).map(([, p]) => strip(p));
   }
 
+  // The box's twice-daily history collector also commits a fresh copy of this snapshot to GitHub. History
+  // commits don't redeploy, so the bundled copy can be days old: fetch the newer one before the first crawl.
+  async function remoteSnapshot() {
+    if (process.env.NO_BACKGROUND || process.env.SNAPSHOT_REMOTE === '0') return false;
+    try {
+      const r = await fetch(`${SNAP_RAW}/${slug}.json.gz`, { headers: { 'User-Agent': 'AirsoftDealsFinder/1.0 (snapshot)' }, signal: AbortSignal.timeout(20000) });
+      if (!r.ok) return false;
+      const buf = Buffer.from(await r.arrayBuffer());
+      const json = await new Promise((res, rej) => zlib.gunzip(buf, (e, b) => (e ? rej(e) : res(b))));
+      const snap = JSON.parse(json);
+      if (!snap.builtAt || (idx.builtAt && Date.parse(snap.builtAt) <= Date.parse(idx.builtAt)) || !snap.items?.length || idx.building) return false;
+      idx.items = snap.items.map(prep);
+      const byUrl = new Map(idx.items.map((p) => [p.url, p]));
+      idx.deals = (snap.deals || []).map((p) => byUrl.get(p.url) || prep(p));
+      idx.builtAt = snap.builtAt; idx.status = 'ready'; idx.source = 'collector snapshot';
+      console.log(`[index] ${name}: newer snapshot from GitHub, ${snap.builtAt} (${idx.items.length} products)`);
+      return true;
+    } catch { return false; }
+  }
+
   let started = false;
   function start(initialDelayMs = 0) {
     if (started) return;
     started = true;
     loadSnapshot();
-    const age = idx.builtAt ? Date.now() - Date.parse(idx.builtAt) : Infinity;
-    // A fresh-enough snapshot waits for its normal refresh time; otherwise refresh soon after boot.
-    const first = age < refreshMs ? refreshMs - age : initialDelayMs;
-    setTimeout(() => { queuedBuild(); setInterval(queuedBuild, refreshMs); }, first);
+    const schedule = () => {
+      const age = idx.builtAt ? Date.now() - Date.parse(idx.builtAt) : Infinity;
+      // A fresh-enough snapshot waits for its normal refresh time; otherwise refresh soon after boot.
+      const first = age < refreshMs ? refreshMs - age : initialDelayMs;
+      setTimeout(() => { queuedBuild(); setInterval(queuedBuild, refreshMs); }, first);
+    };
+    const age0 = idx.builtAt ? Date.now() - Date.parse(idx.builtAt) : Infinity;
+    if (age0 > 2 * 60 * 60 * 1000) remoteSnapshot().finally(schedule); else schedule();
   }
 
   return {
