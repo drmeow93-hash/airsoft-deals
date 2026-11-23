@@ -473,7 +473,8 @@ if (BG) {
 }
 // Shopify fallback snapshots are parsed shortly after boot, one at a time, so the first search
 // during a Shopify rate limit doesn't pay for decompressing them all at once.
-if (BG) stores.filter((s) => s.snapshotInfo).forEach((s, i) => setTimeout(() => s.snapshotInfo(), 8000 + i * 700));
+// (5 min after boot and 20 s apart: parsing them all in the first seconds stalled the waking visitor ~4 s on 0.1 CPU.)
+if (BG) stores.filter((s) => s.snapshotInfo).forEach((s, i) => setTimeout(() => s.snapshotInfo(), 5 * 60 * 1000 + i * 20000));
 if (BG) {
   // Cold start: Render just woke us (a visitor is waiting), so check every store right away.
   // (A short pause first, so the waking visitor's own page requests get the CPU before the crawl.)

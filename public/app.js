@@ -120,12 +120,19 @@ function wakeBanner(on) {
 async function api(path) {
   let flagged = false;
   // Only the page's first requests can mean Render is waking the server; later slow calls just show skeletons.
-  const t = setTimeout(() => { if (performance.now() < 20000) { flagged = true; wakeBanner(true); } }, 3500);
+  // A server that is up but busy checking stores answers /api/health at once: then skeletons are enough and
+  // the "waking up" note would be wrong. Only an unanswered health ping means Render is still starting it.
+  let done = false;
+  const t = setTimeout(async () => {
+    if (performance.now() >= 20000 || done) return;
+    const up = await fetch(API + '/api/health', { cache: 'no-store', signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined }).then((r) => r.ok, () => false);
+    if (!up && !done) { flagged = true; wakeBanner(true); }
+  }, 3500);
   try {
     const r = await fetch(API + path);
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Server error ${r.status}`);
     return await r.json();
-  } finally { clearTimeout(t); if (flagged) wakeBanner(false); }
+  } finally { done = true; clearTimeout(t); if (flagged) wakeBanner(false); }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function toast(msg) {
