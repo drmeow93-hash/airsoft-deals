@@ -153,7 +153,11 @@ function attachOffer(o) {
 
 // Group (same product across stores): best price over time = lowest live offer at each date.
 function attachGroup(g) {
-  const series = g.offers.map(attachOffer);
+  // The group's "best price" line follows the offers you can buy: a sold-out store's lower price made the
+  // chart's lowest/average disagree with the price shown (e.g. $127.99 sold out vs $189.95 best in stock).
+  const all = g.offers.map(attachOffer);
+  const buyable = all.filter((_, i) => g.offers[i].inStock !== false);
+  const series = buyable.length ? buyable : all;
   const dates = [...new Set(series.flat().map(([d]) => d))].sort();
   const merged = [];
   for (const d of dates) {

@@ -226,7 +226,7 @@ function chartHtml(h) {
   const ys = [hi, (hi + lo) / 2, lo];
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price history from ${fmtDate(ser[0][0])} to today, low ${money(h.lo)}, high ${money(h.hi)}">
     <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-    ${ys.map((v) => `<line class="grid-l" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="lbl" x="${pad[3] - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${money(v)}</text>`).join('')}
+    ${ys.map((v) => `<line class="grid-l" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="lbl" x="${pad[3] - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${tick(v)}</text>`).join('')}
     ${h.pts.length > 1 ? `<line class="avg" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(h.avg).toFixed(1)}" y2="${Y(h.avg).toFixed(1)}"/>` : ''}
     <path d="${area}" fill="url(#ag)"/>
     <path d="${d}" fill="none" stroke="${color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
@@ -302,11 +302,15 @@ function chartModel(series, range, W = 680) {
 function chartSvg(m, avg) {
   const { W, H, pad, X, Y, lo, hi, lines } = m;
   if (!lines.length) return '<p class="hist-note">Pick at least one store to draw.</p>';
-  const ys = [0, 1, 2, 3].map((i) => lo + ((hi - lo) * (i + 0.5)) / 4);
+  // Round-number gridlines ($150, $175, $200…) instead of arbitrary cents like $174.40.
+  const raw = (hi - lo) / 4, mag = 10 ** Math.floor(Math.log10(raw || 1));
+  const stp = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw) || 10 * mag;
+  const ys = []; for (let v = Math.ceil(lo / stp) * stp; v <= hi && ys.length < 6; v += stp) ys.push(+v.toFixed(2));
+  const tick = (v) => (stp >= 1 ? '$' + Math.round(v).toLocaleString() : money(v));
   const mid = new Date((m.x0 + m.x1) / 2).toISOString().slice(0, 10);
   const step = (c) => c.map(([d, v], i) => (i ? `H${X(d).toFixed(1)}V${Y(v).toFixed(1)}` : `M${X(d).toFixed(1)} ${Y(v).toFixed(1)}`)).join('');
   return `<svg class="chart mchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price by store from ${fmtDate(m.start)} to today">
-    ${ys.map((v) => `<line class="grid-l" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="lbl" x="${pad[3] - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${money(v)}</text>`).join('')}
+    ${ys.map((v) => `<line class="grid-l" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="lbl" x="${pad[3] - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${tick(v)}</text>`).join('')}
     ${avg > lo && avg < hi ? `<line class="avg" x1="${pad[3]}" x2="${W - pad[1]}" y1="${Y(avg).toFixed(1)}" y2="${Y(avg).toFixed(1)}"/><text class="lbl avg-l" x="${W - pad[1]}" y="${(Y(avg) - 5).toFixed(1)}" text-anchor="end">avg best ${money(avg)}</text>` : ''}
     ${lines.map((s) => `<path d="${step(s.c)}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>${s.c.filter((p, i) => i < s.c.length - 1 && s.pts.some((q) => q[0] === p[0])).map(([d, v]) => `<circle cx="${X(d).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.6" fill="${s.color}"/>`).join('')}`).join('')}
     <line class="xh" id="xh" x1="0" x2="0" y1="${pad[0]}" y2="${H - pad[2]}" visibility="hidden"/>
