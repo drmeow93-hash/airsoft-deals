@@ -60,7 +60,7 @@ async function fanOut(fn, timeoutMs = STORE_TIMEOUT_MS) {
   return { items, status, slow, ms: Date.now() - t0, fetchedAt: new Date().toISOString() };
   function statusOf(r, i) {
     const s = stores[i];
-    if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined, snapshotAt: r.value.snapshotAt, note: r.value.snapshotAt ? `live search unavailable (${r.value.liveError}); showing prices from ${r.value.snapshotAt.slice(0, 10)}` : undefined }; }
+    if (r.value) { let n = 0; r.value.forEach((p) => { const x = prep(p, s); if (x) { items.push(x); n++; } }); return { store: s.name, id: s.id, ok: true, count: n, filtered: r.value.length - n || undefined, snapshotAt: r.value.snapshotAt, note: r.value.snapshotAt ? `live search unavailable (${r.value.liveError}); showing prices from ${r.value.snapshotAt.slice(0, 10)}` : r.value.catalogAt ? `sale prices from the full-catalog read at ${r.value.catalogAt.slice(11, 16)} UTC` : undefined, catalogAt: r.value.catalogAt }; }
     if (r.slow) { slow++; return { store: s.name, id: s.id, ok: false, slow: true, error: 'Still loading' }; }
     const error = String(r.error?.message || r.error);
     return { store: s.name, id: s.id, ok: false, indexing: /^Building catalog index/.test(error), error };
@@ -137,7 +137,7 @@ async function computeSearch(q, timeoutMs) {
 
 async function computeDeals(timeoutMs = 15000) {
   // Keep each store's top 40 by discount so one big catalog doesn't drown out the rest.
-  const out = await fanOut(async (s) => (await s.deals())
+  const out = await fanOut(async (s) => { const raw = await s.deals(); return Object.assign(raw
     .map((p) => ({ ...p, _d: p.originalPrice ? (p.originalPrice - p.price) / p.originalPrice : 0 }))
     .filter((p) => p._d <= 0.8 || p.storeDeal)
     // A deal you can't buy isn't a deal: sold-out sale items stay findable in search, not in the deals feed.
@@ -145,7 +145,7 @@ async function computeDeals(timeoutMs = 15000) {
     .sort((a, b) => b._d - a._d)
     // Collapse color/size variants ("Pouch - Black", "Pouch - Tan") so one product doesn't fill the feed.
     .filter(((seen) => (p) => { const k = p.title.split(/\s[-–|]\s/)[0].toLowerCase(); return seen.has(k) ? false : seen.add(k); })(new Set()))
-    .slice(0, 40).map(({ _d, ...p }) => p), timeoutMs);
+    .slice(0, 40).map(({ _d, ...p }) => p), { catalogAt: raw.catalogAt, snapshotAt: raw.snapshotAt, liveError: raw.liveError }); }, timeoutMs);
   // Interleave stores (each in its own discount order) so the default feed is a fair mix.
   const byStore = {};
   for (const g of groupProducts(out.items)) (byStore[g.offers[0].storeId] ||= []).push(g);

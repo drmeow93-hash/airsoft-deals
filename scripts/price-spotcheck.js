@@ -30,7 +30,9 @@ const SITE = rep.site;
           for (const m of h.matchAll(/"(?:price|lowPrice|highPrice)"\s*:\s*"?([\d.,]+)"?/g)) prices.push(+m[1].replace(/,/g, ''));
           for (const m of h.matchAll(/(?:product:price:amount|og:price:amount|itemprop="price")[^>]*content="([\d.,]+)"/g)) prices.push(+m[1].replace(/,/g, ''));
           for (const m of h.matchAll(/content="([\d.,]+)"[^>]*(?:itemprop="price"|property="product:price:amount")/g)) prices.push(+m[1].replace(/,/g, ''));
-          for (const m of h.matchAll(/class="(?:price|price-new|special-price)[^"]*"[^>]*>\s*\$([\d.,]+)/g)) prices.push(+m[1].replace(/,/g, ''));
+          // OpenCart (Megastore): the first <div class="price"> is the product's own, "<span>$was</span>$now" on sale.
+          const oc = h.match(/class="price">\s*(?:<span[^>]*>\$[\d.,]+<\/span>\s*)?\$([\d.,]+)/);
+          if (oc) prices.push(+oc[1].replace(/,/g, ''));
         }
       } catch { /* unreadable */ }
       prices = prices.filter((x) => x > 0);

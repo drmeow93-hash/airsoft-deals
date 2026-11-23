@@ -17,6 +17,27 @@ function loadSnapshot(id) {
     return snap;
   } catch { return null; }
 }
+// The box collector re-reads every Shopify catalog twice a day and commits these snapshots to GitHub, but
+// history commits don't redeploy. The sale feed reads the newest copy (local file, else GitHub raw) instead of
+// downloading two ~1-2 MB /products.json pages per store on every refresh: on Render's 0.1 CPU those JSON parses
+// stalled every visitor for seconds and left half the stores "loading" on the deals page.
+const SNAP_RAW = (process.env.SNAPSHOT_RAW_BASE || 'https://raw.githubusercontent.com/drmeow93-hash/airsoft-deals/main/server/snapshot').replace(/\/$/, '');
+const CATALOG_MAX_AGE = 14 * 60 * 60 * 1000;
+let catalogLock = Promise.resolve(); // one snapshot parse at a time (memory)
+async function readDealSnapshot(id, { remote }) {
+  const file = `shopify-${id}.json.gz`;
+  let buf;
+  if (remote) {
+    const r = await fetch(`${SNAP_RAW}/${file}`, { headers: { 'User-Agent': 'AirsoftDealsFinder/1.0 (snapshot)' }, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error(`snapshot HTTP ${r.status}`);
+    buf = Buffer.from(await r.arrayBuffer());
+  } else buf = await fs.promises.readFile(path.join(__dirname, '..', 'snapshot', file));
+  const json = await new Promise((res, rej) => zlib.gunzip(buf, (e, b) => (e ? rej(e) : res(b))));
+  const snap = JSON.parse(json);
+  return { builtAt: snap.builtAt, items: (snap.items || []).filter((p) => p.originalPrice && p.price) };
+}
+const fresh = (c) => c && c.builtAt && Date.now() - Date.parse(c.builtAt) < CATALOG_MAX_AGE;
+
 function searchSnapshot(snap, q, limit = 24) {
   const terms = snorm(q).split(' ').filter(Boolean);
   if (!terms.length) return [];
@@ -72,6 +93,22 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
     };
   };
 
+  let cat = null, catTried = 0; // sale items from the newest catalog snapshot
+  async function catalogDeals() {
+    if (fresh(cat) || process.env.NO_BACKGROUND) return fresh(cat) ? cat : null;
+    if (Date.now() - catTried < 30 * 60 * 1000) return null;
+    catTried = Date.now();
+    const run = catalogLock.then(async () => {
+      try { if (!cat) cat = await readDealSnapshot(id, { remote: false }); } catch { /* no bundled copy */ }
+      if (!fresh(cat)) {
+        try { const r = await readDealSnapshot(id, { remote: true }); if (!cat || Date.parse(r.builtAt) > Date.parse(cat.builtAt)) cat = r; } catch { /* offline: live feed */ }
+      }
+    });
+    catalogLock = run.catch(() => {});
+    await run;
+    return fresh(cat) ? cat : null;
+  }
+
   let snap; // loaded on first need
   const snapshot = () => (snap === undefined ? (snap = loadSnapshot(id)) : snap);
   const withFallback = (live, local) => async (...a) => {
@@ -93,6 +130,8 @@ function makeShopifyStore({ id, name, base, location, blurb, fx = null, airsoftO
 
   // Sale feed: the first catalog pages, products whose cheapest variant is below its compare-at price.
   async function deals() {
+    const c = await catalogDeals();
+    if (c) return Object.assign(c.items.map((p) => ({ ...p })), { catalogAt: c.builtAt });
     const out = [];
     // Two pages (500 products) keeps memory low on the free instance; the deals feed itself is cached.
     for (let page = 1; page <= 2; page++) {
